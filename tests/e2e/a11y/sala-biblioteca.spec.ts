@@ -210,6 +210,29 @@ test.describe("con «Sala»", () => {
     await expect(page).not.toHaveURL(/type=/);
   });
 
+  test("nota mínima en un desplegable y «Solo favoritos» en un interruptor", async ({ page }) => {
+    await openLibrary(page);
+    await page.locator("button[aria-controls]").filter({ hasText: es.filters.filters }).click();
+    const score = page.getByRole("combobox", { name: es.library.sala.scoreLabel });
+    await expect(score).toHaveValue("all");
+    await score.selectOption("4");
+    await expect(page).toHaveURL(/[?&]score=4/);
+    // Matrix (8/10) y Elden Ring (7/10, 4 estrellas redondeando) quedan; el manga, sin nota, no.
+    await expect(page.locator("[data-sala-library-count]")).toHaveText("2 títulos");
+
+    const fav = page.getByRole("switch", { name: es.library.sala.favoritesOnly });
+    await expect(fav).toBeVisible();
+    // La fila entera se pulsa: 44 px o más.
+    const row = await fav.evaluate((el) => el.closest("label")!.getBoundingClientRect().height);
+    expect(row).toBeGreaterThanOrEqual(44);
+    await fav.focus();
+    await page.keyboard.press("Space");
+    await expect(fav).toBeChecked();
+    await expect(page).toHaveURL(/[?&]fav=1/);
+    await expect(fav, "el foco sigue en el interruptor").toBeFocused();
+    await expectNoBlockingViolations(page, "filtros con nota y favoritos");
+  });
+
   test("orden: el desplegable va a la URL y reordena la rejilla", async ({ page }) => {
     await openLibrary(page);
     // Un `<select>` cambiado antes de hidratar no llega a React: se espera a

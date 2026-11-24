@@ -442,7 +442,8 @@
         "year": "Año (más nuevos primero)",
         "rating": "Tu nota (más alta primero)"
       },
-      "scoreAny": "Cualquier nota",
+      "scoreLabel": "Nota mínima",
+      "scoreAny": "Cualquiera",
       "scoreTop": "5 estrellas",
       "scoreMin": "{stars, plural, one {# estrella o más} other {# estrellas o más}}",
       "favoritesOnly": "Solo favoritos"

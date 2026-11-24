@@ -15,9 +15,10 @@
 // - Contadores = filtro de estado: cuatro botones con `aria-pressed` que
 //   cuentan la biblioteca ENTERA (son el resumen) y filtran al pulsarlos;
 //   otra vez, quitan el filtro. Sustituyen a la fila de chips de estado.
-// - «Filtros» abre un panel (`aria-expanded`) con formato, nota mínima y
-//   favoritos: botones con `aria-pressed` que se parten en varias líneas
-//   (sin scroll horizontal). Cada pulsación filtra al momento, como hoy.
+// - «Filtros» abre un panel (`aria-expanded`): el formato con botones con
+//   `aria-pressed` que se parten en varias líneas (sin scroll horizontal), la
+//   nota mínima en un `<select>` nativo y «Solo favoritos» en un interruptor
+//   (`SalaSwitch`, `role="switch"`). Todo filtra al momento, como hoy.
 // - «Ordenar por»: un `<select>` nativo (`SalaSelect`).
 // - El número de títulos es una región `status`: al filtrar se anuncia el
 //   resultado («3 títulos»).
@@ -32,6 +33,7 @@ import { Link } from '@/i18n/navigation'
 import { cn } from '@/lib/utils/index'
 import { SalaButton } from '@/components/sala/SalaButton'
 import { SalaSelect } from '@/components/sala/SalaSelect'
+import { SalaSwitch } from '@/components/sala/SalaSwitch'
 import { SalaBlockState } from '@/components/sala/SalaBlockState'
 import { SalaLibraryGrid, type SalaLibraryGridProps } from '@/components/library/sala/SalaLibraryGrid'
 import { LIBRARY_SORTS, parseLibrarySort, sortLibrary } from '@/lib/library/sort'
@@ -182,7 +184,6 @@ function Collection({ entries, scale, onSaved, toastLabels, counts, filters, onF
   const locale = useLocale()
   const panelId = useId()
   const typeId = useId()
-  const scoreId = useId()
   const [open, setOpen] = useState(false)
 
   const sort = parseLibrarySort(filters.sort)
@@ -283,34 +284,31 @@ function Collection({ entries, scale, onSaved, toastLabels, counts, filters, onF
           </div>
         </div>
 
-        <div role="group" aria-labelledby={scoreId}>
-          <p id={scoreId} className="mb-2 sala-type-label">
-            {tF('minScore')}
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <Toggle pressed={filters.score === 'all'} onClick={() => onFilter({ score: 'all' })}>
-              {tS('scoreAny')}
-            </Toggle>
+        {/* Nota mínima y favoritos (Víctor, #292): un desplegable y un interruptor, en una fila. */}
+        <div className="flex flex-wrap items-end gap-x-8 gap-y-4">
+          <SalaSelect
+            label={tS('scoreLabel')}
+            value={filters.score}
+            onChange={(e) => onFilter({ score: e.target.value })}
+            fieldClassName="w-full sm:w-72"
+          >
+            <option value="all">{tS('scoreAny')}</option>
             {SCORES.map((score) => (
-              <Toggle
-                key={score}
-                pressed={filters.score === score}
-                onClick={() => onFilter({ score: filters.score === score ? 'all' : score })}
-              >
+              <option key={score} value={score}>
                 {score === '5' ? tS('scoreTop') : tS('scoreMin', { stars: Number(score) })}
-              </Toggle>
+              </option>
             ))}
-          </div>
+          </SalaSelect>
+          {/* Favoritos (F-24): solo con el diario. Vale al momento: un interruptor. */}
+          {viewHrefs ? (
+            <SalaSwitch
+              label={tS('favoritesOnly')}
+              checked={filters.favorites}
+              onChange={(e) => onFilter({ fav: e.target.checked ? '1' : 'all' })}
+              fieldClassName="w-full sm:w-auto"
+            />
+          ) : null}
         </div>
-
-        {/* Favoritos (F-24): solo con el diario. */}
-        {viewHrefs ? (
-          <div>
-            <Toggle pressed={filters.favorites} onClick={() => onFilter({ fav: filters.favorites ? 'all' : '1' })}>
-              {tS('favoritesOnly')}
-            </Toggle>
-          </div>
-        ) : null}
       </div>
 
       {sorted.length === 0 ? (

@@ -442,7 +442,8 @@
         "year": "Year (newest first)",
         "rating": "Your rating (highest first)"
       },
-      "scoreAny": "Any rating",
+      "scoreLabel": "Minimum rating",
+      "scoreAny": "Any",
       "scoreTop": "5 stars",
       "scoreMin": "{stars, plural, one {# star or more} other {# stars or more}}",
       "favoritesOnly": "Favorites only"

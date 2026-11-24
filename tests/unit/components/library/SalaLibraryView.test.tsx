@@ -78,7 +78,7 @@ describe('SalaLibraryView: cabecera', () => {
   it('sin diario no hay selector ni favoritos', () => {
     renderView({ viewHrefs: null })
     expect(screen.queryByRole('navigation')).toBeNull()
-    expect(screen.queryByRole('button', { name: 'library.sala.favoritesOnly' })).toBeNull()
+    expect(screen.queryByRole('switch')).toBeNull()
   })
 
   it('en el diario: la cabecera, el diario y nada de filtros', () => {
@@ -135,34 +135,60 @@ describe('SalaLibraryView: panel de filtros', () => {
     expect(panel.hidden).toBe(true)
   })
 
-  it('formato, nota y favoritos: botones con aria-pressed en grupos con nombre', () => {
-    const { onFilter } = renderView({ filters: { ...FILTERS, type: 'manga', score: '4', favorites: true } })
+  it('formato: botones con aria-pressed en un grupo con nombre', () => {
+    const { onFilter } = renderView({ filters: { ...FILTERS, type: 'manga' } })
     fireEvent.click(screen.getByRole('button', { name: /library\.sala\.filtersActive/ }))
     const type = screen.getByRole('group', { name: 'filters.type' })
     const typeButtons = within(type).getAllByRole('button')
     expect(typeButtons).toHaveLength(8)
     expect(typeButtons.filter((b) => b.getAttribute('aria-pressed') === 'true').map((b) => b.textContent)).toEqual(['filters.manga'])
-
-    const score = screen.getByRole('group', { name: 'filters.minScore' })
-    expect(within(score).getAllByRole('button').map((b) => b.textContent)).toEqual([
-      'library.sala.scoreAny',
-      'library.sala.scoreTop',
-      'library.sala.scoreMin:{"stars":4}',
-      'library.sala.scoreMin:{"stars":3}',
-      'library.sala.scoreMin:{"stars":2}',
-    ])
-    expect(within(score).getByRole('button', { pressed: true }).textContent).toBe('library.sala.scoreMin:{"stars":4}')
-
     fireEvent.click(within(type).getByRole('button', { name: 'filters.manga' }))
     expect(onFilter).toHaveBeenLastCalledWith({ type: 'all' })
     fireEvent.click(within(type).getByRole('button', { name: 'filters.book' }))
     expect(onFilter).toHaveBeenLastCalledWith({ type: 'book' })
-    fireEvent.click(within(score).getByRole('button', { name: 'library.sala.scoreTop' }))
+  })
+
+  it('nota mínima: un desplegable con etiqueta y el mismo parámetro', () => {
+    const { onFilter } = renderView({ filters: { ...FILTERS, score: '4' } })
+    fireEvent.click(screen.getByRole('button', { expanded: false }))
+    const select = screen.getByRole('combobox', { name: 'library.sala.scoreLabel' }) as HTMLSelectElement
+    expect([...select.options].map((o) => [o.value, o.textContent])).toEqual([
+      ['all', 'library.sala.scoreAny'],
+      ['5', 'library.sala.scoreTop'],
+      ['4', 'library.sala.scoreMin:{"stars":4}'],
+      ['3', 'library.sala.scoreMin:{"stars":3}'],
+      ['2', 'library.sala.scoreMin:{"stars":2}'],
+    ])
+    expect(select.value).toBe('4')
+    fireEvent.change(select, { target: { value: '5' } })
     expect(onFilter).toHaveBeenLastCalledWith({ score: '5' })
-    const fav = screen.getByRole('button', { name: 'library.sala.favoritesOnly' })
-    expect(fav.getAttribute('aria-pressed')).toBe('true')
+    fireEvent.change(select, { target: { value: 'all' } })
+    expect(onFilter).toHaveBeenLastCalledWith({ score: 'all' })
+  })
+
+  it('solo favoritos: un interruptor (role="switch")', () => {
+    const { onFilter, rerender } = renderView({ filters: { ...FILTERS, favorites: true } })
+    fireEvent.click(screen.getByRole('button', { expanded: false }))
+    const fav = screen.getByRole('switch', { name: 'library.sala.favoritesOnly' }) as HTMLInputElement
+    expect(fav.checked).toBe(true)
     fireEvent.click(fav)
     expect(onFilter).toHaveBeenLastCalledWith({ fav: 'all' })
+    rerender(
+      <SalaLibraryView
+        view="collection"
+        viewHrefs={{ collection: '/library', diary: '/library?view=diary' }}
+        totalCount={7}
+        counts={{}}
+        filters={FILTERS}
+        onFilter={onFilter}
+        entries={ENTRIES}
+        scale="stars"
+        onSaved={vi.fn()}
+        toastLabels={{ region: 'Avisos', dismiss: 'Cerrar' }}
+      />
+    )
+    fireEvent.click(screen.getByRole('switch', { name: 'library.sala.favoritesOnly' }))
+    expect(onFilter).toHaveBeenLastCalledWith({ fav: '1' })
   })
 
   it('el botón dice cuántos filtros del panel hay puestos', () => {
