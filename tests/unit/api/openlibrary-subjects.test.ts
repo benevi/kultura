@@ -60,15 +60,60 @@ describe("pickBookSubjects", () => {
     expect(pickBookSubjects([spam])).toBeUndefined();
   });
 
-  it("conserva temas limpios cuando el libro no trae ningún género reconocible", () => {
-    // Información real aunque no puntúe: mejor eso que dejar la ficha vacía.
-    const picked = pickBookSubjects(["Beaches", "Summer", "Friendship"]);
-    expect(picked).toEqual(["Beaches", "Summer", "Friendship"]);
+  it("sin ningún género reconocible no hay géneros (el campo se oculta)", () => {
+    expect(pickBookSubjects(["Beaches", "Summer", "Friendship"])).toBeUndefined();
   });
 
   it("nunca devuelve más de cinco", () => {
-    const many = Array.from({ length: 30 }, (_, i) => `Tema ${i}`);
+    const many = [
+      "Fiction", "Fantasy", "Horror", "Romance", "Poetry", "Humor", "Essays",
+    ];
     expect(pickBookSubjects(many)).toHaveLength(5);
+  });
+
+  // Datos reales recortados de https://openlibrary.org/works/OL27448W.json
+  // (El Señor de los Anillos). La ficha enseñaba «Géneros: Baggins, Frodo
+  // (Fictitious character)».
+  it("OL27448W: no cuela personajes, lugares ni temas como géneros", () => {
+    const picked = pickBookSubjects([
+      "The Lord of the Rings",
+      "Fiction",
+      "Ficción",
+      "English Fantasy fiction",
+      "Fantasy fiction",
+      "Open Library Staff Picks",
+      "Middle Earth (Imaginary place)",
+      "Fiction, fantasy, epic",
+      "Baggins, frodo (fictitious character), fiction",
+      "Gandalf (fictitious character), fiction",
+      "Frodo Baggins (Fictitious character)",
+      "Fiction, fantasy, general",
+      "Wizards",
+      "Terre du Milieu (Lieu imaginaire)",
+      "Baggins, frodo",
+      "Middle earth (imaginary place)--fiction",
+    ]);
+
+    expect(picked).toBeDefined();
+    expect(picked!.length).toBeGreaterThan(0);
+    for (const genre of picked!) {
+      expect(genre).not.toMatch(/fictitious|imaginary|imaginaire|baggins|wizards|lord of the rings/i);
+      expect(canonicalGenres([genre]).length).toBeGreaterThan(0);
+    }
+  });
+
+  it("descarta personajes y lugares aunque el resto no sea género", () => {
+    expect(
+      pickBookSubjects([
+        "Baggins, Frodo (Fictitious character)",
+        "Middle Earth (Imaginary place)",
+        "Fiction, general",
+      ])
+    ).toBeUndefined();
+  });
+
+  it("no repite el mismo género", () => {
+    expect(pickBookSubjects(["Fantasy", "fantasy", "Fantasy "])).toEqual(["Fantasy"]);
   });
 
   it("sin subjects devuelve undefined, no una lista vacía", () => {

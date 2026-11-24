@@ -15,10 +15,11 @@
 //   - La FICHA pintaba "Beaches" como género de una novela romántica, o un
 //     párrafo entero de palabras clave dentro de un chip.
 //
-// Aquí se ordenan los subjects poniendo delante los que el vocabulario
-// canónico reconoce como género, y se descarta el ruido evidente. No se
-// inventa ningún género: si un libro no trae ninguno reconocible, se quedan
-// sus subjects menos ruidosos, que es información real aunque no puntúe.
+// Aquí solo se conservan los subjects que el vocabulario canónico reconoce
+// como género. Antes se guardaban también «los menos ruidosos», y la ficha de
+// El Señor de los Anillos (OL27448W) enseñaba «Géneros: Baggins, Frodo
+// (Fictitious character)»: personajes, lugares y temas no son géneros. Si no
+// queda ninguno reconocible, el libro no tiene géneros y el campo se oculta.
 // ============================================================
 
 import { canonicalGenres } from "@/lib/recommendations/genre-canonical";
@@ -62,13 +63,17 @@ function isNoise(subject: string): boolean {
   // Una cadena con varias barras verticales es una lista de palabras clave
   // metida en un solo subject, no un tema.
   if ((s.match(/\|/g) ?? []).length >= 2) return true;
+  // Personajes y lugares inventados: «Baggins, Frodo (Fictitious character)»,
+  // «Middle Earth (Imaginary place)», «Fiction, general».
+  if (/fictitious character|imaginary place|imaginary organization/.test(s)) return true;
+  if (/,\s*general$/.test(s)) return true;
   return false;
 }
 
 /**
- * Devuelve los subjects más útiles de un libro: primero los que el vocabulario
- * canónico reconoce como género (los que hacen que el match puntúe), después
- * el resto de temas limpios.
+ * Devuelve los géneros de un libro: solo los subjects que el vocabulario
+ * canónico reconoce (los mismos que hacen puntuar el match). Si no queda
+ * ninguno, `undefined`.
  */
 export function pickBookSubjects(
   subjects: string[] | undefined | null
@@ -78,13 +83,17 @@ export function pickBookSubjects(
   const clean = subjects.filter((s) => typeof s === "string" && !isNoise(s));
   if (clean.length === 0) return undefined;
 
-  const recognised: string[] = [];
-  const rest: string[] = [];
+  const seen = new Set<string>();
+  const picked: string[] = [];
   for (const subject of clean) {
-    (canonicalGenres([subject]).length > 0 ? recognised : rest).push(subject);
+    if (canonicalGenres([subject]).length === 0) continue;
+    const key = subject.trim().toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    picked.push(subject.trim());
+    if (picked.length >= MAX_SUBJECTS) break;
   }
 
-  const picked = [...recognised, ...rest].slice(0, MAX_SUBJECTS);
   return picked.length > 0 ? picked : undefined;
 }
 

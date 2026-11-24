@@ -119,6 +119,12 @@ const GENRE_ALIASES: Record<string, string[]> = {
   'biography & autobiography': ['biografia'],
   'juvenile fiction': ['infantil'],
   essays: ['ensayo'],
+
+  // ── Open Library (subjects de catálogo en inglés) ───────────────────────
+  'fantasy fiction': ['fantasia'],
+  'horror fiction': ['terror'],
+  'detective and mystery stories': ['misterio'],
+  'love stories': ['romance'],
 }
 
 /** minúsculas, sin acentos y sin espacios de sobra: la forma en que se indexa la tabla. */
