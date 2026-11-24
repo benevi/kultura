@@ -1665,7 +1665,7 @@
     "privacy": {
       "title": "Política de privacidad",
       "metaDescription": "Qué datos trata KULTURA, para qué, con qué proveedores, cuánto tiempo y cómo ejercer tus derechos, explicado sin rodeos.",
-      "updated": "Última actualización: 17 de noviembre de 2026",
+      "updated": "Última actualización: 24 de noviembre de 2026",
       "version": "Versión 2026-10",
       "summary": {
         "s1": "KULTURA la hago yo, Víctor Franco, como proyecto personal gratuito y sin anuncios. Para cualquier cosa sobre tus datos, escríbeme a <mail>{email}</mail>.",
@@ -1738,7 +1738,7 @@
             "github": "<b>GitHub</b> (GitHub Inc., EE. UU.): guarda las copias de seguridad, que se cifran antes de salir, así que GitHub no puede leerlas."
           },
           "p2": "Varios son empresas de EE. UU. o pueden acceder desde allí para dar soporte. Esas <b>transferencias internacionales</b> se amparan en el Marco de Privacidad de Datos UE-EE. UU. cuando la empresa está adherida y, en todo caso, en las cláusulas contractuales tipo de la Comisión Europea incluidas en sus condiciones de tratamiento (arts. 45 y 46 RGPD).",
-          "p3": "La información de los títulos sale de catálogos públicos: TMDB (con datos de JustWatch para «Dónde ver»), RAWG, Steam, AniList, MangaDex, Open Library, Google Books y Comic Vine. Las consultas las hace el servidor de KULTURA con el texto de la búsqueda, sin tu IP ni tu cuenta. Las portadas se muestran de dos formas: muchas se cargan directamente desde los servidores de imágenes de esos catálogos, que reciben tu IP como al visitar cualquier web; otras pasan por el servicio de imágenes de Vercel, que las descarga, las adapta al tamaño de tu pantalla y guarda una copia temporal en caché, que caduca sola, para servirlas más rápido. En ese caso el catálogo no recibe tu IP. Las imágenes para compartir enlaces pueden incluir la portada del título.",
+          "p3": "La información de los títulos sale de catálogos públicos: TMDB (con datos de JustWatch para «Dónde ver»), RAWG, Steam, AniList, MangaDex, Open Library, Google Books y Comic Vine. Para saber que un mismo título está en varios catálogos (por ejemplo, un anime de AniList y su ficha en TMDB) se consulta Wikidata. Las consultas las hace el servidor de KULTURA con el texto de la búsqueda o el identificador público del título, sin tu IP ni tu cuenta. Las portadas se muestran de dos formas: muchas se cargan directamente desde los servidores de imágenes de esos catálogos, que reciben tu IP como al visitar cualquier web; otras pasan por el servicio de imágenes de Vercel, que las descarga, las adapta al tamaño de tu pantalla y guarda una copia temporal en caché, que caduca sola, para servirlas más rápido. En ese caso el catálogo no recibe tu IP. Las imágenes para compartir enlaces pueden incluir la portada del título.",
           "p4": "Los tráileres de algunas fichas son de YouTube (Google): el tráiler se carga desde youtube-nocookie.com solo cuando pulsas reproducir; a partir de ese momento se aplica la política de Google.",
           "p5": "Ningún proveedor recibe datos para publicidad, y no vendo ni cedo datos a nadie salvo obligación legal."
         },
@@ -1843,7 +1843,7 @@
         },
         "thirdparty": {
           "title": "Contenido de terceros",
-          "p1": "La información de los títulos (sinopsis, portadas, notas y disponibilidad) viene de catálogos públicos: TMDB, JustWatch, RAWG, Steam, AniList, MangaDex, Open Library, Google Books y Comic Vine. Pertenece a sus titulares y puede contener errores. Este producto usa la API de TMDB, pero TMDB no lo respalda ni lo certifica.",
+          "p1": "La información de los títulos (sinopsis, portadas, notas y disponibilidad) viene de catálogos públicos: TMDB, JustWatch, RAWG, Steam, AniList, MangaDex, Open Library, Google Books y Comic Vine, y los vínculos entre catálogos, de Wikidata. Pertenece a sus titulares y puede contener errores. Este producto usa la API de TMDB, pero TMDB no lo respalda ni lo certifica.",
           "p2": "Si crees que algo infringe tus derechos de autor, usa el <report>formulario de denuncia</report> o escríbeme."
         },
         "ai": {
