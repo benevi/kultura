@@ -160,3 +160,20 @@ describe("getFilterOptions — keys nuevas E59 R1", () => {
     expect(getFilterOptions("tv", "estado")).toEqual([]);
   });
 });
+
+describe("getFilterOptions — plataformas con nombre oficial", () => {
+  const labelsOf = (type: Parameters<typeof getFilterOptions>[0]) =>
+    Object.fromEntries(getFilterOptions(type, "platform").map((o) => [o.value, o.label]));
+
+  it("movie/tv: marcas con su nombre oficial y value intacto", () => {
+    expect(labelsOf("movie")).toMatchObject({
+      netflix: "Netflix", "prime-video": "Prime Video", "disney-plus": "Disney+", "hbo-max": "Max",
+      "apple-tv": "Apple TV+", "movistar-plus": "Movistar Plus+", filmin: "Filmin",
+      skyshowtime: "SkyShowtime", crunchyroll: "Crunchyroll",
+    });
+  });
+
+  it("game: plataformas de videojuegos con su nombre oficial", () => {
+    expect(labelsOf("game")).toMatchObject({ pc: "PC", ps5: "PS5", "xbox-series": "Xbox Series X|S", switch: "Nintendo Switch", mac: "macOS" });
+  });
+});

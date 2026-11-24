@@ -62,6 +62,37 @@ export function humanizeSlug(slug: string): string {
     .join(" ");
 }
 
+/**
+ * Nombre oficial de cada plataforma. Son marcas: no se traducen, así que un
+ * único mapa (en vez de una clave i18n por idioma) basta. Los nombres de los
+ * proveedores de cine/series coinciden con los de Ajustes → Plataformas
+ * (`src/lib/platforms/platforms.ts`: «Max», «Movistar Plus+»…). El slug (value)
+ * no cambia: solo la etiqueta que se ve. Lo que no esté aquí cae a humanizeSlug.
+ */
+export const PLATFORM_LABELS: Record<string, string> = {
+  // Proveedores de cine/series (TMDB_PROVIDER)
+  netflix: "Netflix",
+  "prime-video": "Prime Video",
+  "disney-plus": "Disney+",
+  "hbo-max": "Max",
+  "apple-tv": "Apple TV+",
+  "movistar-plus": "Movistar Plus+",
+  filmin: "Filmin",
+  skyshowtime: "SkyShowtime",
+  crunchyroll: "Crunchyroll",
+  // Plataformas de videojuegos (RAWG_PLATFORM)
+  pc: "PC",
+  ps5: "PS5",
+  ps4: "PS4",
+  "xbox-series": "Xbox Series X|S",
+  "xbox-one": "Xbox One",
+  switch: "Nintendo Switch",
+  ios: "iOS",
+  android: "Android",
+  mac: "macOS",
+  linux: "Linux",
+};
+
 /** Convierte las keys de un Record en opciones {value,label}. */
 function optionsFromKeys(record: Record<string, unknown>): FilterOption[] {
   return Object.keys(record).map((value) => ({
@@ -123,7 +154,10 @@ export function getFilterOptions(
     case "platform": {
       // platform = TMDB providers para movie/tv, RAWG platforms para game.
       const record = type === "game" ? RAWG_PLATFORM : TMDB_PROVIDER;
-      return optionsFromKeys(record);
+      return optionsFromKeys(record).map((o) => ({
+        value: o.value,
+        label: PLATFORM_LABELS[o.value] ?? o.label,
+      }));
     }
     case "sort":
       return optionsFromKeys(SORT_BY_TYPE[type]);

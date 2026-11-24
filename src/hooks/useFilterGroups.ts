@@ -4,7 +4,7 @@
 // 'sort' para el pill "Ordenar: <valor>". Las etiquetas salen del namespace
 // `discoverFilters`; el valor (slug canónico) NUNCA se toca. Lo que no tiene
 // traducción (plataformas, editoriales, géneros no listados) cae a
-// `humanizeSlug`: la clave i18n actúa de override.
+// `getFilterOptions` (nombres oficiales de plataforma o `humanizeSlug`): la clave i18n actúa de override.
 
 import { useMemo } from "react";
 import { useTranslations } from "next-intl";
@@ -21,8 +21,10 @@ export function useFilterGroups(type: DiscoverType): FilterGroup[] {
   return useMemo(() => {
     const triggerLabel = (key: string) =>
       tDF.has(`trigger.${key}`) ? tDF(`trigger.${key}`) : humanizeSlug(key);
-    const optionLabel = (key: string, value: string) =>
-      tDF.has(`options.${key}.${value}`) ? tDF(`options.${key}.${value}`) : humanizeSlug(value);
+    // Prioridad: clave i18n → etiqueta de getFilterOptions (nombres oficiales de
+    // plataforma, o humanizeSlug).
+    const optionLabel = (key: string, value: string, fallback: string) =>
+      tDF.has(`options.${key}.${value}`) ? tDF(`options.${key}.${value}`) : fallback;
 
     return TYPE_FILTERS[type].map((trigger) => {
       const isSort = trigger.key === "sort";
@@ -32,7 +34,7 @@ export function useFilterGroups(type: DiscoverType): FilterGroup[] {
           ? buildYearBuckets().map((o) => (o.value === "classic" ? { value: o.value, label: tF("classic") } : o))
           : getFilterOptions(type, trigger.key).map((o) => ({
               value: o.value,
-              label: optionLabel(trigger.key, o.value),
+              label: optionLabel(trigger.key, o.value, o.label),
             }));
       return {
         key: trigger.key,
