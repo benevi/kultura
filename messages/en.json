@@ -249,6 +249,19 @@
     "fetchError": {
       "generic": "We can't reach the catalogs right now. Retry in a minute.",
       "rateLimit": "Lots of people are searching right now. Give it a few seconds and retry."
+    },
+    "sala": {
+      "searchLabel": "Search the catalog",
+      "clearSearch": "Clear search",
+      "resultsFor": "Results for “{query}”",
+      "gridLabel": "Titles",
+      "loading": "Loading titles",
+      "results": "{count, plural, =0 {No results} one {# title} other {# titles}}",
+      "errorTitle": "Discover couldn’t load",
+      "retry": "Try again",
+      "emptySearch": "Nothing found for “{query}”",
+      "emptySearchHint": "Try other words or another type.",
+      "emptyFiltersHint": "Remove a filter to see more titles."
     }
   },
   "search": {

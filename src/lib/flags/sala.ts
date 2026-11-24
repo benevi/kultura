@@ -92,3 +92,12 @@ export function salaFichaEnabled(): Promise<boolean> {
 export function salaBibliotecaEnabled(): Promise<boolean> {
   return salaFlagEnabled(process.env.SALA_BIBLIOTECA);
 }
+
+/**
+ * Descubrir en «Sala» (`SALA_DESCUBRIR`, fase 8.5 D1): la barra de búsqueda y
+ * la rejilla. La misma cookie y la misma lógica que las otras: con `0`
+ * Descubrir sale como hoy.
+ */
+export function salaDescubrirEnabled(): Promise<boolean> {
+  return salaFlagEnabled(process.env.SALA_DESCUBRIR);
+}
