@@ -61,6 +61,9 @@ import {
 } from "@/components/icons";
 
 /** Un paso de la miga de pan (ruta sin idioma, para el `Link` de next-intl). */
+/** Tipos sin «Lo mejor de» a los que la ficha con «Sala» añade su nivel en las migas (F6). */
+const SALA_CRUMB_TYPES: ReadonlySet<string> = new Set(["book", "manga", "comic"]);
+
 export interface Breadcrumb {
   name: string;
   href: string;
@@ -325,30 +328,24 @@ export async function MediaDetail({
       : null;
   const salaMore = !sala ? null : (
     <>
-      {/* Las demás acciones: listas, recomendar, compartir la nota y denunciar. */}
-      <SalaFichaSection
-        id="sala-ficha-more-actions"
-        heading={t("salaMoreActionsLabel")}
-        hiddenHeading
-        data-sala-ficha-more-actions=""
-      >
-        <div className="flex flex-wrap items-start gap-3">
-          {isAuthenticated ? (
-            <>
-              <AddToListButton item={item} skin="sala" />
-              <RecommendButton item={item} skin="sala" />
-              {shareRating && (
-                <ShareRatingButton path={shareRating.path} title={item.title} rating={shareRating.rating} skin="sala" />
-              )}
-              <ReportButton targetType="media" targetId={item.id} skin="sala" closeLabel={tCommon("close")} />
-            </>
-          ) : (
-            <SalaLink href={`/report?target=media&id=${encodeURIComponent(item.id)}`} variant="standalone" rel="nofollow">
-              {t("reportPublic")}
-            </SalaLink>
-          )}
-        </div>
-      </SalaFichaSection>
+      {/* Las demás acciones con sesión: listas, recomendar y compartir la nota.
+          Denunciar va al pie, después de las fuentes (F6). */}
+      {isAuthenticated && (
+        <SalaFichaSection
+          id="sala-ficha-list-actions"
+          heading={t("salaListActionsLabel")}
+          hiddenHeading
+          data-sala-ficha-list-actions=""
+        >
+          <div className="flex flex-wrap items-start gap-3">
+            <AddToListButton item={item} skin="sala" />
+            <RecommendButton item={item} skin="sala" />
+            {shareRating && (
+              <ShareRatingButton path={shareRating.path} title={item.title} rating={shareRating.rating} skin="sala" />
+            )}
+          </div>
+        </SalaFichaSection>
+      )}
 
       {/* Por qué te lo recomendamos — solo con señal real (ver arriba) */}
       {showWhyRecommended && (
@@ -377,6 +374,20 @@ export async function MediaDetail({
         googleBooksHref={googleVolumeId ? googleBooksUrl(googleVolumeId) : null}
         extraSource={salaExtras?.extraSource}
       />
+
+      {/* F6: «Más acciones», al pie y en el mismo sitio en todos los tipos de
+          obra, con su encabezado a la vista. «Denunciar» queda para abusos. */}
+      <SalaFichaSection id="sala-ficha-more-actions" heading={t("salaMoreActionsLabel")} data-sala-ficha-more-actions="">
+        <div className="flex flex-wrap items-start gap-3">
+          {isAuthenticated ? (
+            <ReportButton targetType="media" targetId={item.id} skin="sala" closeLabel={tCommon("close")} />
+          ) : (
+            <SalaLink href={`/report?target=media&id=${encodeURIComponent(item.id)}`} variant="standalone" rel="nofollow">
+              {t("reportPublic")}
+            </SalaLink>
+          )}
+        </div>
+      </SalaFichaSection>
     </>
   );
   // F4: el título original con su idioma («Sen to Chihiro no Kamikakushi · japonés»), marcado con `lang`.
@@ -411,6 +422,13 @@ export async function MediaDetail({
     }
     return { key, label, value };
   });
+  // F6: en libro, manga y cómic, el nivel del tipo («Libros»), como en
+  // película o serie (que lo traen de la página: su «Lo mejor de»). Sin página
+  // propia, va a «Descubrir» con ese tipo. La ficha vieja no cambia.
+  const salaBreadcrumbs: Breadcrumb[] =
+    sala && SALA_CRUMB_TYPES.has(item.type) && breadcrumbs.length === 1
+      ? [...breadcrumbs, { name: tMedia(`${item.type}s`), href: `/discover?type=${item.type}` }]
+      : breadcrumbs;
   const salaFacts: SalaFichaFact[] = sala
     ? [
         ...salaTiles,
@@ -437,6 +455,7 @@ export async function MediaDetail({
                       text={item.synopsis}
                       lang={synopsisLang(item.synopsis, locale)}
                       variant="sala"
+                      langName={languageName(synopsisLang(item.synopsis, locale) ?? null, locale)}
                     />
                   }
                 >
@@ -447,7 +466,12 @@ export async function MediaDetail({
                     variant="sala"
                   />
                 </Suspense>
-              ) : null
+              ) : (
+                // F6: sin sinopsis, un estado vacío en vez del hueco.
+                <p data-sala-synopsis-empty="" className="sala-type-text text-sala-ink-secondary">
+                  {t("salaSynopsisEmpty")}
+                </p>
+              )
             }
             actions={salaActions}
             actionsLabel={t("salaLibraryLabel")}
@@ -456,7 +480,7 @@ export async function MediaDetail({
             credits={credits.map(({ key, value }) => ({ key, label: t(`credits.${key}`), value }))}
             breadcrumbs={
               breadcrumbs.length > 0
-                ? { label: t("breadcrumbLabel"), items: breadcrumbs, current: item.title }
+                ? { label: t("breadcrumbLabel"), items: salaBreadcrumbs, current: item.title }
                 : null
             }
           />

@@ -270,7 +270,7 @@ test.describe("diálogos desde «Más acciones» (SalaDialog, F2d): el foco entr
       test(`${c.opener} (${scheme})`, async ({ page }) => {
         await page.emulateMedia({ colorScheme: scheme });
         await open(page, "/es/media/movie/550");
-        const opener = page.locator("[data-sala-ficha-more-actions]").getByRole("button", { name: c.opener, exact: true });
+        const opener = page.locator("[data-sala-ficha-list-actions], [data-sala-ficha-more-actions]").getByRole("button", { name: c.opener, exact: true });
         await expect(opener).toHaveAttribute("aria-haspopup", "dialog");
         await opener.focus();
         await page.keyboard.press("Enter");
@@ -304,7 +304,7 @@ test.describe("diálogos desde «Más acciones» (SalaDialog, F2d): el foco entr
       await route.continue();
     });
     await open(page, "/es/media/movie/550");
-    const opener = page.locator("[data-sala-ficha-more-actions]").getByRole("button", { name: "Añadir a lista", exact: true });
+    const opener = page.locator("[data-sala-ficha-list-actions]").getByRole("button", { name: "Añadir a lista", exact: true });
     await opener.focus();
     await page.keyboard.press("Enter");
     const dialog = page.getByRole("dialog", { name: "Añadir a una lista" });
