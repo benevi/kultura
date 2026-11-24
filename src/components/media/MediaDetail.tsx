@@ -42,6 +42,7 @@ import { ReportButton } from "@/components/social/ReportButton";
 import { SalaFicha } from "./sala/SalaFicha";
 import { SalaFichaBody, type SalaFichaFact } from "./sala/SalaFichaBody";
 import { salaFichaLayout, salaFichaWideImage } from "./sala/SalaFichaHero";
+import { salaItemOf, type SalaFichaExtras } from "@/lib/media/sala-item";
 import { SalaTrailerLazy as SalaTrailer } from "./sala/SalaTrailerLazy";
 import { youtubeTrailerKey } from "@/lib/media/trailer";
 import { SalaLibraryActionLazy as SalaLibraryAction, SalaLibraryCtaLazy as SalaLibraryCta } from "@/components/library/sala/SalaLibraryLazy";
@@ -115,6 +116,12 @@ interface MediaDetailProps {
    * sigue debajo, como hoy. Sin ella, la ficha de siempre, sin un solo cambio.
    */
   sala?: boolean;
+  /**
+   * Fase 8.5, F5: lo que la sala añade (la apaisada sin rótulo de TMDB). Solo
+   * se usa con `sala`; la imagen para compartir y la biblioteca siguen con
+   * `item.backdrop`.
+   */
+  salaExtras?: SalaFichaExtras | null;
 }
 
 interface DetailTile {
@@ -206,6 +213,7 @@ export async function MediaDetail({
   adaptations,
   shareRating,
   sala = false,
+  salaExtras,
 }: MediaDetailProps) {
   const t = await getTranslations("media_detail");
   const tMedia = await getTranslations("media");
@@ -301,7 +309,9 @@ export async function MediaDetail({
   // F3: el tráiler va en el cuerpo de «Sala», con la imagen de la obra de fondo
   // (nada de YouTube antes de pulsar). Una clave que no vale no pinta la sección.
   const salaTrailerKey = sala ? youtubeTrailerKey(trailerKey) : null;
-  const salaWide = sala ? salaFichaWideImage(item) : undefined;
+  // F5: la sala pinta la obra con su apaisada sin rótulo, si la hay.
+  const salaItem = salaItemOf(item, sala ? salaExtras : null);
+  const salaWide = sala ? salaFichaWideImage(salaItem) : undefined;
   const salaTrailerImage = salaWide
     ? { src: salaWide, wide: true }
     : item.poster
@@ -403,10 +413,10 @@ export async function MediaDetail({
   return (
     <main id="main" className="min-h-screen">
       {sala && (
-        <SalaFicha key={item.id} item={item}>
+        <SalaFicha key={item.id} item={salaItem}>
           <SalaFichaBody
             factsLabel={t("salaFactsLabel")}
-            bandWithStage={salaFichaLayout(item) !== "stage"}
+            bandWithStage={salaFichaLayout(salaItem) !== "stage"}
             facts={salaFacts}
             synopsisHeading={t("synopsis")}
             synopsis={

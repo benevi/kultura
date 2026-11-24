@@ -141,6 +141,20 @@ function videos(id) {
   return { id, results: VIDEOS[id] ?? [] };
 }
 
+/**
+ * Imágenes (F5b): una apaisada con rótulo (`es`) y otra sin él (`null`); la
+ * sala elige la segunda. Las rutas son inventadas, como las de la ficha.
+ */
+function images(id) {
+  return {
+    id,
+    backdrops: [
+      { file_path: `/a11y-${id}-rotulo.jpg`, iso_639_1: "es", vote_average: 6, width: 1920 },
+      { file_path: `/a11y-${id}-sin-rotulo.jpg`, iso_639_1: null, vote_average: 5, width: 1920 },
+    ],
+  };
+}
+
 function watchProviders(id) {
   return { id, results: PROVIDERS[id] ?? {} };
 }
@@ -175,6 +189,7 @@ function tmdbResponse(pathname) {
     if (!sub) return tmdbDetail(Number(id));
     if (sub === "/videos") return videos(Number(id));
     if (sub === "/watch/providers") return watchProviders(Number(id));
+    if (sub === "/images") return images(Number(id));
     if (sub === "/credits") return { id: Number(id), cast: [], crew: [] };
     if (sub === "/external_ids") return { id: Number(id) };
     // recommendations, similar…
