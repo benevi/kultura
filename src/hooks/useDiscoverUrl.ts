@@ -42,7 +42,18 @@ export const DISCOVER_FILTER_PARAM_KEYS = [
 /** Triggers cuyo valor en la URL es CSV (string[]). El resto es single. */
 const MULTI_KINDS = new Set(["multi", "searchable"]);
 
-export function useDiscoverUrl(type: DiscoverType, query: string) {
+export interface DiscoverUrlOptions {
+  /**
+   * Fase 8.5 D2 («Sala»): filtros, orden y página con `history.pushState`
+   * (Next lo sincroniza con `useSearchParams`) sin ir al servidor, como la
+   * biblioteca (B2). Con `router.push` la página se vuelve a montar
+   * (`loading.tsx`): el panel de filtros se cerraba y el foco se perdía. El
+   * tipo y la búsqueda siguen con `router.push`.
+   */
+  shallow?: boolean;
+}
+
+export function useDiscoverUrl(type: DiscoverType, query: string, { shallow = false }: DiscoverUrlOptions = {}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isSearching = query.trim().length > 0;
@@ -77,6 +88,12 @@ export function useDiscoverUrl(type: DiscoverType, query: string) {
   }, [type, searchParams]);
 
   const go = (params: URLSearchParams) => router.push(`/discover?${params.toString()}`);
+  // Sin servidor: la página lee `page` de la URL (`urlPage`) y pide los datos sola.
+  const goShallow = (params: URLSearchParams) =>
+    shallow ? window.history.pushState(null, "", `${window.location.pathname}?${params.toString()}`) : go(params);
+
+  // La página de la URL (con `shallow`, la del servidor se queda atrás).
+  const urlPage = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10) || 1);
 
   return {
     isSearching,
@@ -84,6 +101,8 @@ export function useDiscoverUrl(type: DiscoverType, query: string) {
     activeFilters,
     /** Hay algún filtro en la URL (distingue "0 con filtros" de catálogo vacío). */
     hasActiveFilters: filterQuery !== "",
+    /** La página de la URL. */
+    page: urlPage,
 
     /**
      * Cambio de tipo: ?type=X&page=1 y FUERA los filtros (difieren por tipo).
@@ -125,7 +144,20 @@ export function useDiscoverUrl(type: DiscoverType, query: string) {
       }
       params.set("type", type);
       params.set("page", "1");
-      go(params);
+      goShallow(params);
+    },
+
+    /**
+     * Fase 8.5 D2: quita todos los filtros y deja el orden (como «Quitar
+     * filtros» de la biblioteca), en la página 1.
+     */
+    clearFilters() {
+      const params = new URLSearchParams();
+      params.set("type", type);
+      params.set("page", "1");
+      const sort = searchParams.get("sort");
+      if (sort) params.set("sort", sort);
+      goShallow(params);
     },
 
     /** Otra página; `q` y los filtros ya viajan en la URL actual. */
@@ -133,7 +165,7 @@ export function useDiscoverUrl(type: DiscoverType, query: string) {
       const params = new URLSearchParams(searchParams.toString());
       params.set("type", type);
       params.set("page", String(page));
-      go(params);
+      goShallow(params);
     },
   };
 }

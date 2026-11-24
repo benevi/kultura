@@ -178,6 +178,7 @@ describe('DiscoverClient con «Sala» (SALA_DESCUBRIR)', () => {
   })
 
   it('la vista de «Sala» sustituye a toda la pantalla y recibe el estado de la URL y de la petición', async () => {
+    current = new URLSearchParams('type=all&q=matrix&page=2')
     mockDiscover({ items: ITEMS, hasMore: true, totalPages: 3, fetchErrorKind: null })
     const { container } = render(
       <DiscoverClient currentType="all" currentPage={2} currentQuery="matrix" quickAdd sala={sala} />
@@ -223,5 +224,38 @@ describe('DiscoverClient con «Sala» (SALA_DESCUBRIR)', () => {
     expect(mockPush).toHaveBeenLastCalledWith(expect.stringContaining('q=dune'))
     act(() => (salaProps!.onClearSearch as () => void)())
     expect(mockPush).toHaveBeenLastCalledWith('/discover?type=all&page=1')
+  })
+
+  // D2: filtros, orden y páginas con `pushState`, sin ir al servidor (como B2).
+  it('filtros, «Quitar filtros» y páginas cambian la URL con pushState, sin router.push', async () => {
+    current = new URLSearchParams('type=movie&genre=drama&sort=rating&page=1')
+    const pushState = vi.spyOn(window.history, 'pushState')
+    mockDiscover({ items: ITEMS, hasMore: true, totalPages: 3, fetchErrorKind: null })
+    render(<DiscoverClient currentType="movie" currentPage={1} sala={sala} />)
+    await waitFor(() => expect(salaProps?.loading).toBe(false))
+
+    act(() => (salaProps!.onFilterChange as (k: string, v: string | string[]) => void)('valoracion', '7plus'))
+    const url = (n: number) => new URL(String(pushState.mock.calls.at(n)?.[2]), 'http://x')
+    expect(url(-1).searchParams.get('rating')).toBe('7plus')
+    expect(url(-1).searchParams.get('genre')).toBe('drama')
+    expect(url(-1).searchParams.get('page')).toBe('1')
+
+    act(() => (salaProps!.onClearFilters as () => void)())
+    expect(url(-1).search).toBe('?type=movie&page=1&sort=rating')
+
+    act(() => (salaProps!.onPageChange as (p: number) => void)(3))
+    expect(url(-1).searchParams.get('page')).toBe('3')
+    expect(url(-1).searchParams.get('genre')).toBe('drama')
+    expect(mockPush).not.toHaveBeenCalled()
+    pushState.mockRestore()
+  })
+
+  it('la página sale de la URL (tras un pushState la del servidor se queda atrás)', async () => {
+    current = new URLSearchParams('type=movie&page=3')
+    const fetchFn = mockDiscover({ items: ITEMS, hasMore: true, totalPages: 3, fetchErrorKind: null })
+    render(<DiscoverClient currentType="movie" currentPage={1} sala={sala} />)
+    await waitFor(() => expect(salaProps?.loading).toBe(false))
+    expect(salaProps?.currentPage).toBe(3)
+    expect(String(fetchFn.mock.calls.at(-1)?.[0])).toContain('page=3')
   })
 })

@@ -26,7 +26,7 @@ Una por pantalla, leída en el servidor como `QUICK_ADD`: `SALA_FICHA`, `SALA_BI
 B1 rejilla con SalaWorkList/SalaWorkCard + edición rápida en SalaDialog · B2 cabecera, contadores que filtran por estado, panel de filtros, orden (`?sort=`) y progreso en la tarjeta · (opcional) gráficas de seguimiento · P-Uso.
 
 ## Descubrir
-D1 buscador, tipos (botones con aria-pressed desde `sm`; en el móvil, un `<select>` nativo como los de B2), «Sorpréndeme», rejilla con SalaWorkList/SalaWorkCard y paginación (arregla de paso: imagen rota —las obras sin portada ya no se esconden—, × repetidas, error no anunciado —con «Reintentar»—, aria-pressed) · D2 filtros · tráiler al pasar: aparte, necesita preferencia o cambio en `/privacy` · P-Uso.
+D1 buscador, tipos (botones con aria-pressed desde `sm`; en el móvil, un `<select>` nativo como los de B2), «Sorpréndeme», rejilla con SalaWorkList/SalaWorkCard y paginación (arregla de paso: imagen rota —las obras sin portada ya no se esconden—, × repetidas, error no anunciado —con «Reintentar»—, aria-pressed) · D2 filtros en un panel como B2 (botones con aria-pressed para los de varias opciones, `<select>` para los de una y para el orden, URL con `pushState`) y foco en la lista al cambiar de página · tráiler al pasar: aparte, necesita preferencia o cambio en `/privacy` · P-Uso.
 
 ## Decisiones (Víctor, 21-11-2026)
 1. `KButton sm` 32→44: **no se toca**; cada pantalla migrada pasa a `SalaButton` (48 px) y `KButton` muere con la migración. 32 px ya cumple WCAG 2.2 AA (2.5.8 pide 24).

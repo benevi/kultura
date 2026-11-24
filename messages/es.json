@@ -261,7 +261,10 @@
       "retry": "Reintentar",
       "emptySearch": "No encontramos nada para «{query}»",
       "emptySearchHint": "Prueba con otras palabras o con otro tipo.",
-      "emptyFiltersHint": "Quita algún filtro para ver más obras."
+      "emptyFiltersHint": "Quita algún filtro para ver más obras.",
+      "filtersActive": "{count, plural, one {Filtros · #} other {Filtros · #}}",
+      "sortLabel": "Ordenar por",
+      "any": "Cualquiera"
     }
   },
   "search": {

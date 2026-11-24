@@ -61,6 +61,7 @@ function props(over: Partial<SalaDiscoverViewProps> = {}): SalaDiscoverViewProps
     activeFilters: {},
     hasActiveFilters: false,
     onFilterChange: vi.fn(),
+    onClearFilters: vi.fn(),
     onSearch: vi.fn(),
     onClearSearch: vi.fn(),
     onTypeChange: vi.fn(),
@@ -197,7 +198,9 @@ describe('SalaDiscoverView', () => {
     expect(screen.getByRole('heading', { name: 'discover.sala.emptySearch:{"query":"zzz"}' })).toBeInTheDocument()
     rerender(<SalaDiscoverView {...p} query="" isSearching={false} hasActiveFilters />)
     fireEvent.click(screen.getByRole('button', { name: 'filters.reset' }))
-    expect(p.onClearSearch).toHaveBeenCalled()
+    // D2: quita los filtros y deja el orden (no vuelve al catálogo pelado).
+    expect(p.onClearFilters).toHaveBeenCalled()
+    expect(p.onClearSearch).not.toHaveBeenCalled()
     rerender(<SalaDiscoverView {...p} query="" isSearching={false} />)
     expect(screen.getByRole('heading', { name: 'discover.noResults' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'filters.reset' })).toBeNull()
@@ -228,5 +231,100 @@ describe('SalaDiscoverView', () => {
     expect(mockFetch).toHaveBeenCalledWith('/api/library/bulk', expect.objectContaining({ method: 'POST', json: { mediaIds: ['movie_1'] } }))
     expect(screen.getByRole('button', { name: 'library.quickInLibrary:{"title":"Obra 1"}' })).toHaveAttribute('aria-disabled', 'true')
     expect(await screen.findByText('library.quickAdded:{"title":"Obra 1"}')).toBeInTheDocument()
+  })
+
+  // ── D2: filtros ──────────────────────────────────────────────
+  const GROUPS: SalaDiscoverViewProps['filterGroups'] = [
+    { key: 'genre', kind: 'searchable', label: 'Género', options: [{ value: 'action', label: 'Acción' }, { value: 'drama', label: 'Drama' }] },
+    { key: 'year', kind: 'single', label: 'Año', options: [{ value: '2026', label: '2026' }, { value: 'classic', label: 'Clásicos' }] },
+    { key: 'platform', kind: 'multi', label: 'Plataforma', options: [{ value: 'netflix', label: 'Netflix' }] },
+    { key: 'sort', kind: 'single', align: 'end', variant: 'sort', label: 'Ordenar', options: [{ value: 'popularity', label: 'Popularidad' }, { value: 'rating', label: 'Nota' }] },
+  ]
+  const NONE = { genre: [], year: 'all', platform: [], sort: 'all' }
+
+  it('filtros: panel cerrado al entrar, «Filtros» con aria-expanded y sin FilterBar', () => {
+    const { container } = render(<SalaDiscoverView {...props({ filterGroups: GROUPS, activeFilters: NONE })} />)
+    const button = screen.getByRole('button', { name: 'filters.filters' })
+    expect(button).toHaveAttribute('aria-expanded', 'false')
+    const panel = document.getElementById(button.getAttribute('aria-controls')!)!
+    expect(panel).not.toBeVisible()
+    expect(container.querySelector('[data-testid^="filter-trigger-"]')).toBeNull()
+    fireEvent.click(button)
+    expect(button).toHaveAttribute('aria-expanded', 'true')
+    expect(panel).toBeVisible()
+    // Sin filtros puestos, sin «Quitar filtros».
+    expect(screen.queryByRole('button', { name: 'filters.reset' })).toBeNull()
+  })
+
+  it('filtros: los de varias opciones son botones con aria-pressed; los de una, un select con «Cualquiera»', () => {
+    const p = props({ filterGroups: GROUPS, activeFilters: { ...NONE, genre: ['drama'] } })
+    render(<SalaDiscoverView {...p} />)
+    fireEvent.click(screen.getByRole('button', { name: 'discover.sala.filtersActive:{"count":1}' }))
+    const genre = screen.getByRole('group', { name: 'Género' })
+    expect(within(genre).getByRole('button', { name: 'Drama' })).toHaveAttribute('aria-pressed', 'true')
+    expect(within(genre).getByRole('button', { name: 'Acción' })).toHaveAttribute('aria-pressed', 'false')
+    fireEvent.click(within(genre).getByRole('button', { name: 'Acción' }))
+    expect(p.onFilterChange).toHaveBeenLastCalledWith('genre', ['drama', 'action'])
+    fireEvent.click(within(genre).getByRole('button', { name: 'Drama' }))
+    expect(p.onFilterChange).toHaveBeenLastCalledWith('genre', [])
+
+    const year = screen.getByRole('combobox', { name: 'Año' })
+    expect(year).toHaveValue('all')
+    expect(within(year).getAllByRole('option').map((o) => o.textContent)).toEqual(['discover.sala.any', '2026', 'Clásicos'])
+    fireEvent.change(year, { target: { value: 'classic' } })
+    expect(p.onFilterChange).toHaveBeenLastCalledWith('year', 'classic')
+    fireEvent.change(year, { target: { value: 'all' } })
+    expect(p.onFilterChange).toHaveBeenLastCalledWith('year', 'all')
+  })
+
+  it('orden: un select fuera del panel, con la primera opción si la URL no trae ninguna', () => {
+    const p = props({ filterGroups: GROUPS, activeFilters: NONE })
+    render(<SalaDiscoverView {...p} />)
+    const sort = screen.getByRole('combobox', { name: 'discover.sala.sortLabel' })
+    expect(sort).toBeVisible()
+    expect(sort).toHaveValue('popularity')
+    fireEvent.change(sort, { target: { value: 'rating' } })
+    expect(p.onFilterChange).toHaveBeenLastCalledWith('sort', 'rating')
+  })
+
+  it('«Filtros · N» cuenta los filtros puestos (no el orden) y «Quitar filtros» los quita', () => {
+    const p = props({ filterGroups: GROUPS, activeFilters: { genre: ['drama', 'action'], year: '2026', platform: [], sort: 'rating' }, hasActiveFilters: true })
+    render(<SalaDiscoverView {...p} />)
+    expect(screen.getByRole('button', { name: 'discover.sala.filtersActive:{"count":2}' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'filters.reset' }))
+    expect(p.onClearFilters).toHaveBeenCalled()
+  })
+
+  it('al buscar no hay filtros ni orden', () => {
+    render(<SalaDiscoverView {...props({ filterGroups: GROUPS, activeFilters: NONE, query: 'x', isSearching: true })} />)
+    expect(screen.queryByRole('button', { name: 'filters.filters' })).toBeNull()
+    expect(screen.queryByRole('combobox', { name: 'discover.sala.sortLabel' })).toBeNull()
+  })
+
+  it('al cambiar de página, el foco pasa a la lista cuando llega la página nueva (o al h1 si llega vacía)', async () => {
+    const p = props({ currentPage: 1, hasMore: true, totalPages: 3 })
+    const { rerender } = render(<SalaDiscoverView {...p} />)
+    fireEvent.click(screen.getByRole('button', { name: 'discover.next' }))
+    expect(p.onPageChange).toHaveBeenCalledWith(2)
+    await act(async () => rerender(<SalaDiscoverView {...p} currentPage={2} loading items={[]} />))
+    await act(async () => rerender(<SalaDiscoverView {...p} currentPage={2} loading={false} items={ITEMS} />))
+    const list = screen.getByRole('list', { name: 'discover.sala.gridLabel' })
+    expect(list).toHaveFocus()
+    expect(list).toHaveAttribute('tabindex', '-1')
+
+    fireEvent.click(screen.getByRole('button', { name: 'discover.next' }))
+    await act(async () => rerender(<SalaDiscoverView {...p} currentPage={3} loading items={[]} />))
+    await act(async () => rerender(<SalaDiscoverView {...p} currentPage={3} loading={false} items={[]} />))
+    expect(screen.getByRole('heading', { level: 1 })).toHaveFocus()
+  })
+
+  it('sin cambiar de página, la carga no mueve el foco', async () => {
+    const p = props()
+    const { rerender } = render(<SalaDiscoverView {...p} />)
+    const input = screen.getByRole('combobox', { name: 'discover.sala.searchLabel' })
+    input.focus()
+    await act(async () => rerender(<SalaDiscoverView {...p} loading items={[]} />))
+    await act(async () => rerender(<SalaDiscoverView {...p} loading={false} items={ITEMS} />))
+    expect(input).toHaveFocus()
   })
 })

@@ -1,6 +1,7 @@
 /**
  * Descubrir con «Sala» (fase 8.5 D1): buscador, tipos, «Sorpréndeme», la
- * rejilla de `SalaWorkCard` y la paginación. La red arranca con
+ * rejilla de `SalaWorkCard` y la paginación. D2: el panel de filtros, el
+ * orden y el foco al cambiar de página. La red arranca con
  * `SALA_DESCUBRIR=prueba` (`env.cjs`) y este spec entra con la cookie de
  * prueba; con `SALA_DESCUBRIR=1` también pasa (salvo el caso «sin cookie»).
  *
@@ -28,9 +29,10 @@ async function salaCookie(context: BrowserContext, baseURL: string) {
   ]);
 }
 
-/** Contesta `/api/discover`: con búsqueda, solo Matrix; con `fail`, un 500. */
-async function mockDiscover(page: Page, opts: { fail?: () => boolean; hasMore?: boolean } = {}) {
+/** Contesta `/api/discover`: con búsqueda, solo Matrix; con `fail`, un 500. `seen` apunta las URL pedidas. */
+async function mockDiscover(page: Page, opts: { fail?: () => boolean; hasMore?: boolean; seen?: URL[] } = {}) {
   await page.route("**/api/discover?**", (route: Route) => {
+    opts.seen?.push(new URL(route.request().url()));
     if (opts.fail?.()) return route.fulfill({ status: 500, contentType: "application/json", body: JSON.stringify({ error: { code: "internal" } }) });
     const q = new URL(route.request().url()).searchParams.get("q");
     const items = q ? ITEMS.filter((i) => i.title.toLowerCase().includes(q.toLowerCase())) : ITEMS;
@@ -211,10 +213,13 @@ test.describe("con «Sala»", () => {
       await expect(page.getByRole("group", { name: es.filters.type, exact: true })).toBeHidden();
       await expect(page.locator(`${VIEW} label`, { hasText: es.filters.type })).toBeVisible();
 
+      // D2: con el panel de filtros abierto, todo cabe y todo mide 44 px o más.
+      await page.getByRole("button", { name: es.filters.filters, exact: true }).click();
+      await expect(page.locator("[data-sala-discover-filter-panel]")).toBeVisible();
+      await expectNoHorizontalScroll(page, width);
       const small = await page.$$eval(`${VIEW} button, ${VIEW} input, ${VIEW} select`, (els) =>
         els
-          // Los filtros siguen siendo los de hoy hasta D2.
-          .filter((el) => !el.closest('[role="group"]:not([aria-labelledby])') && (el as HTMLElement).offsetParent !== null)
+          .filter((el) => (el as HTMLElement).offsetParent !== null)
           .map((el) => ({ text: el.textContent?.trim() || el.getAttribute("aria-label"), h: el.getBoundingClientRect().height, w: el.getBoundingClientRect().width }))
           .filter((r) => r.h < 44 || r.w < 44)
       );
@@ -232,6 +237,98 @@ test.describe("con «Sala»", () => {
       await expect(page.getByRole("combobox", { name: es.filters.type, exact: true })).toHaveValue("tv");
     });
   }
+
+  test("filtros (D2): panel cerrado al entrar, botones con aria-pressed, desplegables, orden y «Quitar filtros», contra /api/discover", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    const seen: URL[] = [];
+    await mockDiscover(page, { seen });
+    await openDiscover(page, "/es/discover?type=movie");
+    // Sin FilterBar: ni sus pastillas ni su scroll horizontal.
+    await expect(page.locator(`${VIEW} [data-testid^="filter-trigger-"]`)).toHaveCount(0);
+
+    // Su nombre cambia con el contador («Filtros · 1»): se busca por lo que controla.
+    const toggle = page.locator("[data-sala-discover-filters] button[aria-controls]");
+    await expect(toggle).toHaveText(es.filters.filters);
+    await expect(toggle).toHaveAttribute("aria-expanded", "false");
+    await expect(page.locator("[data-sala-discover-filter-panel]")).toBeHidden();
+    await toggle.focus();
+    await page.keyboard.press("Enter");
+    await expect(toggle).toHaveAttribute("aria-expanded", "true");
+    const panel = page.locator("[data-sala-discover-filter-panel]");
+    await expect(panel).toBeVisible();
+    await expectNoBlockingViolations(page, "Descubrir con los filtros abiertos");
+
+    // Género: botones con aria-pressed que bajan de línea (todos a la vista, sin scroll).
+    const genre = panel.getByRole("group", { name: es.discoverFilters.trigger.genre, exact: true });
+    const drama = genre.getByRole("button", { name: es.discoverFilters.options.genre.drama, exact: true });
+    await expect(drama).toHaveAttribute("aria-pressed", "false");
+    const overflow = await genre.evaluate((el) => el.scrollWidth - el.clientWidth);
+    expect(overflow, "el género no se desplaza en horizontal").toBeLessThanOrEqual(0);
+    await drama.focus();
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(/[?&]genre=drama/);
+    await expect(drama).toHaveAttribute("aria-pressed", "true");
+    await expect(drama, "sin volver a montar la página: el foco sigue en el botón").toBeFocused();
+    await expect(toggle, "el panel sigue abierto").toHaveAttribute("aria-expanded", "true");
+    await expect(page.getByRole("button", { name: "Filtros · 1", exact: true })).toBeVisible();
+    await expect.poll(() => seen.at(-1)?.searchParams.get("genre")).toBe("drama");
+    await expect(page.locator("[data-sala-list-status]")).toHaveText("3 obras");
+
+    // Valoración: un select nativo con «Cualquiera»; su parámetro es `rating` (E88).
+    const rating = panel.getByRole("combobox", { name: es.discoverFilters.trigger.valoracion, exact: true });
+    await expect(rating).toHaveValue("all");
+    await rating.selectOption("7");
+    await expect(page).toHaveURL(/[?&]rating=7/);
+    await expect.poll(() => seen.at(-1)?.searchParams.get("rating")).toBe("7");
+    await expect(page.getByRole("button", { name: "Filtros · 2", exact: true })).toBeVisible();
+
+    // Orden: fuera del panel, otro select.
+    const sort = page.getByRole("combobox", { name: es.discover.sala.sortLabel, exact: true });
+    await expect(sort).toHaveValue("popularity");
+    await sort.selectOption("rating");
+    await expect(page).toHaveURL(/[?&]sort=rating/);
+    await expect.poll(() => seen.at(-1)?.searchParams.get("sort")).toBe("rating");
+
+    // «Quitar filtros»: fuera los filtros, se queda el orden.
+    await page.getByRole("button", { name: es.filters.reset, exact: true }).click();
+    await expect(page).not.toHaveURL(/genre=|rating=/);
+    await expect(page).toHaveURL(/[?&]sort=rating/);
+    await expect(page.getByRole("button", { name: es.filters.filters, exact: true })).toBeVisible();
+    await expect(drama).toHaveAttribute("aria-pressed", "false");
+
+    // Atrás en el navegador: vuelve el filtro anterior (pushState deja historial).
+    await page.goBack();
+    await expect(page).toHaveURL(/[?&]genre=drama/);
+    await expect(drama).toHaveAttribute("aria-pressed", "true");
+  });
+
+  test("al cambiar de página, el foco pasa a la lista de obras", async ({ page }) => {
+    const seen: URL[] = [];
+    await mockDiscover(page, { hasMore: true, seen });
+    await openDiscover(page, "/es/discover?type=movie");
+    const next = page.getByRole("navigation", { name: es.discover.paginationLabel }).getByRole("button", { name: es.discover.next, exact: true });
+    await next.focus();
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(/[?&]page=2/);
+    await expect.poll(() => seen.at(-1)?.searchParams.get("page")).toBe("2");
+    const list = page.getByRole("list", { name: GRID });
+    await expect(list).toBeFocused();
+    // Con la lista a la vista, por debajo de la cabecera fija.
+    const top = await list.evaluate((el) => el.getBoundingClientRect().top);
+    expect(top).toBeGreaterThanOrEqual(0);
+    expect(top).toBeLessThan(400);
+    await expect(page.getByRole("button", { name: es.discover.pageN.replace("{n}", "2") })).toHaveAttribute("aria-current", "page");
+  });
+
+  test("movimiento reducido: el panel de filtros se abre sin animación", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await mockDiscover(page);
+    await openDiscover(page, "/es/discover?type=movie");
+    await page.getByRole("button", { name: es.filters.filters, exact: true }).click();
+    const panel = page.locator("[data-sala-discover-filter-panel]");
+    await expect(panel).toBeVisible();
+    expect(await panel.evaluate((el) => getComputedStyle(el).animationName)).toBe("none");
+  });
 
   test("movimiento reducido: los esqueletos de carga, quietos", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });

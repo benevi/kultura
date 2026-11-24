@@ -261,7 +261,10 @@
       "retry": "Try again",
       "emptySearch": "Nothing found for “{query}”",
       "emptySearchHint": "Try other words or another type.",
-      "emptyFiltersHint": "Remove a filter to see more titles."
+      "emptyFiltersHint": "Remove a filter to see more titles.",
+      "filtersActive": "{count, plural, one {Filters · #} other {Filters · #}}",
+      "sortLabel": "Sort by",
+      "any": "Any"
     }
   },
   "search": {
