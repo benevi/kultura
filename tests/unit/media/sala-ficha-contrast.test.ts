@@ -1,15 +1,15 @@
 /**
  * F6: el título de la sala de la ficha (y el original, pequeño) se lee sobre
  * cualquier imagen, también una blanca del todo. La sala pinta, de abajo
- * arriba: la imagen, un negro fijo (`SALA_FICHA_SCRIM`), el velo con el fondo
- * de la paleta (`SALA_STAGE_VEIL`) y la tinta (`--sala-ink`, tema oscuro).
+ * arriba: la imagen, el velo con el fondo de la paleta (`SALA_STAGE_VEIL`),
+ * un negro fijo (`SALA_FICHA_SCRIM`) y la tinta (`--sala-ink`, tema oscuro).
  * Se mide el peor caso, una imagen blanca, con la paleta neutra y con las
  * paletas que salen de 300 portadas claras, y también sin contar el velo
  * (el negro fijo solo ya tiene que bastar).
  */
 import { describe, expect, it } from "vitest";
 import { SALA_STAGE_VEIL } from "@/components/sala/SalaStage";
-import { SALA_FICHA_SCRIM } from "@/components/media/sala/SalaFichaHero";
+import { SALA_FICHA_SCRIM, salaFichaTitleLang } from "@/components/media/sala/SalaFichaHero";
 import { blend, contrastRatio, toSrgb, type Rgb } from "@/lib/design/color";
 import { NEUTRAL_PALETTE, paletteFromPixels, type ImagePalette } from "@/lib/design/image-palette";
 
@@ -45,8 +45,8 @@ function lightCover(rnd: () => number): number[] {
 function titleContrast(palette: ImagePalette, image: Rgb, veil: number): number {
   const ink = toSrgb(palette.dark.ink)!;
   const background = toSrgb(palette.dark.background)!;
-  const underVeil = blend(BLACK, image, SALA_FICHA_SCRIM);
-  return contrastRatio(ink, blend(background, underVeil, veil));
+  // El velo sobre la imagen y, encima, el negro fijo.
+  return contrastRatio(ink, blend(BLACK, blend(background, image, veil), SALA_FICHA_SCRIM));
 }
 
 describe("sala de la ficha: contraste del título sobre una imagen clara (F6)", () => {
@@ -60,5 +60,23 @@ describe("sala de la ficha: contraste del título sobre una imagen clara (F6)", 
 
   it("sin contar el velo, el negro fijo solo deja el título a 3:1 y el original a 4,5:1", () => {
     for (const p of palettes) expect(titleContrast(p, WHITE, 0)).toBeGreaterThanOrEqual(4.5);
+  });
+});
+
+describe("salaFichaTitleLang: `lang` en el h1 (F6)", () => {
+  const base = { title: "The Lord of the Rings", originalTitle: "The Lord of the Rings" };
+  it("marca el idioma cuando el título que se ve es el original y no es el de la interfaz", () => {
+    expect(salaFichaTitleLang({ ...base, metadata: { originalLanguage: "en" } }, "es")).toBe("en");
+  });
+  it("no lo marca si coincide con la interfaz, si no se sabe o si el título está traducido", () => {
+    expect(salaFichaTitleLang({ ...base, metadata: { originalLanguage: "en" } }, "en")).toBeUndefined();
+    expect(salaFichaTitleLang({ ...base, metadata: {} }, "es")).toBeUndefined();
+    expect(salaFichaTitleLang({ ...base, metadata: { originalLanguage: "xx" } }, "es")).toBeUndefined();
+    expect(
+      salaFichaTitleLang(
+        { title: "El señor de los anillos", originalTitle: "The Lord of the Rings", metadata: { originalLanguage: "en" } },
+        "es"
+      )
+    ).toBeUndefined();
   });
 });

@@ -72,7 +72,7 @@ export interface SalaStageProps extends Omit<React.HTMLAttributes<HTMLDivElement
   /** Opacidad del velo, 0–1. Por defecto 0,7. */
   veil?: number;
   /**
-   * Negro de opacidad fija (0–1) bajo el velo, solo con `tone="dark"`. El velo
+   * Negro de opacidad fija (0–1) sobre el velo, solo con `tone="dark"`. El velo
    * lleva el color de la paleta de la obra; este fondo no depende de ella y
    * garantiza el contraste de la tinta clara aunque la imagen sea blanca (la
    * ficha, F6). Por defecto 0.

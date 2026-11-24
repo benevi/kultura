@@ -240,8 +240,10 @@ ${fallbackFaces()}
   position: relative;
   grid-area: 2 / 1 / -1 / -1;
   pointer-events: none;
-  /* Encima el velo con la paleta; debajo, un negro de opacidad fija (\`scrim\`, 0 por defecto). */
-  background: linear-gradient(${veilColor}, ${veilColor}), rgb(0 0 0 / var(${v.scrim}, 0));
+  /* El velo con la paleta y, encima, un negro de opacidad fija (\`scrim\`, 0 por
+     defecto) que oscurece aún más sin depender de la paleta. */
+  background-color: ${veilColor};
+  background-image: linear-gradient(rgb(0 0 0 / var(${v.scrim}, 0)), rgb(0 0 0 / var(${v.scrim}, 0)));
 }
 
 .${c.stageVeil}::before {
