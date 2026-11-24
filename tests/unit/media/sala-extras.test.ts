@@ -8,6 +8,10 @@
 // ============================================================
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+
+// F5c: el cruce con Wikidata se prueba en `anime-tmdb-cross.test.ts`; aquí, fijo.
+const cross = vi.hoisted(() => ({ value: null as null | { kind: "movie" | "tv"; id: number; scope: "full" | "image" } }));
+vi.mock("@/lib/media/anime-tmdb-cross", () => ({ findAnimeTmdbCross: async () => cross.value }));
 import { getTmdbImages, tmdbTextlessBackdrop } from "@/lib/api/tmdb";
 import { loadSalaFichaExtras, tmdbRefOf } from "@/lib/media/sala-extras";
 import { salaItemOf } from "@/lib/media/sala-item";
@@ -20,9 +24,13 @@ function respond(body: unknown, status = 200) {
   return spy;
 }
 
-beforeEach(() => resetProviderCircuits());
+beforeEach(() => {
+  resetProviderCircuits();
+  cross.value = null;
+});
 afterEach(() => vi.unstubAllGlobals());
 
+const ctx = { locale: "es", hasTrailer: false, hasProviders: false };
 const movie: MediaItem = { id: "movie_129", externalId: "129", type: "movie", title: "El viaje de Chihiro" };
 
 describe("tmdbTextlessBackdrop", () => {
@@ -82,20 +90,20 @@ describe("tmdbRefOf", () => {
 describe("loadSalaFichaExtras", () => {
   it("con apaisada sin rótulo, la devuelve", async () => {
     respond({ backdrops: [{ file_path: "/sin.jpg", iso_639_1: null, width: 1920 }] });
-    await expect(loadSalaFichaExtras(movie)).resolves.toEqual({
+    await expect(loadSalaFichaExtras(movie, ctx)).resolves.toEqual({
       backdrop: "https://image.tmdb.org/t/p/w1280/sin.jpg",
     });
   });
 
   it("TMDB caído: nada, sin lanzar", async () => {
     respond({}, 503);
-    await expect(loadSalaFichaExtras(movie)).resolves.toEqual({});
+    await expect(loadSalaFichaExtras(movie, ctx)).resolves.toEqual({});
   });
 
-  it("anime de AniList: no llama a nadie (eso es el cruce de F5c)", async () => {
+  it("un tipo sin TMDB: no llama a nadie", async () => {
     const spy = respond({ backdrops: [] });
     await expect(
-      loadSalaFichaExtras({ id: "anime_al-1", externalId: "al-1", type: "anime", title: "Cowboy Bebop" })
+      loadSalaFichaExtras({ id: "anime_tv-1", externalId: "1", type: "manga", title: "Sin TMDB" }, ctx)
     ).resolves.toEqual({});
     expect(spy).not.toHaveBeenCalled();
   });
@@ -110,5 +118,84 @@ describe("salaItemOf", () => {
       ...item,
       backdrop: "https://image.tmdb.org/t/p/w1280/sin.jpg",
     });
+  });
+});
+
+// ── F5c: anime de AniList cruzado con TMDB ───────────────────────────────────
+
+describe("loadSalaFichaExtras · anime de AniList (F5c)", () => {
+  const frieren: MediaItem = { id: "anime_al-154587", externalId: "al-154587", type: "anime", title: "Frieren" };
+  const TV_DETAIL = {
+    id: 209867,
+    name: "Frieren",
+    backdrop_path: "/con-rotulo.jpg",
+    first_air_date: "2023-09-29",
+    videos: { results: [{ site: "YouTube", type: "Trailer", key: "qgQ0CmwbaRs" }] },
+    "watch/providers": {
+      results: {
+        ES: {
+          link: "https://www.themoviedb.org/tv/209867/watch?locale=ES",
+          flatrate: [{ provider_name: "Crunchyroll", logo_path: "/cr.jpg" }],
+        },
+      },
+    },
+  };
+
+  function tmdb() {
+    const spy = vi.fn(async (input: string) => {
+      const path = new URL(input).pathname;
+      const body =
+        path === "/3/tv/209867/images"
+          ? { backdrops: [{ file_path: "/sin.jpg", iso_639_1: null, width: 1920 }] }
+          : path === "/3/tv/209867"
+            ? TV_DETAIL
+            : null;
+      return new Response(JSON.stringify(body ?? {}), { status: body ? 200 : 404 });
+    });
+    vi.stubGlobal("fetch", spy);
+    return spy;
+  }
+
+  it("sin cruce: nada (ni se pide TMDB)", async () => {
+    const spy = tmdb();
+    await expect(loadSalaFichaExtras(frieren, ctx)).resolves.toEqual({});
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it("primera temporada: imagen sin rótulo, tráiler y «Dónde ver» de TMDB, y la segunda fuente", async () => {
+    tmdb();
+    cross.value = { kind: "tv", id: 209867, scope: "full" };
+    await expect(loadSalaFichaExtras(frieren, ctx)).resolves.toEqual({
+      backdrop: "https://image.tmdb.org/t/p/w1280/sin.jpg",
+      trailerKey: "qgQ0CmwbaRs",
+      providers: [{ name: "Crunchyroll", logoPath: "https://image.tmdb.org/t/p/w92/cr.jpg", type: "flatrate" }],
+      watchLink: "https://www.themoviedb.org/tv/209867/watch?locale=ES",
+      extraSource: { name: "TMDB", url: "https://www.themoviedb.org/tv/209867" },
+    });
+  });
+
+  it("si AniList ya trae tráiler y hay «Dónde ver», solo la imagen", async () => {
+    tmdb();
+    cross.value = { kind: "tv", id: 209867, scope: "full" };
+    await expect(loadSalaFichaExtras(frieren, { locale: "es", hasTrailer: true, hasProviders: true })).resolves.toEqual({
+      backdrop: "https://image.tmdb.org/t/p/w1280/sin.jpg",
+      extraSource: { name: "TMDB", url: "https://www.themoviedb.org/tv/209867" },
+    });
+  });
+
+  it("temporada 2: de TMDB solo la imagen (ni tráiler ni «Dónde ver»)", async () => {
+    tmdb();
+    cross.value = { kind: "tv", id: 209867, scope: "image" };
+    const extras = await loadSalaFichaExtras({ ...frieren, id: "anime_al-182255", externalId: "al-182255" }, ctx);
+    expect(extras).toEqual({
+      backdrop: "https://image.tmdb.org/t/p/w1280/sin.jpg",
+      extraSource: { name: "TMDB", url: "https://www.themoviedb.org/tv/209867" },
+    });
+  });
+
+  it("TMDB caído tras el cruce: nada, sin lanzar", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("{}", { status: 503 })));
+    cross.value = { kind: "tv", id: 209867, scope: "full" };
+    await expect(loadSalaFichaExtras(frieren, ctx)).resolves.toEqual({});
   });
 });

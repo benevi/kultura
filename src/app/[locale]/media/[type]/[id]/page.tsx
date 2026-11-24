@@ -179,9 +179,16 @@ export default async function MediaDetailPage({ params }: Props) {
     salaFichaEnabled(),
   ]);
 
-  // Fase 8.5, F5: solo con la sala, la apaisada sin rótulo de TMDB. Con la
-  // bandera apagada no se pide nada más y la ficha sale igual que siempre.
-  const salaExtras = sala ? await loadSalaFichaExtras(item) : null;
+  // Fase 8.5, F5: solo con la sala, la apaisada sin rótulo de TMDB y, en un
+  // anime de AniList, el cruce con TMDB por Wikidata (F5c). Con la bandera
+  // apagada no se pide nada más y la ficha sale igual que siempre.
+  const salaExtras = sala
+    ? await loadSalaFichaExtras(item, {
+        locale,
+        hasTrailer: Boolean(data.trailerKey),
+        hasProviders: data.providers.length > 0,
+      })
+    : null;
 
   // Miga de pan: la misma en pantalla y en el JSON-LD. El formato enlaza a su
   // ranking del año cuando existe (los hubs `/best/[format]` llegan con F-16).

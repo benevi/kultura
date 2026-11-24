@@ -32,6 +32,8 @@ import {
   PROVIDER_MAX_TIMEOUT_MS,
   PROVIDER_TOTAL_BUDGET_MS,
   CIRCUIT_OPEN_MS,
+  RETRY_AFTER_MAX_MS,
+  parseRetryAfter,
 } from "@/lib/api/http";
 
 const json = (body: unknown, status = 200) =>
@@ -396,7 +398,9 @@ describe("providerFetch", () => {
   // ── Identificación ─────────────────────────────────────────────────────────
 
   it("User-Agent: URL real, contacto opcional y nunca kultura.app", async () => {
-    expect(providerUserAgent()).toBe("KULTURA/1.0 (+https://kulturaapp.vercel.app)");
+    expect(providerUserAgent()).toBe(
+      "KULTURA/1.0 (+https://kulturaapp.vercel.app; https://kulturaapp.vercel.app/es/legal)"
+    );
     process.env.PROVIDER_CONTACT = "hola@ejemplo.test\r\nX: y";
     expect(providerUserAgent()).toBe(
       "KULTURA/1.0 (+https://kulturaapp.vercel.app; hola@ejemplo.testX: y)"
@@ -407,6 +411,66 @@ describe("providerFetch", () => {
     const ua = (init.headers as Record<string, string>)["User-Agent"];
     expect(ua).toContain("kulturaapp.vercel.app");
     expect(ua).not.toMatch(/\/\/kultura\.app/);
+  });
+
+  // ── 429 con Retry-After (fase 8.5, F5c) ────────────────────────────────────
+
+  it("429 con Retry-After en segundos: nadie vuelve a llamar hasta que pase; luego una prueba", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-24T10:00:00Z"));
+    vi.mocked(fetch).mockImplementation(async () =>
+      new Response("{}", { status: 429, headers: { "Retry-After": "120" } })
+    );
+    const err = (await providerFetch("wikidata", "https://query.wikidata.org/a", { cache: false }).catch(
+      (e) => e
+    )) as ProviderError;
+    expect(err.status).toBe(429);
+    expect(err.retryAfterMs).toBe(120_000);
+    expect(providerCircuitState("wikidata")).toBe("open");
+
+    vi.setSystemTime(new Date("2026-11-24T10:01:59Z"));
+    await expect(providerFetch("wikidata", "https://query.wikidata.org/b", { cache: false })).rejects.toBeInstanceOf(
+      ProviderUnavailableError
+    );
+    expect(fetch).toHaveBeenCalledTimes(1);
+
+    vi.setSystemTime(new Date("2026-11-24T10:02:01Z"));
+    vi.mocked(fetch).mockImplementation(async () => json({ ok: 1 }));
+    await expect(providerFetch("wikidata", "https://query.wikidata.org/c", { cache: false })).resolves.toEqual({
+      ok: 1,
+    });
+    expect(providerCircuitState("wikidata")).toBe("closed");
+  });
+
+  it("Retry-After como fecha HTTP, con tope de un día; y también con la clase de error de cada cliente", async () => {
+    const now = Date.parse("2026-11-24T10:00:00Z");
+    expect(parseRetryAfter("Tue, 24 Nov 2026 10:05:00 GMT", now)).toBe(300_000);
+    expect(parseRetryAfter("Tue, 24 Nov 2026 09:00:00 GMT", now)).toBeUndefined();
+    expect(parseRetryAfter("99999999", now)).toBe(RETRY_AFTER_MAX_MS);
+    expect(parseRetryAfter("0", now)).toBeUndefined();
+    expect(parseRetryAfter("pronto", now)).toBeUndefined();
+    expect(parseRetryAfter(null, now)).toBeUndefined();
+
+    class MyError extends Error {
+      constructor(readonly status: number) {
+        super(`mine ${status}`);
+      }
+    }
+    vi.mocked(fetch).mockImplementation(async () =>
+      new Response("{}", { status: 429, headers: { "Retry-After": "30" } })
+    );
+    const err = await providerFetch("anilist", "https://graphql.anilist.co", {
+      cache: false,
+      httpError: (s) => new MyError(s),
+    }).catch((e) => e);
+    expect(err).toBeInstanceOf(MyError);
+    expect(providerCircuitState("anilist")).toBe("open");
+  });
+
+  it("un 429 sin Retry-After sigue contando como fallo, sin abrir a la primera", async () => {
+    vi.mocked(fetch).mockImplementation(async () => json({}, 429));
+    await providerFetch("rawg", "https://api.rawg.io/x", { cache: false }).catch(() => {});
+    expect(providerCircuitState("rawg")).toBe("closed");
   });
 
   it("cache:false no pasa por la caché", async () => {

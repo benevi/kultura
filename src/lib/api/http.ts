@@ -32,7 +32,10 @@
 //   5. Circuit breaker por proveedor: 5 fallos en 5 min lo abren 10 min. Con
 //      el circuito abierto la petición falla al instante (sin llamar al
 //      proveedor) y el que llama salta a su respaldo (anime → TMDB). Al abrirse
-//      se avisa a Sentry con la etiqueta `provider`.
+//      se avisa a Sentry con la etiqueta `provider`. Un 429 con `Retry-After`
+//      (fase 8.5, F5c: WDQS lo pide y puede vetar a quien lo ignora) abre el
+//      circuito al menos ese plazo (tope de un día): nadie vuelve a llamar
+//      antes, y luego una sola prueba.
 //   6. Caché: `unstable_cache` alrededor de TODO lo anterior, de modo que solo
 //      se guarda lo que ha pasado las comprobaciones (`unstable_cache` no
 //      guarda rechazos). Fuera de Next (tests, scripts de contrato) no hay
@@ -133,19 +136,53 @@ export class ProviderError extends Error {
   readonly provider: ProviderId;
   readonly kind: ProviderErrorKind;
   readonly status?: number;
+  /** Plazo de `Retry-After` de un 429, en ms (ver `RETRY_AFTER_MAX_MS`). */
+  readonly retryAfterMs?: number;
 
   constructor(
     provider: ProviderId,
     kind: ProviderErrorKind,
     message: string,
-    options: { status?: number; cause?: unknown } = {}
+    options: { status?: number; cause?: unknown; retryAfterMs?: number } = {}
   ) {
     super(message, options.cause !== undefined ? { cause: options.cause } : undefined);
     this.name = "ProviderError";
     this.provider = provider;
     this.kind = kind;
     this.status = options.status;
+    if (options.retryAfterMs !== undefined) this.retryAfterMs = options.retryAfterMs;
   }
+}
+
+/**
+ * Como mucho se respeta un día de `Retry-After`: un valor absurdo (o mal
+ * escrito por el proveedor) no deja la ficha sin ese proveedor una semana.
+ */
+export const RETRY_AFTER_MAX_MS = 24 * 3600_000;
+
+/**
+ * `Retry-After` en ms: segundos («120») o fecha HTTP. `undefined` si falta, no
+ * se entiende o ya pasó. Con tope de `RETRY_AFTER_MAX_MS`.
+ */
+export function parseRetryAfter(value: string | null | undefined, now = Date.now()): number | undefined {
+  const raw = value?.trim();
+  if (!raw) return undefined;
+  let ms: number;
+  if (/^\d+$/.test(raw)) ms = Number(raw) * 1000;
+  else {
+    const at = Date.parse(raw);
+    if (!Number.isFinite(at)) return undefined;
+    ms = at - now;
+  }
+  if (!Number.isFinite(ms) || ms <= 0) return undefined;
+  return Math.min(ms, RETRY_AFTER_MAX_MS);
+}
+
+/** El `Retry-After` de un 429 que lleva el error (también en las clases de cada cliente). */
+function retryAfterOf(e: unknown): number | undefined {
+  const status = (e as { status?: unknown } | null)?.status;
+  const ms = (e as { retryAfterMs?: unknown } | null)?.retryAfterMs;
+  return status === 429 && typeof ms === "number" && ms > 0 ? ms : undefined;
 }
 
 /** La respuesta no cumple el contrato mínimo (solo se lanza en modo `enforce`). */
@@ -192,14 +229,17 @@ function headerSafe(value: string): string {
 
 /**
  * User-Agent único para todos los proveedores (D-18 / ROJO-11). Lleva la URL
- * real del proyecto y, si está configurado, el contacto de `PROVIDER_CONTACT`,
- * para que un proveedor que vea abuso escriba a quien corresponde.
+ * real del proyecto y un contacto, para que un proveedor que vea abuso
+ * escriba a quien corresponde: `PROVIDER_CONTACT` si está configurado y, si
+ * no, la página `/es/legal` del propio sitio (contacto y canal de retirada).
+ * La política de User-Agent de Wikimedia lo exige y admite una web; nunca un
+ * correo personal (decisión de Víctor, 24-11-2026).
  */
 export function providerUserAgent(): string {
   const rawSite = process.env.NEXT_PUBLIC_SITE_URL?.trim() || DEFAULT_SITE_URL;
   const site = headerSafe(rawSite).replace(/\/+$/, "") || DEFAULT_SITE_URL;
-  const contact = headerSafe(process.env.PROVIDER_CONTACT ?? "");
-  return `KULTURA/1.0 (+${site}${contact ? `; ${contact}` : ""})`;
+  const contact = headerSafe(process.env.PROVIDER_CONTACT ?? "") || `${site}/es/legal`;
+  return `KULTURA/1.0 (+${site}; ${contact})`;
 }
 
 // ── Avisos (log + Sentry con etiqueta `provider`) ─────────────────────────────
@@ -344,6 +384,13 @@ function onFailure(provider: ProviderId, probe: boolean, e: unknown): void {
     return;
   }
   const now = Date.now();
+  // Un 429 con `Retry-After` (WDQS lo manda; ignorarlo puede costar un veto):
+  // nadie vuelve a llamar a ese proveedor hasta que pase el plazo.
+  const retryAfter = retryAfterOf(e);
+  if (retryAfter !== undefined) {
+    holdFor(provider, state, now, retryAfter);
+    return;
+  }
   if (probe) {
     open(provider, state, now, e, "la prueba ha vuelto a fallar");
     return;
@@ -353,6 +400,21 @@ function onFailure(provider: ProviderId, probe: boolean, e: unknown): void {
   if (state.failures.length >= CIRCUIT_FAILURE_THRESHOLD) {
     open(provider, state, now, e, `${state.failures.length} fallos en 5 min`);
   }
+}
+
+/** Abre el circuito al menos `ms` (el `Retry-After` de un 429); luego, una prueba. */
+function holdFor(provider: ProviderId, state: CircuitState, now: number, ms: number): void {
+  const until = now + ms;
+  if (until <= state.openUntil) return;
+  state.openUntil = until;
+  state.halfOpen = true;
+  state.failures = [];
+  reportIncident(
+    provider,
+    "rate_limited",
+    `proveedor ${provider}: 429 con Retry-After de ${Math.ceil(ms / 1000)} s; sin llamadas hasta entonces`,
+    { until: new Date(until).toISOString() }
+  );
 }
 
 function open(
@@ -630,7 +692,7 @@ async function attemptOnce(
   label: string,
   opts: ProviderFetchOptions,
   timeoutMs: number
-): Promise<{ ok: true; json: unknown } | { ok: false; status: number }> {
+): Promise<{ ok: true; json: unknown } | { ok: false; status: number; retryAfterMs?: number }> {
   const controller = new AbortController();
   let timer: ReturnType<typeof setTimeout> | undefined;
   let onCallerAbort: (() => void) | undefined;
@@ -680,7 +742,10 @@ async function attemptOnce(
       if (e instanceof ProviderError) throw e;
       throw new ProviderError(provider, "network", `${provider} ${label} → error de red`, { cause: e });
     }
-    if (!res.ok) return { ok: false as const, status: res.status };
+    if (!res.ok) {
+      const retryAfterMs = res.status === 429 ? parseRetryAfter(res.headers?.get?.("retry-after")) : undefined;
+      return { ok: false as const, status: res.status, ...(retryAfterMs ? { retryAfterMs } : {}) };
+    }
     try {
       return { ok: true as const, json: (await res.json()) as unknown };
     } catch (e) {
@@ -714,6 +779,7 @@ async function fetchAndValidate<T>(
   const retryOn = opts.retryOn ?? DEFAULT_RETRY_ON;
 
   let lastStatus = 0;
+  let lastRetryAfter: number | undefined;
   for (let attempt = 0; attempt <= retries; attempt++) {
     if (attempt > 0) {
       if (opts.signal?.aborted) break;
@@ -739,12 +805,20 @@ async function fetchAndValidate<T>(
       return result.json as T;
     }
     lastStatus = result.status;
+    lastRetryAfter = result.retryAfterMs;
     if (!retryOn.has(result.status)) break;
   }
-  throw (
+  const error =
     opts.httpError?.(lastStatus) ??
-    new ProviderError(provider, "http", `${provider} ${label} → ${lastStatus}`, { status: lastStatus })
-  );
+    new ProviderError(provider, "http", `${provider} ${label} → ${lastStatus}`, {
+      status: lastStatus,
+      ...(lastRetryAfter ? { retryAfterMs: lastRetryAfter } : {}),
+    });
+  // Las clases de cada cliente (AniListError…) también llevan el plazo.
+  if (lastRetryAfter && !(error instanceof ProviderError)) {
+    Object.defineProperty(error, "retryAfterMs", { value: lastRetryAfter, enumerable: false });
+  }
+  throw error;
 }
 
 async function guarded<T>(

@@ -81,6 +81,8 @@ export interface TmdbTVDetail extends TmdbTV {
   number_of_seasons: number;
   networks?: { name: string }[];
   status?: string;
+  /** Temporadas con su fecha (F5c: validar el cruce de una temporada posterior). */
+  seasons?: { season_number?: number; air_date?: string | null }[];
   credits?: {
     crew: { job: string; name: string }[];
     cast: { name: string }[];

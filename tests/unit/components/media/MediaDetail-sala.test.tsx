@@ -763,3 +763,69 @@ describe("MediaDetail · F5b: la apaisada sin rótulo, solo en la sala", () => {
     expect(b.container.innerHTML).not.toContain(TEXTLESS);
   });
 });
+
+describe("MediaDetail · F5c: anime de AniList cruzado con TMDB", () => {
+  const frieren: MediaItem = {
+    id: "anime_al-154587",
+    externalId: "al-154587",
+    type: "anime",
+    title: "Frieren",
+    poster: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/frieren.jpg",
+  };
+  const source = { name: "AniList", url: "https://anilist.co/anime/154587" };
+  const tmdbProviders: StreamingProvider[] = [
+    { name: "Crunchyroll", logoPath: "https://image.tmdb.org/t/p/w92/cr.jpg", type: "flatrate" },
+  ];
+  const extras = {
+    backdrop: "https://image.tmdb.org/t/p/w1280/sin.jpg",
+    trailerKey: YT,
+    providers: tmdbProviders,
+    watchLink: "https://www.themoviedb.org/tv/209867/watch?locale=ES",
+    extraSource: { name: "TMDB", url: "https://www.themoviedb.org/tv/209867" },
+  };
+
+  it("sala completa con la imagen de TMDB, tráiler, «Dónde ver» con JustWatch y dos líneas de fuente", async () => {
+    const { container } = render(
+      await MediaDetail({ item: frieren, initialEntry: null, isAuthenticated: false, source, sala: true, salaExtras: extras })
+    );
+    expect(container.querySelector("[data-sala-ficha]")).toHaveAttribute("data-sala-ficha", "stage");
+    expect(screen.getByRole("region", { name: "trailer" })).toBeInTheDocument();
+    const watch = screen.getByRole("region", { name: "whereToWatch" });
+    expect(within(watch).getByAltText("JustWatch")).toBeInTheDocument();
+    const sources = container.querySelector("[data-sala-ficha-sources]")!;
+    const lines = Array.from(sources.querySelectorAll("p")).map((p) => p.textContent);
+    expect(lines[0]).toContain("sourceLabel");
+    expect(lines[0]).toContain("AniList");
+    const extra = sources.querySelector("[data-sala-ficha-extra-source]")!;
+    expect(extra).toHaveTextContent("extraSourceLabel");
+    expect(within(extra as HTMLElement).getByRole("link")).toHaveAttribute("href", "https://www.themoviedb.org/tv/209867");
+  });
+
+  it("lo propio manda: el tráiler y «Dónde ver» de la ficha no se cambian por los de TMDB", async () => {
+    const own: StreamingProvider[] = [{ name: "Netflix", logoPath: "https://image.tmdb.org/t/p/w92/n.jpg", type: "flatrate" }];
+    render(
+      await MediaDetail({
+        item: frieren,
+        initialEntry: null,
+        isAuthenticated: false,
+        source,
+        trailerKey: "ownTrailer1",
+        providers: own,
+        sala: true,
+        salaExtras: extras,
+      })
+    );
+    const watch = screen.getByRole("region", { name: "whereToWatch" });
+    expect(watch).toHaveTextContent("Netflix");
+    expect(watch).not.toHaveTextContent("Crunchyroll");
+  });
+
+  it("con sala=false, nada de TMDB en la ficha de siempre", async () => {
+    const { container } = render(
+      await MediaDetail({ item: frieren, initialEntry: null, isAuthenticated: false, source, salaExtras: extras })
+    );
+    expect(container.innerHTML).not.toContain("themoviedb.org/tv/209867");
+    expect(container.innerHTML).not.toContain("Crunchyroll");
+    expect(container.innerHTML).not.toContain("extraSourceLabel");
+  });
+});
