@@ -9,8 +9,8 @@ import { Logo } from "@/components/layout/Logo";
  *   `bg-surface/80`, una clase que Tailwind no generaba (DIS-1): el contenido
  *   pasaba por detrás desenfocado.
  * - Cabe en 320 px (WCAG 1.4.10, ACC-5/MOV-12): logotipo de 24 px y botones
- *   compactos por debajo de `sm`; por debajo de 360 px "Iniciar sesión" se
- *   acorta a "Entra" para no perder el acceso de quien ya tiene cuenta. El
+ *   compactos por debajo de `sm`; "Entrar" es corto y cabe sin
+ *   versión reducida (antes "Iniciar sesión" se acortaba a "Entra"). El
  *   wordmark no se parte (`Logo` lleva `whitespace-nowrap`).
  * - Enlaces `<a>` del servidor y no el `Link` de next-intl (REN-9): el `Link`
  *   es un componente cliente que también usa la cabecera con sesión, y cada
@@ -31,8 +31,7 @@ export async function Header({ locale }: { locale?: string } = {}) {
         <nav className="flex items-center gap-1.5 sm:gap-2">
           <KButton variant="secondary" size="md" className={compact} asChild>
             <a href={`/${lang}/login?mode=login`}>
-              <span className="min-[360px]:hidden">{t("signInAction")}</span>
-              <span className="max-[359px]:hidden">{t("signIn")}</span>
+              {t("signIn")}
             </a>
           </KButton>
           <KButton variant="primary" size="md" className={compact} asChild>

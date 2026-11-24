@@ -10,7 +10,7 @@ test.describe("Auth flow", () => {
   test("landing page loads and CTAs visible", async ({ page }) => {
     await page.goto(`/es`);
     await expect(page.getByRole("heading", { name: /Descubre, registra/ })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Iniciar sesión" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Entrar" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Registrarse" })).toBeVisible();
   });
 

@@ -23,7 +23,7 @@
     "dismiss": "Cerrar aviso"
   },
   "auth": {
-    "signIn": "Iniciar sesión",
+    "signIn": "Entrar",
     "signUp": "Registrarse",
     "signOut": "Cerrar sesión",
     "email": "Correo electrónico",
@@ -41,7 +41,7 @@
     "chooseCharacterNone": "Sin personaje (iniciales)",
     "welcomeBack": "Ey, ¡qué bien verte!",
     "signUpAction": "Regístrate",
-    "signInAction": "Entra",
+    "signInAction": "Entrar",
     "demoUnavailable": "La demo no está disponible ahora mismo. Prueba en un rato o crea tu cuenta.",
     "metaTitle": "Entra o crea tu cuenta",
     "metaDescription": "Entra en KULTURA para apuntar lo que quieres ver, leer y jugar, y puntuar lo que ya viste.",
@@ -306,7 +306,7 @@
     "breadcrumbHome": "Inicio",
     "ctaAdd": "Añadir a mi biblioteca",
     "ctaHint": "Gratis y sin anuncios. Al crear tu cuenta vuelves a esta ficha.",
-    "ctaLogin": "¿Ya tienes cuenta? Entra",
+    "ctaLogin": "¿Ya tienes cuenta? Entrar",
     "reportPublic": "Denunciar este título",
     "metaFallback": "{title} en KULTURA: apunta lo que quieres ver, leer y jugar, puntúa lo que ya viste y compártelo con tus amigos.",
     "kulturaRatingLabel": "Nota KULTURA",

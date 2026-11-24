@@ -6,7 +6,7 @@ vi.mock("next-intl/server", () => ({
   getLocale: vi.fn(async () => "es"),
   getTranslations: vi.fn(async () => (key: string) => {
     const map: Record<string, string> = {
-      signIn: "Iniciar sesión",
+      signIn: "Entrar",
       signUp: "Registrarse",
     };
     return map[key] ?? key;
@@ -60,10 +60,10 @@ describe("Header", () => {
     expect(screen.getByRole("link", { name: /registrarse/i })).toHaveAttribute("href", "/en/login?mode=register");
   });
 
-  it("renderiza enlace de Iniciar sesión hacia /login?mode=login", async () => {
+  it("renderiza enlace de Entrar hacia /login?mode=login", async () => {
     const HeaderResolved = await Header();
     render(HeaderResolved);
-    const signInLink = screen.getByRole("link", { name: /iniciar sesión/i });
+    const signInLink = screen.getByRole("link", { name: "Entrar" });
     expect(signInLink).toBeInTheDocument();
     expect(signInLink).toHaveAttribute("href", "/es/login?mode=login");
   });
@@ -84,13 +84,12 @@ describe("Header", () => {
     expect(header.className).not.toMatch(/bg-surface\/80|backdrop-blur/);
   });
 
-  it("cabe en 320 px: botones compactos en móvil y etiqueta corta de entrar por debajo de 360 px", async () => {
+  it("cabe en 320 px: botones compactos en móvil y una sola etiqueta «Entrar» en todos los anchos", async () => {
     const HeaderResolved = await Header();
     render(HeaderResolved);
-    const signIn = screen.getByRole("link", { name: /iniciar sesión/i });
+    const signIn = screen.getByRole("link", { name: "Entrar" });
     expect(signIn.className).toMatch(/\bh-9\b/);
     expect(signIn.className).toMatch(/\bsm:h-10\b/);
-    expect(screen.getByText("Iniciar sesión")).toHaveClass("max-[359px]:hidden");
-    expect(screen.getByText("signInAction")).toHaveClass("min-[360px]:hidden");
+    expect(screen.queryByText("signInAction")).toBeNull();
   });
 });
