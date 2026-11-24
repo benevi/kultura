@@ -8,7 +8,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { act, render, screen, fireEvent } from "@testing-library/react";
 import { INSTALLED_ENDPOINT, InstallPrompt, type InstallLabels } from "@/components/pwa/InstallPrompt";
 import { resetInstallEventsForTest } from "@/components/pwa/install-events";
-import { DISMISS_MS, INSTALL_STORAGE_KEY, VISIT_GAP_MS } from "@/components/pwa/install-policy";
+import { DISMISS_MS, INSTALL_STORAGE_KEY } from "@/components/pwa/install-policy";
 
 let pathname = "/es/home";
 vi.mock("next/navigation", () => ({ usePathname: () => pathname }));
@@ -44,12 +44,9 @@ function fireBeforeInstallPrompt(outcome: "accepted" | "dismissed" = "accepted")
   return event;
 }
 
-/** Simula que ya hubo una visita hace más de 30 min. */
-function previousVisit(extra: Record<string, unknown> = {}) {
-  window.localStorage.setItem(
-    INSTALL_STORAGE_KEY,
-    JSON.stringify({ visits: 1, lastSeenAt: Date.now() - VISIT_GAP_MS - 1000, ...extra }),
-  );
+/** El aviso solo sale en la biblioteca. */
+function inLibrary() {
+  pathname = "/es/library";
 }
 
 const beacon = vi.fn((_url: string, _body?: BodyInit | null) => true);
@@ -69,15 +66,21 @@ afterEach(() => {
 });
 
 describe("InstallPrompt", () => {
-  it("1.ª visita en Inicio: nada, aunque el navegador pueda instalar", () => {
+  it("fuera de la biblioteca: nada, aunque el navegador pueda instalar, y no se guarda nada", () => {
     render(<InstallPrompt labels={labels} />);
     fireBeforeInstallPrompt();
     expect(screen.queryByTestId("install-prompt")).toBeNull();
-    expect(JSON.parse(window.localStorage.getItem(INSTALL_STORAGE_KEY)!).visits).toBe(1);
+    expect(window.localStorage.getItem(INSTALL_STORAGE_KEY)).toBeNull();
   });
 
-  it("captura beforeinstallprompt (quita la mini-barra) y sale en la 2.ª visita", () => {
-    previousVisit();
+  it("el contador de versiones anteriores se borra al montar; la respuesta se conserva", () => {
+    window.localStorage.setItem(INSTALL_STORAGE_KEY, JSON.stringify({ visits: 5, lastSeenAt: 1, installed: true }));
+    render(<InstallPrompt labels={labels} />);
+    expect(window.localStorage.getItem(INSTALL_STORAGE_KEY)).toBe('{"installed":true}');
+  });
+
+  it("captura beforeinstallprompt (quita la mini-barra) y sale en la biblioteca", () => {
+    inLibrary();
     render(<InstallPrompt labels={labels} />);
     expect(screen.queryByTestId("install-prompt")).toBeNull(); // aún sin evento
     const event = fireBeforeInstallPrompt();
@@ -96,7 +99,7 @@ describe("InstallPrompt", () => {
   });
 
   it("Instalar abre el diálogo nativo; aceptado, ya no vuelve", async () => {
-    previousVisit();
+    inLibrary();
     render(<InstallPrompt labels={labels} />);
     const event = fireBeforeInstallPrompt("accepted");
     await act(async () => {
@@ -108,7 +111,7 @@ describe("InstallPrompt", () => {
   });
 
   it("cancelar el diálogo nativo cuenta como descartar (30 días)", async () => {
-    previousVisit();
+    inLibrary();
     render(<InstallPrompt labels={labels} />);
     fireBeforeInstallPrompt("dismissed");
     await act(async () => {
@@ -118,7 +121,7 @@ describe("InstallPrompt", () => {
   });
 
   it("«Ahora no» lo cierra y no reaparece en 30 días; después, sí", () => {
-    previousVisit();
+    inLibrary();
     const first = render(<InstallPrompt labels={labels} />);
     fireBeforeInstallPrompt();
     fireEvent.click(screen.getByRole("button", { name: labels.later }));
@@ -140,7 +143,7 @@ describe("InstallPrompt", () => {
   });
 
   it("Escape la cierra como «Ahora no» y devuelve el foco adonde estaba", () => {
-    previousVisit();
+    inLibrary();
     render(
       <>
         <main id="main" tabIndex={-1}>
@@ -162,7 +165,7 @@ describe("InstallPrompt", () => {
   });
 
   it("si el elemento de antes ya no existe, el foco va al contenido principal; otras teclas no cierran", () => {
-    previousVisit();
+    inLibrary();
     render(
       <>
         <main id="main" tabIndex={-1} />
@@ -180,7 +183,7 @@ describe("InstallPrompt", () => {
 
   it("iOS: instrucciones de Compartir → Añadir a pantalla de inicio, sin botón Instalar", () => {
     setUserAgent(IPHONE);
-    previousVisit();
+    inLibrary();
     render(<InstallPrompt labels={labels} />);
     const card = screen.getByRole("complementary", { name: labels.iosTitle });
     expect(card).toHaveTextContent(labels.iosStepShare);
@@ -193,7 +196,7 @@ describe("InstallPrompt", () => {
 
   it("ya instalada (modo standalone): nunca", () => {
     window.matchMedia = vi.fn().mockReturnValue({ matches: true }) as unknown as typeof window.matchMedia;
-    previousVisit();
+    inLibrary();
     render(<InstallPrompt labels={labels} />);
     fireBeforeInstallPrompt();
     expect(screen.queryByTestId("install-prompt")).toBeNull();
@@ -201,7 +204,7 @@ describe("InstallPrompt", () => {
 
   it("appinstalled: se registra con beacon (no pasa por window.fetch) y se recuerda", async () => {
     const fetchSpy = vi.spyOn(window, "fetch");
-    previousVisit();
+    inLibrary();
     render(<InstallPrompt labels={labels} />);
     const event = fireBeforeInstallPrompt("accepted");
     await act(async () => {

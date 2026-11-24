@@ -213,14 +213,15 @@ test.describe("aviso de instalación", () => {
     });
   }
 
-  test("2.ª visita: sale; «Ahora no» lo calla 30 días; después vuelve", async ({ page }) => {
+  test("en la biblioteca sale (en Inicio no); «Ahora no» lo calla 30 días; después vuelve", async ({ page }) => {
     await page.clock.install({ time: new Date("2026-11-01T10:00:00+01:00") });
     await page.goto("/es/home");
     await fakeInstallPrompt(page);
-    await expect(page.getByTestId("install-prompt")).toHaveCount(0); // 1.ª visita
+    await expect(page.getByTestId("install-prompt")).toHaveCount(0); // fuera de la biblioteca
+    // Sin respuesta no se guarda nada en el navegador.
+    expect(await page.evaluate(() => window.localStorage.getItem("kultura.pwa.install"))).toBeNull();
 
-    await page.clock.setSystemTime(new Date("2026-11-01T12:00:00+01:00"));
-    await page.reload();
+    await page.goto("/es/library");
     await fakeInstallPrompt(page);
     const card = page.getByRole("complementary", { name: "Instala KULTURA" });
     await expect(card).toBeVisible();

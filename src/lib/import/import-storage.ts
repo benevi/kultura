@@ -7,7 +7,9 @@
 // nada: el servidor es idempotente y reimportar no duplica. Solo se guarda
 // el resultado por fila (lo que devolvió el servidor), nunca el archivo.
 // La clave lleva el id del usuario: en un navegador compartido, otra cuenta
-// no ve ni retoma el avance de la anterior. "Empezar de cero" lo borra.
+// no ve ni retoma el avance de la anterior. "Empezar de cero" lo borra; al
+// leerlo caducado (una semana) también, y al cerrar sesión se borra el de
+// todas las cuentas (`clearAllProgress`).
 // ============================================================
 
 import type { ImportItemResult, ImportSource } from '@/lib/import/types'
@@ -34,7 +36,12 @@ export function loadProgress(userId: string, fp: string): Map<string, ImportItem
     const raw = window.localStorage.getItem(progressKey(userId))
     if (!raw) return null
     const stored = JSON.parse(raw) as Stored
-    if (stored.fp !== fp || Date.now() - stored.savedAt > MAX_AGE_MS || !Array.isArray(stored.results)) return null
+    if (!stored || typeof stored.savedAt !== 'number' || Date.now() - stored.savedAt > MAX_AGE_MS) {
+      // Caducado o ilegible: se borra, no solo se ignora.
+      window.localStorage.removeItem(progressKey(userId))
+      return null
+    }
+    if (stored.fp !== fp || !Array.isArray(stored.results)) return null
     return new Map(stored.results.map((r) => [r.key, r]))
   } catch {
     return null
@@ -53,6 +60,25 @@ export function saveProgress(
     window.localStorage.removeItem(LEGACY_KEY)
   } catch {
     // Sin almacenamiento: se puede reimportar igual.
+  }
+}
+
+/**
+ * Al cerrar sesión (o salir de la demo, o borrar la cuenta): se borra el
+ * avance de todas las cuentas de este navegador. Decisión de Víctor,
+ * 24-11-2026: los títulos importados no se quedan en un navegador sin sesión.
+ */
+export function clearAllProgress(): void {
+  try {
+    const storage = window.localStorage
+    const keys: string[] = []
+    for (let i = 0; i < storage.length; i++) {
+      const key = storage.key(i)
+      if (key && (key.startsWith(PREFIX) || key === LEGACY_KEY)) keys.push(key)
+    }
+    keys.forEach((key) => storage.removeItem(key))
+  } catch {
+    // Sin almacenamiento: nada que borrar.
   }
 }
 

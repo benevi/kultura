@@ -18,6 +18,7 @@ import {
   type AttributionParams,
 } from "@/lib/analytics/attribution";
 import { unsubscribeCurrentDevice } from "@/lib/push/client";
+import { clearAllProgress } from "@/lib/import/import-storage";
 import { updateSettings } from "@/lib/settings/client";
 
 // KULTURA — Lógica de Entrar / Crear cuenta / Recuperar (rescate F0, §7.3).
@@ -375,6 +376,7 @@ export function useAuthFlow(locale: string) {
     // Sale de la demo (o de otra cuenta) antes de crear la nueva; F-33: sin
     // llevarse los avisos push de la cuenta anterior.
     await unsubscribeCurrentDevice();
+    clearAllProgress();
     await supabase.auth.signOut();
     const { error, data } = await supabase.auth.signUp({
       email: form.email,
