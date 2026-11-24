@@ -36,3 +36,8 @@ export const tmdbGenresSchema = z.looseObject({
 export const tmdbConfigurationSchema = z.looseObject({
   images: z.looseObject({}).optional(),
 });
+
+/** /movie/{id}/images y /tv/{id}/images (F5): solo se leen las apaisadas. */
+export const tmdbImagesSchema = z.looseObject({
+  backdrops: z.array(z.looseObject({ file_path: z.string() })).optional(),
+});

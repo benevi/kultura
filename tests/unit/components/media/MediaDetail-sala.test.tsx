@@ -720,3 +720,46 @@ describe("MediaDetail con sala=true (F2a)", () => {
     expect(container.querySelector("[data-sala-ficha-band]")).not.toBeNull();
   });
 });
+
+describe("MediaDetail · F5b: la apaisada sin rótulo, solo en la sala", () => {
+  const TEXTLESS = "https://image.tmdb.org/t/p/w1280/sin-rotulo.jpg";
+  const extras = { backdrop: TEXTLESS };
+
+  it("con sala, la cabecera y el fondo del tráiler usan la apaisada sin rótulo, directa de TMDB", async () => {
+    const { container } = render(
+      await MediaDetail({ item: movie, initialEntry: null, isAuthenticated: false, trailerKey: YT, sala: true, salaExtras: extras })
+    );
+    const stage = container.querySelector("[data-sala-ficha]")!;
+    expect(stage).toHaveAttribute("data-sala-ficha", "stage");
+    expect(stage.querySelector("img")).toHaveAttribute("src", TEXTLESS);
+    const trailer = screen.getByRole("region", { name: "trailer" });
+    expect(trailer.querySelector("img")).toHaveAttribute("src", TEXTLESS);
+    // La de siempre no se pinta en ningún sitio de la sala.
+    expect(container.innerHTML).not.toContain(movie.backdrop);
+  });
+
+  it("una obra sin apaisada pasa a la sala completa si llega la sin rótulo", async () => {
+    const { container } = render(
+      await MediaDetail({
+        item: { ...movie, backdrop: undefined },
+        initialEntry: null,
+        isAuthenticated: false,
+        sala: true,
+        salaExtras: extras,
+      })
+    );
+    expect(container.querySelector("[data-sala-ficha]")).toHaveAttribute("data-sala-ficha", "stage");
+    expect(container.querySelector("[data-sala-ficha-band]")).not.toHaveAttribute("data-theme");
+  });
+
+  it("con sala=false, los extras no cambian nada", async () => {
+    const a = render(await MediaDetail({ item: movie, initialEntry: null, isAuthenticated: false, ...full }));
+    const before = html(a.container);
+    a.unmount();
+    const b = render(
+      await MediaDetail({ item: movie, initialEntry: null, isAuthenticated: false, ...full, salaExtras: extras })
+    );
+    expect(html(b.container)).toBe(before);
+    expect(b.container.innerHTML).not.toContain(TEXTLESS);
+  });
+});

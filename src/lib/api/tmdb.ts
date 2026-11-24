@@ -12,6 +12,7 @@ import {
   tmdbConfigurationSchema,
   tmdbDetailSchema,
   tmdbGenresSchema,
+  tmdbImagesSchema,
   tmdbListSchema,
   tmdbProvidersSchema,
   tmdbVideosSchema,
@@ -178,6 +179,7 @@ function tmdbSchemaFor(path: string) {
   if (path.startsWith("/genre/")) return tmdbGenresSchema;
   if (path.endsWith("/watch/providers")) return tmdbProvidersSchema;
   if (path.endsWith("/videos")) return tmdbVideosSchema;
+  if (path.endsWith("/images")) return tmdbImagesSchema;
   if (path === "/configuration") return tmdbConfigurationSchema;
   if (/^\/(search|discover|trending)\//.test(path) || path.endsWith("/popular")) {
     return tmdbListSchema;
@@ -452,6 +454,56 @@ export async function getTVVideos(
   locale?: string | null
 ): Promise<TmdbVideosResponse> {
   return tmdbFetch<TmdbVideosResponse>(`/tv/${id}/videos`, {}, locale);
+}
+
+// ── Imágenes sin rótulo (fase 8.5, F5) ────────────────────────────────────────
+
+export interface TmdbImage {
+  file_path: string;
+  /** `null`: la imagen no tiene idioma (en la práctica, sin texto). */
+  iso_639_1?: string | null;
+  vote_average?: number;
+  vote_count?: number;
+  width?: number;
+}
+
+export interface TmdbImagesResponse {
+  backdrops?: TmdbImage[];
+}
+
+/**
+ * Imágenes de una película o serie con `include_image_language=null`: TMDB
+ * añade las que no tienen idioma (sin rótulo) a las del idioma de la
+ * petición. `tmdbTextlessBackdrop` se queda solo con las primeras.
+ * https://developer.themoviedb.org/docs/image-languages
+ */
+export async function getTmdbImages(kind: "movie" | "tv", id: number): Promise<TmdbImagesResponse> {
+  return tmdbFetch<TmdbImagesResponse>(`/${kind}/${id}/images`, { include_image_language: "null" });
+}
+
+/**
+ * La apaisada SIN rótulo mejor votada (en w1280, como `tmdbBackdrop`), o
+ * `undefined` si no hay ninguna. Es una URL de `image.tmdb.org`: se carga
+ * directa en el navegador, sin optimizador ni copia (revisión de términos F5).
+ */
+export function tmdbTextlessBackdrop(resp: TmdbImagesResponse | null | undefined): string | undefined {
+  const candidates = (resp?.backdrops ?? []).filter(
+    (b): b is TmdbImage =>
+      Boolean(b) &&
+      b.iso_639_1 == null &&
+      typeof b.file_path === "string" &&
+      /^\/[\w.-]+$/.test(b.file_path) &&
+      // Una «apaisada» estrecha no llena la sala (por si TMDB mezcla otra cosa).
+      (typeof b.width !== "number" || b.width >= 1280)
+  );
+  if (candidates.length === 0) return undefined;
+  const score = (b: TmdbImage) => [b.vote_average ?? 0, b.vote_count ?? 0] as const;
+  const best = candidates.reduce((a, b) => {
+    const [va, ca] = score(a);
+    const [vb, cb] = score(b);
+    return vb > va || (vb === va && cb > ca) ? b : a;
+  });
+  return tmdbBackdrop(best.file_path);
 }
 
 // Providers: `region` gobierna el CATÁLOGO de streaming (oferta por país), no el

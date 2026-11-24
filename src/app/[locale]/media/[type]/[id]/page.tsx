@@ -43,6 +43,7 @@ import { routing } from "@/i18n/routing";
 import { siteUrl } from "@/lib/site-url";
 import type { AppLocale } from "@/i18n/detect";
 import { salaFichaEnabled } from "@/lib/flags/sala";
+import { loadSalaFichaExtras } from "@/lib/media/sala-extras";
 
 interface Props {
   params: Promise<{ locale: string; type: string; id: string }>;
@@ -178,6 +179,10 @@ export default async function MediaDetailPage({ params }: Props) {
     salaFichaEnabled(),
   ]);
 
+  // Fase 8.5, F5: solo con la sala, la apaisada sin rótulo de TMDB. Con la
+  // bandera apagada no se pide nada más y la ficha sale igual que siempre.
+  const salaExtras = sala ? await loadSalaFichaExtras(item) : null;
+
   // Miga de pan: la misma en pantalla y en el JSON-LD. El formato enlaza a su
   // ranking del año cuando existe (los hubs `/best/[format]` llegan con F-16).
   const base = siteUrl();
@@ -217,6 +222,7 @@ export default async function MediaDetailPage({ params }: Props) {
         matchScore={matchScores.get(item.id)}
         shareRating={shareRatingFor(user, profile?.username, initialEntry, item, locale)}
         sala={sala}
+        salaExtras={salaExtras}
         // Sin «También existe como…» (F-29): Víctor no quiere que se vea
         // (22-11-2026). Se borró la sección y ya no se consulta Wikidata
         // desde la ficha; la carga de datos (src/lib/adaptations) sigue.
