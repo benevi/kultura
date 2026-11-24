@@ -4,6 +4,7 @@ import { getUserMedia } from '@/lib/library/queries'
 import { readDiary } from '@/lib/library/diary'
 import { readRatingScale } from '@/lib/library/scale'
 import { createLogger } from '@/lib/logger'
+import { salaBibliotecaEnabled } from '@/lib/flags/sala'
 import { LibraryClient } from './LibraryClient'
 import type { Metadata } from 'next'
 import type { DiaryLog, RatingScale } from '@/types/library'
@@ -33,10 +34,28 @@ export default async function LibraryPage() {
       return null
     })
 
-  const [entries, diary] = await Promise.all([getUserMedia(user.id), diaryPromise])
+  // Fase 8.5 B1: la rejilla de «Sala» (bandera SALA_BIBLIOTECA: 0, prueba o 1).
+  const [entries, diary, sala] = await Promise.all([getUserMedia(user.id), diaryPromise, salaBibliotecaEnabled()])
+  // Los textos de la zona de avisos de «Sala», los mismos que en la ficha. Van
+  // por aquí para no mandar todo `media_detail` a cada página con sesión (REN-5).
+  const tMedia = sala ? await getTranslations('media_detail') : null
+  const salaProps = tMedia
+    ? {
+        toastLabels: {
+          region: tMedia('salaToastRegion'),
+          dismiss: tMedia('salaToastDismiss'),
+          hint: tMedia('salaToastHint'),
+        },
+      }
+    : null
   return (
     <main className="page-grid py-8">
-      <LibraryClient entries={entries} diary={diary} quickEdit={process.env.LIBRARY_QUICK_EDIT === '1'} />
+      <LibraryClient
+        entries={entries}
+        diary={diary}
+        quickEdit={process.env.LIBRARY_QUICK_EDIT === '1'}
+        sala={salaProps}
+      />
     </main>
   )
 }

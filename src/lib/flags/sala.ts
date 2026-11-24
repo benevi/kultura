@@ -67,15 +67,28 @@ export function salaTestNext(raw: string | null): string {
   return raw;
 }
 
-/**
- * Ficha en «Sala» (`SALA_FICHA`). Solo lee la cookie con la bandera en
- * `prueba`: con `0` la ficha sale como hoy.
- */
-export async function salaFichaEnabled(): Promise<boolean> {
-  const mode = salaFlagMode(process.env.SALA_FICHA);
+/** Una bandera de «Sala» en el servidor. Solo lee la cookie con la bandera en `prueba`. */
+async function salaFlagEnabled(raw: string | undefined): Promise<boolean> {
+  const mode = salaFlagMode(raw);
   if (mode === "on") return true;
   if (mode !== "test") return false;
   const { cookies } = await import("next/headers");
   const store = await cookies();
   return salaEnabled(mode, store.get(SALA_TEST_COOKIE)?.value);
+}
+
+/**
+ * Ficha en «Sala» (`SALA_FICHA`). Solo lee la cookie con la bandera en
+ * `prueba`: con `0` la ficha sale como hoy.
+ */
+export function salaFichaEnabled(): Promise<boolean> {
+  return salaFlagEnabled(process.env.SALA_FICHA);
+}
+
+/**
+ * Biblioteca en «Sala» (`SALA_BIBLIOTECA`, fase 8.5 B1). La misma cookie y la
+ * misma lógica que `SALA_FICHA`: con `0` la biblioteca sale como hoy.
+ */
+export function salaBibliotecaEnabled(): Promise<boolean> {
+  return salaFlagEnabled(process.env.SALA_BIBLIOTECA);
 }

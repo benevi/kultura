@@ -12,6 +12,7 @@ import {
   SALA_TEST_COOKIE,
   SALA_TEST_COOKIE_MAX_AGE,
   salaEnabled,
+  salaBibliotecaEnabled,
   salaFichaEnabled,
   salaFlagMode,
   salaTestCookie,
@@ -78,6 +79,40 @@ describe("salaFichaEnabled (lee process.env.SALA_FICHA y la cookie)", () => {
     expect(cookieStore.get).toHaveBeenCalledWith(SALA_TEST_COOKIE);
     cookieStore.get.mockReturnValue(undefined);
     expect(await salaFichaEnabled()).toBe(false);
+  });
+});
+
+describe("salaBibliotecaEnabled (lee process.env.SALA_BIBLIOTECA, misma cookie)", () => {
+  const before = { ficha: process.env.SALA_FICHA, biblioteca: process.env.SALA_BIBLIOTECA };
+  beforeEach(() => cookieStore.get.mockReset());
+  afterEach(() => {
+    for (const [k, v] of [["SALA_FICHA", before.ficha], ["SALA_BIBLIOTECA", before.biblioteca]] as const) {
+      if (v === undefined) delete process.env[k];
+      else process.env[k] = v;
+    }
+  });
+
+  it("sin definir o 0: apagada y sin mirar la cookie, aunque la ficha esté encendida", async () => {
+    process.env.SALA_FICHA = "1";
+    delete process.env.SALA_BIBLIOTECA;
+    expect(await salaBibliotecaEnabled()).toBe(false);
+    process.env.SALA_BIBLIOTECA = "0";
+    cookieStore.get.mockReturnValue({ value: "1" });
+    expect(await salaBibliotecaEnabled()).toBe(false);
+    expect(cookieStore.get).not.toHaveBeenCalled();
+  });
+  it("1: encendida, aunque la ficha esté apagada", async () => {
+    process.env.SALA_FICHA = "0";
+    process.env.SALA_BIBLIOTECA = "1";
+    expect(await salaBibliotecaEnabled()).toBe(true);
+  });
+  it("prueba: según la misma cookie de prueba", async () => {
+    process.env.SALA_BIBLIOTECA = "prueba";
+    cookieStore.get.mockReturnValue({ value: "1" });
+    expect(await salaBibliotecaEnabled()).toBe(true);
+    expect(cookieStore.get).toHaveBeenCalledWith(SALA_TEST_COOKIE);
+    cookieStore.get.mockReturnValue(undefined);
+    expect(await salaBibliotecaEnabled()).toBe(false);
   });
 });
 

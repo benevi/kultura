@@ -429,7 +429,9 @@
     "quickAlready": "«{title}» ya estaba en tu biblioteca",
     "quickAddFailed": "No hemos podido añadirlo. Reintenta.",
     "quickAddRateLimited": "Demasiados seguidos. Espera un momento y reintenta.",
-    "quickEdit": "Cambiar estado y nota de «{title}»"
+    "quickEdit": "Cambiar estado y nota de «{title}»",
+    "gridLabel": "Tus títulos",
+    "cardScore": "{scale, select, ten {Tu nota: {value} de 10} other {Tu nota: {value} de 5}}"
   },
   "diary": {
     "title": "Diario",
