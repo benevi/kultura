@@ -270,6 +270,8 @@
     "justwatchAttribution": "Availability data:",
     "justwatchLinkLabel": "JustWatch (opens in a new tab)",
     "providerLinkLabel": "{name}: where to watch, on TMDB (opens in a new tab)",
+    "salaProviderVariants": "+{count, plural, one {# variant} other {# variants}}",
+    "salaProviderVariantsLabel": "{name}: {count, plural, one {# more variant} other {# more variants}}",
     "salaProviderLinkLabel": "{name}, {type, select, flatrate {subscription} free {free} ads {free with ads} rent {rent} buy {buy} other {}}: where to watch, on TMDB (opens in a new tab)",
     "genres": "Genres",
     "notFound": "Title not found",
