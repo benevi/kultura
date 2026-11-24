@@ -71,6 +71,13 @@ export interface SalaStageProps extends Omit<React.HTMLAttributes<HTMLDivElement
   tone?: "dark" | "light";
   /** Opacidad del velo, 0–1. Por defecto 0,7. */
   veil?: number;
+  /**
+   * Negro de opacidad fija (0–1) bajo el velo, solo con `tone="dark"`. El velo
+   * lleva el color de la paleta de la obra; este fondo no depende de ella y
+   * garantiza el contraste de la tinta clara aunque la imagen sea blanca (la
+   * ficha, F6). Por defecto 0.
+   */
+  scrim?: number;
   fuse?: SalaStageFuse | null;
   preset?: SalaTitlePreset;
   /** Lo que va debajo del título, dentro de la sala. */
@@ -99,6 +106,7 @@ export const SalaStage = React.forwardRef<HTMLDivElement, SalaStageProps>(functi
     focus,
     tone = "dark",
     veil = SALA_STAGE_VEIL,
+    scrim = 0,
     fuse,
     preset = SALA_TITLE_PRESET.sala,
     className,
@@ -127,6 +135,7 @@ export const SalaStage = React.forwardRef<HTMLDivElement, SalaStageProps>(functi
   const vars = {
     ...salaTitleVars(plan),
     [c.vars.veil]: Math.min(1, Math.max(0, Number.isFinite(veil) ? veil : SALA_STAGE_VEIL)),
+    ...(tone === "dark" && scrim > 0 ? { [c.vars.scrim]: Math.min(1, scrim) } : {}),
     ...(foco ? { [c.vars.focus]: foco } : {}),
     ...(figura && estrecho ? { [c.vars.fuseNarrow]: salaFuseBackground(estrecho, figura, foco) } : {}),
     ...(figura && ancho ? { [c.vars.fuseWide]: salaFuseBackground(ancho, figura, foco) } : {}),

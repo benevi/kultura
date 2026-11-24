@@ -381,7 +381,8 @@
   position: relative;
   grid-area: 2 / 1 / -1 / -1;
   pointer-events: none;
-  background: color-mix(in srgb, var(--sala-background) calc(max(var(--sala-stage-veil, 0.7), var(--sala-stage-veil-min, 0)) * 100%), transparent);
+  /* Encima el velo con la paleta; debajo, un negro de opacidad fija (`scrim`, 0 por defecto). */
+  background: linear-gradient(color-mix(in srgb, var(--sala-background) calc(max(var(--sala-stage-veil, 0.7), var(--sala-stage-veil-min, 0)) * 100%), transparent), color-mix(in srgb, var(--sala-background) calc(max(var(--sala-stage-veil, 0.7), var(--sala-stage-veil-min, 0)) * 100%), transparent)), rgb(0 0 0 / var(--sala-stage-scrim, 0));
 }
 
 .sala-stage-veil::before {
@@ -390,7 +391,8 @@
   inset-inline: 0;
   bottom: 100%;
   height: 12cqw;
-  background: linear-gradient(to top, color-mix(in srgb, var(--sala-background) calc(max(var(--sala-stage-veil, 0.7), var(--sala-stage-veil-min, 0)) * 100%), transparent), transparent);
+  background: linear-gradient(to top, color-mix(in srgb, var(--sala-background) calc(max(var(--sala-stage-veil, 0.7), var(--sala-stage-veil-min, 0)) * 100%), transparent), transparent),
+    linear-gradient(to top, rgb(0 0 0 / var(--sala-stage-scrim, 0)), transparent);
 }
 
 /* La figura solo se pinta con el fundido encendido. */

@@ -167,7 +167,8 @@ export function SalaFichaBody({
                   </dt>
                   <dd className="sala-type-data [overflow-wrap:anywhere]">
                     {valueLang ? <span lang={valueLang}>{value}</span> : value}
-                    {hint && <span className="sala-type-small ml-2 whitespace-nowrap">· {hint}</span>}
+                    {/* El espacio va en el texto, no solo en el margen: «2nd Season · japonés». */}
+                    {hint && <> <span className="sala-type-small ml-1 whitespace-nowrap">· {hint}</span></>}
                   </dd>
                 </div>
               ))}

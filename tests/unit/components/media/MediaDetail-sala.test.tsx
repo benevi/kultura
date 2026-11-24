@@ -640,7 +640,7 @@ describe("MediaDetail con sala=true (F2a)", () => {
     const romaji = within(fact as HTMLElement).getByText("Sen to Chihiro no Kamikakushi");
     expect(romaji).toHaveAttribute("lang", "ja-Latn");
     // El nombre del idioma, en el de la página y fuera del `lang` del título.
-    expect(fact.querySelector("dd")!.textContent).toBe("Sen to Chihiro no Kamikakushi· japonés");
+    expect(fact.querySelector("dd")!.textContent).toBe("Sen to Chihiro no Kamikakushi · japonés");
     expect(document.querySelector('[data-fact="original-language"]')).toBeNull();
   });
 

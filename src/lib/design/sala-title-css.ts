@@ -69,6 +69,8 @@ export const SALA_TITLE_CSS = {
     veil: '--sala-stage-veil',
     /** Opacidad mínima del velo: la sube `prefers-contrast: more`. */
     veilMin: '--sala-stage-veil-min',
+    /** Fondo negro fijo bajo el velo (0–1): suelo de contraste que no depende de la paleta. */
+    scrim: '--sala-stage-scrim',
     /** Fondo del fundido en la caja estrecha y en la ancha. */
     fuseNarrow: '--sala-fuse-n',
     fuseWide: '--sala-fuse-w',
@@ -238,7 +240,8 @@ ${fallbackFaces()}
   position: relative;
   grid-area: 2 / 1 / -1 / -1;
   pointer-events: none;
-  background: ${veilColor};
+  /* Encima el velo con la paleta; debajo, un negro de opacidad fija (\`scrim\`, 0 por defecto). */
+  background: linear-gradient(${veilColor}, ${veilColor}), rgb(0 0 0 / var(${v.scrim}, 0));
 }
 
 .${c.stageVeil}::before {
@@ -247,7 +250,8 @@ ${fallbackFaces()}
   inset-inline: 0;
   bottom: 100%;
   height: 12cqw;
-  background: linear-gradient(to top, ${veilColor}, transparent);
+  background: linear-gradient(to top, ${veilColor}, transparent),
+    linear-gradient(to top, rgb(0 0 0 / var(${v.scrim}, 0)), transparent);
 }
 
 /* La figura solo se pinta con el fundido encendido. */
