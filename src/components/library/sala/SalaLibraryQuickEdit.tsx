@@ -32,14 +32,30 @@ export interface SalaLibraryQuickEditProps {
   fallbackFocusRef?: RefObject<HTMLElement | null>
 }
 
-/** Lápiz de trazo recto (biblia §1: esquinas rectas, sin adornos). */
+/**
+ * Lápiz de trazo recto (biblia §1: esquinas rectas, sin adornos). El
+ * `viewBox` lleva margen: en la caja de 20 px del botón se ve de unos 16.
+ */
 function PencilIcon() {
   return (
-    <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" className="h-5 w-5">
+    <svg aria-hidden="true" viewBox="-2 -2 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" className="h-5 w-5">
       <path d="M13.5 3.5l3 3L7 16H4v-3l9.5-9.5zM11.5 5.5l3 3" />
     </svg>
   )
 }
+
+/**
+ * Discreto sobre la portada (decisión de Víctor, #291): fondo de «Sala» al
+ * 75 % con desenfoque y el lápiz en tinta. Sobre la portada más clara el
+ * fondo mezclado no pasa de #5c5c5b y la tinta guarda más de 5:1 con él
+ * (1.4.11 pide 3:1). Al pasar el puntero o con el foco del teclado se
+ * resalta: tinta opaca, como el resto de botones de «Sala», y el anillo de
+ * foco. Sigue midiendo 48 × 48 (2.5.8 pide 24).
+ */
+const DISCRETO = [
+  "bg-[color-mix(in_srgb,var(--sala-background)_75%,transparent)] backdrop-blur-sm",
+  "sala-focused:border-sala-ink sala-focused:bg-sala-ink sala-focused:text-sala-background",
+].join(" ")
 
 export function SalaLibraryQuickEdit({ entry, title, onSaved, fallbackFocusRef }: SalaLibraryQuickEditProps) {
   const t = useTranslations('library')
@@ -64,7 +80,8 @@ export function SalaLibraryQuickEdit({ entry, title, onSaved, fallbackFocusRef }
     <>
       <SalaButton
         ref={buttonRef}
-        variant="primary"
+        variant="quiet"
+        className={DISCRETO}
         icon={<PencilIcon />}
         label={t('quickEdit', { title })}
         aria-haspopup="dialog"
