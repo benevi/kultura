@@ -1746,12 +1746,16 @@
         },
         "analytics": {
           "title": "Analytics and cookies",
-          "p1": "There's no cookie banner because KULTURA doesn't use cookies that need your consent:",
+          "p1": "There's no cookie banner because KULTURA doesn't use cookies or browser storage that need your consent:",
           "list": {
-            "session": "<b>Session</b> (Supabase): strictly necessary cookies to keep you signed in.",
-            "locale": "<b>Language</b> (NEXT_LOCALE): remembers the language you pick.",
+            "session": "<b>Session</b> (Supabase, sb-…-auth-token cookies): strictly necessary to keep you signed in. They're deleted when you sign out and last 400 days at most.",
+            "locale": "<b>Language</b> (NEXT_LOCALE): remembers the language you pick until you close the browser.",
             "sala": "<b>“Sala” test</b> (kultura_sala_prueba): only set if you open the test link I give some people to try the new design of some screens (for now, each title's page) before it reaches everyone. Its value is “1”: it stores no data about you, isn't used to track you, and only KULTURA's server reads it. It lasts 60 days; to remove it sooner, open /api/sala-prueba?on=0 on this site or clear this site's cookies.",
-            "storage": "<b>Local storage</b>: during sign-up, the browser briefly keeps the character you pick and deletes it once sign-up is done."
+            "storage": "<b>Local storage</b>: during sign-up, the browser briefly keeps the character you pick and deletes it once sign-up is done.",
+            "import": "<b>Import progress</b> (local storage): if you import your library from another service, the browser keeps what has already been matched (each work's title and year, never the file) so you can pick up where you left off if you close the page. It's tied to your account and is deleted when you sign out, with “Start over” or, if more than a week has passed, the next time you import.",
+            "install": "<b>Install-the-app prompt</b> (local storage): only if you answer the prompt, the browser remembers that you pressed “Not now” (and when, so it isn't offered again for 30 days) or that you've already installed it. It doesn't count your visits. It's deleted when you clear this site's data in your browser.",
+            "push": "<b>Notifications offer</b> (local and session storage): if you press “Not now”, the browser remembers it so they aren't offered again; also, during a visit, it remembers they were already offered so it happens at most once.",
+            "cache": "<b>App cache</b>: while you're signed in, the browser keeps the site's files (code, styles and fonts) and an “offline” page, to load faster and tell you when there's no connection. It never stores pages with your data."
           },
           "p2": "Visits are counted with Vercel Web Analytics, which uses no cookies: it counts page views with a temporary fingerprint that is discarded within 24 hours and can't identify you.",
           "p3": "KULTURA may also record usage events from registered people (for example, signing up, saving a first title or accepting an invitation) and how you arrived when you signed up (an invitation or campaign link), to study them in aggregate, with no cookies and no cross-site tracking."
