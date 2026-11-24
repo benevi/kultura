@@ -150,6 +150,8 @@ test("«Dónde ver» sin enlaces: la fila recibe el foco y se mueve con las flec
   await expect(row).toHaveAttribute("role", "group");
   await expect(row).toHaveAccessibleName("Dónde ver");
   await expect(row.locator("a")).toHaveCount(0);
+  // A 640 px la fila de 603 cabe: se ensanchan las tarjetas para que desborde.
+  await page.addStyleTag({ content: `${ROW} li { width: 12rem !important; }` });
 
   // Llega con Tab desde lo anterior (foco de teclado, con anillo).
   await row.focus();
