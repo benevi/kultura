@@ -147,6 +147,7 @@ export const SalaStage = React.forwardRef<HTMLDivElement, SalaStageProps>(functi
       data-sala-stage={conImagen ? "image" : "empty"}
       data-theme={tone}
       data-sala-fuse={fundido || undefined}
+      data-sala-scrim={tone === "dark" && scrim > 0 ? "" : undefined}
       className={cn(
         c.stage,
         "bg-sala-band",

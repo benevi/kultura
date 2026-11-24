@@ -240,10 +240,7 @@ ${fallbackFaces()}
   position: relative;
   grid-area: 2 / 1 / -1 / -1;
   pointer-events: none;
-  /* El velo con la paleta y, encima, un negro de opacidad fija (\`scrim\`, 0 por
-     defecto) que oscurece aún más sin depender de la paleta. */
-  background-color: ${veilColor};
-  background-image: linear-gradient(rgb(0 0 0 / var(${v.scrim}, 0)), rgb(0 0 0 / var(${v.scrim}, 0)));
+  background: ${veilColor};
 }
 
 .${c.stageVeil}::before {
@@ -252,8 +249,19 @@ ${fallbackFaces()}
   inset-inline: 0;
   bottom: 100%;
   height: 12cqw;
-  background: linear-gradient(to top, ${veilColor}, transparent),
-    linear-gradient(to top, rgb(0 0 0 / var(${v.scrim}, 0)), transparent);
+  background: linear-gradient(to top, ${veilColor}, transparent);
+}
+
+/* Con \`scrim\` (la ficha, F6): encima del velo, un negro de opacidad fija que
+   no depende de la paleta. Solo entonces lleva capa de imagen: sin él, axe
+   sigue midiendo el velo como un color liso. */
+.${c.stage}[data-sala-scrim] .${c.stageVeil} {
+  background-image: linear-gradient(rgb(0 0 0 / var(${v.scrim})), rgb(0 0 0 / var(${v.scrim})));
+}
+
+.${c.stage}[data-sala-scrim] .${c.stageVeil}::before {
+  background-image: linear-gradient(to top, rgb(0 0 0 / var(${v.scrim})), transparent),
+    linear-gradient(to top, ${veilColor}, transparent);
 }
 
 /* La figura solo se pinta con el fundido encendido. */
