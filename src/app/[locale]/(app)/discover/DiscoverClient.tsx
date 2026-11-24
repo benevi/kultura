@@ -45,7 +45,10 @@ export function DiscoverClient({ currentType, currentPage, currentQuery = "", qu
   const t = useTranslations("discover");
   const locale = useLocale();
   const type: DiscoverType = isDiscoverType(currentType) ? currentType : "movie";
-  const url = useDiscoverUrl(type, currentQuery);
+  // D2: con «Sala», filtros y páginas cambian la URL sin ir al servidor; la
+  // página sale entonces de la URL, no de la que pintó el servidor.
+  const url = useDiscoverUrl(type, currentQuery, { shallow: sala !== null });
+  const page = sala ? url.page : currentPage;
   const filterGroups = useFilterGroups(type);
 
   // "Sorpréndeme": un ítem al azar de la página actual; se suelta al llegar
@@ -53,7 +56,7 @@ export function DiscoverClient({ currentType, currentPage, currentQuery = "", qu
   const [randomItem, setRandomItem] = useState<MediaItem | null>(null);
   const { items, hasMore, totalPages, fetchErrorKind, loading, retry } = useDiscoverQuery({
     type,
-    page: currentPage,
+    page,
     filterQuery: url.filterQuery,
     query: currentQuery,
     locale,
@@ -83,10 +86,11 @@ export function DiscoverClient({ currentType, currentPage, currentQuery = "", qu
         activeFilters={url.activeFilters}
         hasActiveFilters={url.hasActiveFilters}
         onFilterChange={url.changeFilter}
+        onClearFilters={url.clearFilters}
         onSearch={url.submitSearch}
         onClearSearch={url.resetToCatalog}
         onTypeChange={url.changeType}
-        currentPage={currentPage}
+        currentPage={page}
         hasMore={hasMore}
         totalPages={totalPages}
         onPageChange={url.goToPage}

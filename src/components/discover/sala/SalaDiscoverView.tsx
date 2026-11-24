@@ -3,8 +3,8 @@
 // ============================================================
 // KULTURA — SalaDiscoverView (fase 8.5 D1, bandera SALA_DESCUBRIR)
 // Descubrir en «Sala»: cabecera, buscador, «Sorpréndeme», tipos, la rejilla
-// de `SalaWorkCard` y la paginación. Los filtros siguen siendo los de hoy
-// (`FilterBar`) hasta D2.
+// de `SalaWorkCard` y la paginación. Los filtros, en su panel
+// (`SalaDiscoverFilters`, D2).
 //
 // Solo se carga con `next/dynamic` (`SalaDiscoverViewLazy`): con la bandera
 // apagada Descubrir no descarga su código ni sus hojas.
@@ -23,19 +23,23 @@
 //   móvil los tipos van en un `<select>` nativo (Víctor, #299).
 // - **Resultados anunciados:** la lista dice «Cargando obras» y, al acabar,
 //   «12 obras» (`SalaWorkList`); el aleatorio, por su propia región.
+// - **Foco al cambiar de página (D2):** al llegar la página nueva, el foco
+//   pasa a la lista de obras (o al `h1` si la página llega vacía) y la vista
+//   sube hasta ella: el botón pulsado ya no existe mientras carga.
 // ============================================================
 
 import "@/styles/sala/tokens.css";
 import "@/styles/sala/fonts.css";
 import "@/styles/sala/title.css";
 
-import { useId, type ReactNode } from "react";
+import { useEffect, useId, useRef, type ReactNode, type RefObject } from "react";
 import { useTranslations } from "next-intl";
 import type { MediaItem } from "@/types/media";
 import type { DiscoverResult } from "@/lib/api/discover";
 import { TYPE_ORDER, type DiscoverType } from "@/lib/discover/type-filters";
 import { googleBooksVolumeId } from "@/lib/media/google-books";
-import { FilterBar, type FilterGroup } from "@/components/ui/FilterBar";
+import { cn } from "@/lib/utils/index";
+import type { FilterGroup } from "@/components/ui/FilterBar";
 import { SalaSelect } from "@/components/sala/SalaSelect";
 import { ELLIPSIS, buildPageWindow } from "@/components/ui/Pagination";
 import { GoogleBooksAttribution } from "@/components/media/GoogleBooksAttribution";
@@ -47,6 +51,7 @@ import { SalaWorkCard } from "@/components/sala/SalaWorkCard";
 import { SalaToastProvider, type SalaToastLabels } from "@/components/sala/SalaToast";
 import { SalaDiscoverSearch } from "./SalaDiscoverSearch";
 import { SalaDiscoverQuickAdd } from "./SalaDiscoverQuickAdd";
+import { SalaDiscoverFilters } from "./SalaDiscoverFilters";
 
 export interface SalaDiscoverViewProps {
   type: DiscoverType;
@@ -64,6 +69,8 @@ export interface SalaDiscoverViewProps {
   activeFilters: Record<string, string | string[]>;
   hasActiveFilters: boolean;
   onFilterChange: (key: string, value: string | string[]) => void;
+  /** Quita los filtros y deja el orden (D2). */
+  onClearFilters: () => void;
   onSearch: (query: string) => void;
   onClearSearch: () => void;
   onTypeChange: (type: string) => void;
@@ -127,7 +134,9 @@ export function SalaDiscoverView({ toastLabels, ...props }: SalaDiscoverViewProp
   );
 }
 
-function View(props: Omit<SalaDiscoverViewProps, "toastLabels">) {
+type ViewProps = Omit<SalaDiscoverViewProps, "toastLabels">;
+
+function View(props: ViewProps) {
   const {
     type,
     query,
@@ -141,9 +150,12 @@ function View(props: Omit<SalaDiscoverViewProps, "toastLabels">) {
     filterGroups,
     activeFilters,
     onFilterChange,
+    onClearFilters,
     onSearch,
     onClearSearch,
     onTypeChange,
+    onPageChange,
+    loading,
   } = props;
   const t = useTranslations("discover");
   const tS = useTranslations("discover.sala");
@@ -151,9 +163,31 @@ function View(props: Omit<SalaDiscoverViewProps, "toastLabels">) {
   const tF = useTranslations("filters");
   const typeId = useId();
 
+  // D2: al cambiar de página, el foco va a la lista nueva (o al h1 si llega
+  // vacía) cuando acaba de cargar. Se apunta al pulsar y se cumple al bajar
+  // `loading`; con `pushState` la vista no se vuelve a montar.
+  const h1Ref = useRef<HTMLHeadingElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
+  const focusOnLoad = useRef(false);
+  useEffect(() => {
+    if (loading || !focusOnLoad.current) return;
+    focusOnLoad.current = false;
+    const list = listRef.current;
+    const target = list && list.querySelector("li") ? list : h1Ref.current;
+    if (!target) return;
+    target.focus({ preventScroll: true });
+    target.scrollIntoView({ block: "start" });
+  }, [loading]);
+  const goToPage = (page: number) => {
+    focusOnLoad.current = true;
+    onPageChange(page);
+  };
+
   return (
     <div data-sala-discover="" className="font-sala-text text-sala-ink">
-      <h1 className="mb-6 sala-type-heading [overflow-wrap:anywhere]">{t("title")}</h1>
+      <h1 ref={h1Ref} tabIndex={-1} className="mb-6 scroll-mt-24 outline-none sala-type-heading [overflow-wrap:anywhere]">
+        {t("title")}
+      </h1>
 
       <div className="mb-4 flex flex-wrap items-end gap-3">
         <SalaDiscoverSearch
@@ -210,11 +244,9 @@ function View(props: Omit<SalaDiscoverViewProps, "toastLabels">) {
         </div>
       </div>
 
-      {/* Los filtros de hoy, hasta D2. Ocultos al buscar: los buscadores de los proveedores no los aceptan. */}
+      {/* Filtros y orden (D2). Ocultos al buscar: los buscadores de los proveedores no los aceptan. */}
       {!isSearching ? (
-        <div role="group" aria-label={tF("filters")} className="mb-6 flex items-center gap-3">
-          <FilterBar className="flex-1" groups={filterGroups} activeFilters={activeFilters} onChange={onFilterChange} />
-        </div>
+        <SalaDiscoverFilters groups={filterGroups} activeFilters={activeFilters} onChange={onFilterChange} onClear={onClearFilters} />
       ) : null}
 
       {/* Región montada siempre: un lector anuncia el error al entrar el aviso. */}
@@ -235,8 +267,8 @@ function View(props: Omit<SalaDiscoverViewProps, "toastLabels">) {
         ) : null}
       </div>
 
-      <Results {...props} />
-      <Pages {...props} />
+      <Results {...props} listRef={listRef} />
+      <Pages {...props} onPageChange={goToPage} />
     </div>
   );
 }
@@ -252,7 +284,9 @@ function Results({
   quickAdd,
   onRandom,
   onClearSearch,
-}: Omit<SalaDiscoverViewProps, "toastLabels">) {
+  onClearFilters,
+  listRef,
+}: ViewProps & { listRef: RefObject<HTMLUListElement | null> }) {
   const t = useTranslations("discover");
   const tS = useTranslations("discover.sala");
   const tSearch = useTranslations("search");
@@ -279,12 +313,15 @@ function Results({
 
       {/* Montada siempre (también vacía): así anuncia «Cargando obras» y, al acabar, cuántas hay. */}
       <SalaWorkList
+        ref={listRef}
+        // Recibe el foco al cambiar de página (D2); no es una parada de Tab.
+        tabIndex={-1}
         aria-label={tS("gridLabel")}
         loading={loading}
         loadingLabel={tS("loading")}
         loadedLabel={tS("results", { count: shown.length })}
         skeletons={SKELETONS}
-        className={loading || shown.length > 0 ? REJILLA : "hidden"}
+        className={loading || shown.length > 0 ? cn(REJILLA, "scroll-mt-24 sala-focused:sala-focus") : "hidden"}
       >
         {shown.map((item, i) => (
           <SalaWorkCard
@@ -322,7 +359,7 @@ function Results({
             title={t("noResults")}
             description={tS("emptyFiltersHint")}
             action={
-              <SalaButton variant="secondary" onClick={onClearSearch}>
+              <SalaButton variant="secondary" onClick={onClearFilters}>
                 {tF("reset")}
               </SalaButton>
             }
@@ -336,7 +373,7 @@ function Results({
 }
 
 /** Paginación de «Sala»: la misma ventana que la de hoy, con `SalaButton` de 48 px que se parten en filas. */
-function Pages({ loading, hasMore, currentPage, totalPages, onPageChange, randomItem }: Omit<SalaDiscoverViewProps, "toastLabels">) {
+function Pages({ loading, hasMore, currentPage, totalPages, onPageChange, randomItem }: ViewProps) {
   const t = useTranslations("discover");
   if (loading || randomItem || !(hasMore || currentPage > 1)) return null;
   const entries = buildPageWindow(currentPage, totalPages);
