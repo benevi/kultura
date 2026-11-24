@@ -1750,6 +1750,7 @@
           "list": {
             "session": "<b>Sesión</b> (Supabase): cookies estrictamente necesarias para mantenerte conectado.",
             "locale": "<b>Idioma</b> (NEXT_LOCALE): recuerda el idioma que eliges.",
+            "sala": "<b>Prueba de «Sala»</b> (kultura_sala_prueba): solo se pone si abres el enlace de prueba que doy a algunas personas para ver el diseño nuevo de algunas pantallas (por ahora, la ficha de cada título) antes de que llegue a todos. Vale «1»: no guarda ningún dato tuyo ni sirve para seguirte, y solo la lee el servidor de KULTURA. Dura 60 días; para quitarla antes, abre la dirección /api/sala-prueba?on=0 de esta web o borra las cookies de este sitio.",
             "storage": "<b>Almacenamiento local</b>: durante el registro, el navegador guarda un momento el personaje que eliges y lo borra al terminar el alta."
           },
           "p2": "Las visitas se cuentan con Vercel Web Analytics, que no usa cookies: cuenta páginas vistas con una huella temporal que se descarta en 24 horas y no permite identificarte.",

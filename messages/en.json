@@ -1750,6 +1750,7 @@
           "list": {
             "session": "<b>Session</b> (Supabase): strictly necessary cookies to keep you signed in.",
             "locale": "<b>Language</b> (NEXT_LOCALE): remembers the language you pick.",
+            "sala": "<b>“Sala” test</b> (kultura_sala_prueba): only set if you open the test link I give some people to try the new design of some screens (for now, each title's page) before it reaches everyone. Its value is “1”: it stores no data about you, isn't used to track you, and only KULTURA's server reads it. It lasts 60 days; to remove it sooner, open /api/sala-prueba?on=0 on this site or clear this site's cookies.",
             "storage": "<b>Local storage</b>: during sign-up, the browser briefly keeps the character you pick and deletes it once sign-up is done."
           },
           "p2": "Visits are counted with Vercel Web Analytics, which uses no cookies: it counts page views with a temporary fingerprint that is discarded within 24 hours and can't identify you.",
