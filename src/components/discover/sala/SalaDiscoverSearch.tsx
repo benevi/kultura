@@ -46,6 +46,12 @@ function SearchIcon() {
   );
 }
 
+/**
+ * ¿Hay que devolver el foco al campo al montarlo? Vive fuera del componente
+ * porque tiene que sobrevivir a que se desmonte durante la navegación.
+ */
+let refocusAfterNavigation = false;
+
 export function SalaDiscoverSearch({ query, type, onSearch, onClear, className }: SalaDiscoverSearchProps) {
   const t = useTranslations("search");
   const tS = useTranslations("discover.sala");
@@ -64,12 +70,34 @@ export function SalaDiscoverSearch({ query, type, onSearch, onClear, className }
     handleKeyDown,
     handleSelectSuggestion,
     handleChange,
-  } = useSearchSuggestions({ defaultValue: query, mode: "inline", onSubmit: onSearch, onClear, type });
+  } = useSearchSuggestions({
+    defaultValue: query,
+    mode: "inline",
+    // Buscar o vaciar cambia la URL; mientras llega la página nueva, Next puede
+    // pintar `loading.tsx` y volver a montar Descubrir entero. Se apunta que el
+    // foco estaba aquí para devolverlo al montar (si no, se iría al <body>).
+    onSubmit: (q) => {
+      refocusAfterNavigation = q !== query;
+      onSearch(q);
+    },
+    onClear: () => {
+      refocusAfterNavigation = query !== "";
+      onClear();
+    },
+    type,
+  });
 
   // La URL manda: al volver al catálogo (o atrás en el historial) el campo la sigue.
   useEffect(() => {
     setInputValue(query);
   }, [query, setInputValue]);
+
+  // Se volvió a montar tras buscar o borrar desde aquí: el foco vuelve al campo.
+  useEffect(() => {
+    if (!refocusAfterNavigation) return;
+    refocusAfterNavigation = false;
+    input.current?.focus();
+  }, [query]);
 
   function clear() {
     handleChange("");

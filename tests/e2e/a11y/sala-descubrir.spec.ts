@@ -111,6 +111,12 @@ test.describe("con «Sala»", () => {
   test("búsqueda: etiqueta a la vista, una sola ×, resultados anunciados y el foco en el campo", async ({ page }) => {
     await mockDiscover(page);
     await openDiscover(page);
+    // La navegación lenta (como en CI) pinta `loading.tsx` y vuelve a montar la
+    // vista: se fuerza siempre, para probar que el foco vuelve al campo.
+    await page.route("**/es/discover?**", async (route) => {
+      if (route.request().headers()["rsc"]) await new Promise((r) => setTimeout(r, 1500));
+      await route.fallback();
+    });
     const search = page.getByRole("search");
     const input = search.getByRole("combobox", { name: es.discover.sala.searchLabel });
     await expect(search.getByText(es.discover.sala.searchLabel, { exact: true })).toBeVisible();
