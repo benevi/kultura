@@ -8,6 +8,6 @@
     { "nombre": "WELCOME_RATE_FIRST", "dueno": "benevi", "desde": "2026-11-17", "produccion": "on", "para": "Fase 8.2: la bienvenida empieza por puntuar (primera obra antes de pedir el nombre)" },
     { "nombre": "LIBRARY_QUICK_EDIT", "dueno": "benevi", "desde": "2026-11-17", "produccion": "on", "para": "Fase 8.2: cambiar estado y nota desde la tarjeta de la Biblioteca, sin entrar en la ficha" },
     { "nombre": "SALA_FICHA", "dueno": "benevi", "desde": "2026-11-21", "produccion": "on", "para": "Fase 8.5 (F1): la ficha con la sala de «Sala» en 2D. 0 = ficha de hoy; prueba = solo con la cookie de /api/sala-prueba?on=1; 1 = para todos. En producción: prueba desde el 24-11-2026 (P-Uso)" },
-    { "nombre": "SALA_BIBLIOTECA", "dueno": "benevi", "desde": "2026-11-24", "produccion": "off", "para": "Fase 8.5 (B1 y B2): la biblioteca en «Sala»: rejilla con progreso, edición rápida en su diálogo, cabecera, contadores que filtran por estado, panel de filtros y orden. 0 = biblioteca de hoy; prueba = solo con la cookie de /api/sala-prueba?on=1 (la misma que SALA_FICHA); 1 = para todos" }
+    { "nombre": "SALA_BIBLIOTECA", "dueno": "benevi", "desde": "2026-11-24", "produccion": "on", "para": "Fase 8.5 (B1 y B2): la biblioteca en «Sala»: rejilla con progreso, edición rápida en su diálogo, cabecera, contadores que filtran por estado, panel de filtros y orden. 0 = biblioteca de hoy; prueba = solo con la cookie de /api/sala-prueba?on=1 (la misma que SALA_FICHA); 1 = para todos. En producción: prueba desde el 24-11-2026 (P-Uso)" }
   ]
 }
