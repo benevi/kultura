@@ -315,6 +315,8 @@ export async function MediaDetail({
   // F5c: en un anime de AniList cruzado con TMDB, el tráiler y «Dónde ver» de
   // TMDB si los de siempre no están (`salaExtras` solo los trae en ese caso).
   const salaTrailerKey = sala ? youtubeTrailerKey(trailerKey ?? salaExtras?.trailerKey) : null;
+  // Juegos: sin YouTube, el tráiler de la tienda de Steam (si lo hay).
+  const steamTrailer = steam?.trailer ? { trailer: steam.trailer, storeUrl: steam.storeUrl } : null;
   const ownProviders = Boolean(providers && providers.length > 0);
   const salaProviders = ownProviders ? providers! : (salaExtras?.providers ?? []);
   const salaWatchLink = ownProviders ? watchLink : salaExtras?.watchLink;
@@ -363,9 +365,14 @@ export async function MediaDetail({
       {/* Sin «También existe como…» con «Sala» (decisión de Víctor, F2c). */}
 
       {/* El tráiler, al final (F3); debajo solo la cita de las fuentes. */}
-      {salaTrailerKey && (
+      {(salaTrailerKey || steamTrailer) && (
         <SalaFichaSection id="sala-ficha-trailer" heading={t("trailer")} data-sala-ficha-trailer="">
-          <SalaTrailer youtubeKey={salaTrailerKey} title={item.title} image={salaTrailerImage} />
+          <SalaTrailer
+            youtubeKey={salaTrailerKey}
+            steam={salaTrailerKey ? null : steamTrailer}
+            title={item.title}
+            image={salaTrailerImage}
+          />
         </SalaFichaSection>
       )}
 
@@ -730,10 +737,14 @@ export async function MediaDetail({
             )}
 
             {/* Tráiler */}
-            {trailerKey && (
+            {(trailerKey || steamTrailer) && (
               <section>
                 <h2 className={sectionTitle}>{t("trailer")}</h2>
-                <TrailerEmbed youtubeKey={trailerKey} title={t("trailerTitle", { title: item.title })} />
+                <TrailerEmbed
+                  youtubeKey={trailerKey}
+                  steam={trailerKey ? undefined : (steamTrailer ?? undefined)}
+                  title={t("trailerTitle", { title: item.title })}
+                />
               </section>
             )}
 

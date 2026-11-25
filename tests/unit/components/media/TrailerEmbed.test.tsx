@@ -50,3 +50,53 @@ describe("TrailerEmbed (fachada)", () => {
     expect(container.innerHTML).toBe("");
   });
 });
+
+describe("TrailerEmbed con el vídeo de Steam", () => {
+  const steam = {
+    trailer: {
+      src: "https://video.akamai.steamstatic.com/store_trailers/1/2/a/3/hls_264_master.m3u8",
+      poster: "https://shared.akamai.steamstatic.com/ss.jpg",
+    },
+    storeUrl: "https://store.steampowered.com/app/1145360/",
+  };
+
+  it("sin pulsar no hay <video>: póster y aviso de Steam", () => {
+    render(<TrailerEmbed steam={steam} title="Tráiler de Hades" />);
+    expect(document.querySelector("video")).toBeNull();
+    const btn = screen.getByRole("button", { name: "trailerPlay" });
+    expect(btn).toHaveAccessibleDescription("steamTrailerNotice");
+    expect(btn.querySelector("img")).toHaveAttribute("src", steam.trailer.poster);
+  });
+
+  it("al pulsar monta <video> con controles, sin autoplay ni precarga, y le pasa el foco", () => {
+    const canPlay = vi.spyOn(HTMLMediaElement.prototype, "canPlayType").mockReturnValue("maybe");
+    const play = vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue(undefined);
+    render(<TrailerEmbed steam={steam} title="Tráiler de Hades" />);
+    fireEvent.click(screen.getByRole("button", { name: "trailerPlay" }));
+    const video = document.querySelector("video")!;
+    expect(video).toHaveAttribute("src", steam.trailer.src);
+    expect(video).toHaveAttribute("controls");
+    expect(video).toHaveAttribute("preload", "none");
+    expect(video).not.toHaveAttribute("autoplay");
+    expect(video).not.toHaveAttribute("muted");
+    expect(video).toHaveAttribute("aria-label", "Tráiler de Hades");
+    expect(document.activeElement).toBe(video);
+    expect(play).toHaveBeenCalledOnce();
+    canPlay.mockRestore();
+    play.mockRestore();
+  });
+
+  it("sin HLS nativo: enlace a la página de Steam", () => {
+    const canPlay = vi.spyOn(HTMLMediaElement.prototype, "canPlayType").mockReturnValue("");
+    render(<TrailerEmbed steam={steam} title="Tráiler de Hades" />);
+    fireEvent.click(screen.getByRole("button", { name: "trailerPlay" }));
+    expect(document.querySelector("video")).toBeNull();
+    expect(screen.getByRole("link", { name: "steamTrailerOpen" })).toHaveAttribute("href", steam.storeUrl);
+    canPlay.mockRestore();
+  });
+
+  it("YouTube gana a Steam si hay clave", () => {
+    render(<TrailerEmbed youtubeKey="dQw4w9WgXcQ" steam={steam} title="t" />);
+    expect(screen.getByRole("button")).toHaveAccessibleDescription("trailerNotice");
+  });
+});

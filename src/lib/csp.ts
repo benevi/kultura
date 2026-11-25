@@ -123,7 +123,7 @@ function directives(scriptSrc: string, connectSrc: string, isDev: boolean, repor
     "img-src 'self' data: blob: https:",
     connectSrc,
     "font-src 'self' data:",
-    "media-src 'self'",
+    "media-src 'self' https://video.akamai.steamstatic.com",
     "object-src 'none'",
     "base-uri 'self'",
     // SEG-10: nadie de fuera puede enmarcar la app (equivale a X-Frame-Options

@@ -6,7 +6,8 @@
  * No hace una petición HTTP real; valida la configuración/función directamente.
  */
 import { describe, it, expect, beforeAll } from "vitest";
-import { buildCsp } from "@/lib/csp";
+import { buildCsp, buildStaticCsp } from "@/lib/csp";
+import { STEAM_VIDEO_HOST } from "@/lib/api/steam";
 
 const REQUIRED_CSP_DIRECTIVES = [
   "default-src",
@@ -63,6 +64,14 @@ describe("src/lib/csp.ts — buildCsp() (C7: nonce por request)", () => {
   it("frame-src incluye youtube (nocookie o normal)", () => {
     const csp = buildCsp({ nonce: NONCE, isDev: false });
     expect(csp).toMatch(/frame-src.*youtube/);
+  });
+
+  it("media-src solo añade el host exacto de los vídeos de Steam", () => {
+    for (const csp of [buildCsp({ nonce: NONCE, isDev: false }), buildStaticCsp({ isDev: false })]) {
+      const media = csp.split(";").find((d) => d.trim().startsWith("media-src"))?.trim();
+      expect(media).toBe("media-src 'self' https://video.akamai.steamstatic.com");
+    }
+    expect(STEAM_VIDEO_HOST).toBe("video.akamai.steamstatic.com");
   });
 
   it("object-src está restringido a 'none'", () => {

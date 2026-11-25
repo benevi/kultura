@@ -42,7 +42,7 @@ function cspDirectives(scriptSrc, connectSrc, isDev, reportOnly = false) {
     "img-src 'self' data: blob: https:",
     connectSrc,
     "font-src 'self' data:",
-    "media-src 'self'",
+    "media-src 'self' https://video.akamai.steamstatic.com",
     "object-src 'none'",
     "base-uri 'self'",
     "frame-ancestors 'self'",

@@ -404,6 +404,26 @@ describe("MediaDetail con sala=true (F2a)", () => {
     expect(region.innerHTML).not.toMatch(/rounded|shadow/);
   });
 
+  it("Steam: un juego sin YouTube pinta el tráiler de la tienda; sin `trailer`, ninguna sección", async () => {
+    const { fireEvent } = await import("@testing-library/react");
+    const steamBase = { appId: 1145360, storeUrl: "https://store.steampowered.com/app/1145360", isFree: false };
+    const src = "https://video.akamai.steamstatic.com/store_trailers/1/2/a/3/hls_264_master.m3u8";
+    const { unmount } = render(await sala(movie, { steam: steamBase }));
+    expect(screen.queryByRole("region", { name: "trailer" })).toBeNull();
+    unmount();
+    render(await sala(movie, { steam: { ...steamBase, trailer: { src } } }));
+    const region = screen.getByRole("region", { name: "trailer" });
+    expect(region.querySelector("video")).toBeNull();
+    const button = within(region).getByRole("button", { name: /salaTrailerPlay/ });
+    expect(button).toHaveAccessibleDescription("steamTrailerNotice");
+    const canPlay = vi.spyOn(HTMLMediaElement.prototype, "canPlayType").mockReturnValue("maybe");
+    const play = vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue(undefined);
+    fireEvent.click(button);
+    expect(region.querySelector("video")).toHaveAttribute("src", src);
+    canPlay.mockRestore();
+    play.mockRestore();
+  });
+
   it("F3: al pulsar, youtube-nocookie en reproducción, con título, y el foco en el reproductor", async () => {
     const { fireEvent } = await import("@testing-library/react");
     render(await sala(movie, { trailerKey: ` ${YT}\t` }));
