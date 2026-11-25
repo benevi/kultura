@@ -1,10 +1,19 @@
+import { salaInicioEnabled } from '@/lib/flags/sala'
+import { SalaHomeSkeletonLazy } from '@/components/home/sala/SalaHomeLazy'
+
 /**
  * Esqueleto de Inicio con la forma real (DIS-13): el héroe «Continuando» con
  * su radio de héroe, su sombra dura y el bloque de imagen a la izquierda en
  * escritorio, y las filas de pósteres con el mismo ancho, hueco y título
  * debajo que `MediaRow`. Al llegar los datos, nada cambia de sitio.
  */
-export default function HomeLoading() {
+export default async function HomeLoading() {
+  // Fase 8.5 I2b: con `SALA_INICIO`, el esqueleto de «Sala» (por
+  // `next/dynamic`: con la bandera apagada no trae sus hojas). La bandera
+  // solo lee la cookie en `prueba`, y `/home` ya es dinámica (lee la sesión),
+  // así que esto no vuelve dinámica ninguna página que no lo fuera.
+  if (await salaInicioEnabled()) return <SalaHomeSkeletonLazy />
+
   return (
     <main className="page-grid [&>*]:max-w-4xl py-6 md:py-8 space-y-8 md:space-y-10">
       <div className="motion-safe:animate-pulse flex flex-col md:flex-row overflow-hidden rounded-bento-xl bg-surface-elevated shadow-hard-sm md:shadow-hard">

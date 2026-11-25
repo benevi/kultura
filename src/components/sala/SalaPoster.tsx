@@ -106,6 +106,12 @@ export interface SalaPosterProps extends Omit<React.HTMLAttributes<HTMLDivElemen
   naturalSize?: PixelSize;
   /** La imagen no ha cargado (404, proveedor caído). El sustituto ya está puesto. Solo desde un componente de cliente. */
   onLoadError?: () => void;
+  /**
+   * Ya cargada, el color de la imagen tiñe el contenedor `sala-work` más
+   * cercano (el hero de Inicio). Se pide con CORS donde el origen lo deja.
+   * No vale con `capUpscale`.
+   */
+  readPalette?: boolean;
 }
 
 export const SalaPoster = React.forwardRef<HTMLDivElement, SalaPosterProps>(function SalaPoster(
@@ -126,6 +132,7 @@ export const SalaPoster = React.forwardRef<HTMLDivElement, SalaPosterProps>(func
     capUpscale = false,
     naturalSize,
     onLoadError,
+    readPalette = false,
     className,
     style,
     ...props
@@ -184,7 +191,7 @@ export const SalaPoster = React.forwardRef<HTMLDivElement, SalaPosterProps>(func
       {origen === null ? null : capUpscale ? (
         <SalaPosterCappedImage src={origen} naturalSize={naturalSize} {...imagen} />
       ) : (
-        <SalaPosterImage src={origen} {...imagen} />
+        <SalaPosterImage src={origen} readPalette={readPalette} {...imagen} />
       )}
     </div>
   );
