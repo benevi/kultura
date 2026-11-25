@@ -236,6 +236,14 @@ describe('SalaHomeHero', () => {
     expect(section.querySelector('img')).toBeNull()
   })
 
+  it('el título de la obra es el rótulo (SalaTitleText), con su tope por debajo del h1', () => {
+    render(<SalaHomeHero item={HERO} />)
+    const rotulo = screen.getByRole('heading', { level: 2 }).querySelector('[data-sala-title-text]') as HTMLElement
+    expect(rotulo).toHaveTextContent('Slime')
+    expect(rotulo).toHaveClass('sala-type-title')
+    expect(rotulo).toHaveClass('[--sala-title-cap:clamp(1.375rem,2.6vw,2.25rem)]', '[--sala-title-floor:1.375rem]')
+  })
+
   it('sin nada en curso no sale; una película no lleva «+1»', () => {
     const { container, rerender } = render(<SalaHomeHero item={null} />)
     expect(container).toBeEmptyDOMElement()

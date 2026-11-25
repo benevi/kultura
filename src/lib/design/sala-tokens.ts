@@ -153,7 +153,8 @@ const TYPE_ROLES = {
     font: 'display',
     weight: 800,
     stretch: '88%',
-    size: 'clamp(1.625rem, 3vw, 2.5rem)',
+    // Mínimo 30 px en el móvil (decisión de Víctor del 25-11-2026; antes, 26).
+    size: 'clamp(1.875rem, 3vw, 2.5rem)',
     lineHeight: '1',
     letterSpacing: '-0.02em',
     use: 'Título de sección',
