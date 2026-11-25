@@ -241,8 +241,7 @@ describe('SalaHomeHero', () => {
     const rotulo = screen.getByRole('heading', { level: 2 }).querySelector('[data-sala-title-text]') as HTMLElement
     expect(rotulo).toHaveTextContent('Slime')
     expect(rotulo).toHaveClass('sala-type-title')
-    expect(rotulo.style.getPropertyValue('--sala-title-cap')).toBe('clamp(1.375rem, 2.6vw, 2.25rem)')
-    expect(rotulo.style.getPropertyValue('--sala-title-floor')).toBe('1.375rem')
+    expect(rotulo).toHaveClass('[--sala-title-cap:clamp(1.375rem,2.6vw,2.25rem)]', '[--sala-title-floor:1.375rem]')
   })
 
   it('sin nada en curso no sale; una película no lleva «+1»', () => {

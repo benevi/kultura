@@ -28,14 +28,13 @@
 //   (`heading`, 30–40 px): a cualquier ancho queda por debajo.
 // ============================================================
 
-import { useId, type CSSProperties } from 'react'
+import { useId } from 'react'
 import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 import { SalaPoster } from '@/components/sala/SalaPoster'
 import { SalaButton } from '@/components/sala/SalaButton'
 import { SalaTitleText } from '@/components/sala/SalaTitle'
 import { SalaScriptFonts } from '@/components/sala/SalaScriptFonts'
-import { SALA_TITLE_CSS } from '@/lib/design/sala-title-css'
 import { salaScripts } from '@/lib/design/sala-title'
 import { progressKindFor } from '@/lib/library/progress'
 import { SALA_WORK_CLASS } from '@/lib/design/sala-palette'
@@ -44,13 +43,12 @@ import type { HeroItem } from '@/components/home/HeroSection'
 import { SalaHomeProgress } from './SalaHomeProgress'
 
 /**
- * Suelo y tope del rótulo: no baja del papel `data` (22 px) y no llega al
- * `h1` (`heading`: `clamp(1.875rem, 3vw, 2.5rem)`): 2,6vw < 3vw y 36 px < 40 px.
+ * Suelo y tope del rótulo (`--sala-title-floor` y `--sala-title-cap`, las
+ * variables de `SALA_TITLE_CSS`), en clases: no baja del papel `data` (22 px)
+ * y no llega al `h1` (`heading`: `clamp(1.875rem, 3vw, 2.5rem)`): 2,6vw < 3vw
+ * y 36 px < 40 px.
  */
-const HERO_ROTULO = {
-  [SALA_TITLE_CSS.vars.floor]: '1.375rem',
-  [SALA_TITLE_CSS.vars.cap]: 'clamp(1.375rem, 2.6vw, 2.25rem)',
-} as CSSProperties
+const HERO_ROTULO = '[--sala-title-floor:1.375rem] [--sala-title-cap:clamp(1.375rem,2.6vw,2.25rem)]'
 
 export function SalaHomeHero({ item }: { item: HeroItem | null }) {
   const t = useTranslations('home')
@@ -91,7 +89,7 @@ export function SalaHomeHero({ item }: { item: HeroItem | null }) {
           {/* El nombre, con el título tal cual: los saltos del rótulo (`<br>`) meten un espacio en el
               nombre accesible de los títulos sin espacios (japonés, coreano). El rótulo se ve y no se lee. */}
           <span className="sr-only">{media.title}</span>
-          <SalaTitleText title={media.title} aria-hidden="true" className="block hyphens-auto" style={HERO_ROTULO} />
+          <SalaTitleText title={media.title} aria-hidden="true" className={cn('block hyphens-auto', HERO_ROTULO)} />
         </h2>
         {escrituras.length > 0 ? <SalaScriptFonts scripts={escrituras} /> : null}
         <p className="sala-type-small">
