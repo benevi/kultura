@@ -15,6 +15,16 @@ import { resolveApiLocale, type ApiLocale } from "@/lib/api/locale";
  */
 export const CATALOG_EDGE_CACHE = "public, s-maxage=3600, stale-while-revalidate=86400";
 
+/**
+ * Descubrir (cupo de Fluid Active CPU de Vercel Hobby): cada fallo de caché
+ * agrega varios proveedores y normaliza su JSON, y cada combinación de tipo,
+ * filtros, página e idioma es una entrada aparte. El catálogo de Descubrir
+ * (estrenos, populares, por género) cambia en horas, no en minutos: 6 h fresca
+ * y hasta 7 días sirviendo la anterior mientras se renueva en segundo plano.
+ * La búsqueda sigue con `CATALOG_EDGE_CACHE`.
+ */
+export const DISCOVER_EDGE_CACHE = "public, s-maxage=21600, stale-while-revalidate=604800";
+
 /** Errores y límites nunca se cachean: un fallo no se congela una hora. */
 export const NO_STORE = "no-store";
 

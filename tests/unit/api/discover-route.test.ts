@@ -329,7 +329,7 @@ describe("GET /api/discover", () => {
   it("respuesta buena → Cache-Control cacheable en el CDN", async () => {
     const res = await GET(req("?type=movie&page=1&locale=es"));
     expect(res.headers.get("Cache-Control")).toBe(
-      "public, s-maxage=3600, stale-while-revalidate=86400"
+      "public, s-maxage=21600, stale-while-revalidate=604800"
     );
   });
 
@@ -343,13 +343,13 @@ describe("GET /api/discover", () => {
     });
     const res = await GET(req("?type=all&page=1&locale=es"));
     expect(res.headers.get("Cache-Control")).toBe(
-      "public, s-maxage=3600, stale-while-revalidate=86400"
+      "public, s-maxage=21600, stale-while-revalidate=604800"
     );
     expect(fetchAggregateResult).toHaveBeenCalledWith(1, expect.any(Object), "es", null);
     expect(fetchDiscoverData).not.toHaveBeenCalled();
     const search = await GET(req("?type=all&q=batman&locale=es"));
     expect(search.headers.get("Cache-Control")).toBe(
-      "public, s-maxage=3600, stale-while-revalidate=86400"
+      "public, s-maxage=21600, stale-while-revalidate=604800"
     );
     expect(fetchAggregateResult).toHaveBeenLastCalledWith(1, expect.any(Object), "es", "batman");
   });
