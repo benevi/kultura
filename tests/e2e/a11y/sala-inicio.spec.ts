@@ -338,15 +338,24 @@ test.describe("con «Sala» (I2b-1)", () => {
   /** Una portada de dos colores vivos (como imagen; el navegador la pinta en el lienzo). */
   const COLOR = `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="60"><rect width="40" height="60" fill="#1f7a3a"/><rect y="40" width="40" height="20" fill="#e8c21a"/></svg>`;
 
+  /**
+   * La portada de color. `cors: false` hace de CDN que falla al pedirla con
+   * CORS (lo que pasa con AniList detrás de su caché): Playwright añade la
+   * cabecera de CORS a lo que sirve, así que el fallo se simula cortando la
+   * petición con CORS.
+   */
   async function servePoster(page: Page, cors: boolean) {
-    await page.route(PORTADA, (route) =>
-      route.fulfill({
+    await page.route(PORTADA, async (route) => {
+      // Pedida con CORS, el navegador manda `Origin`; sin él, no.
+      const headers = await route.request().allHeaders();
+      if (!cors && ("origin" in headers || headers["sec-fetch-mode"] === "cors")) return route.abort();
+      return route.fulfill({
         status: 200,
         contentType: "image/svg+xml",
-        headers: cors ? { "Access-Control-Allow-Origin": "*" } : {},
+        headers: { "Access-Control-Allow-Origin": "*" },
         body: COLOR,
-      })
-    );
+      });
+    });
   }
 
   const heroColors = (page: Page) =>
@@ -378,7 +387,7 @@ test.describe("con «Sala» (I2b-1)", () => {
     });
   }
 
-  test("si la portada no deja leer su color (sin CORS): se ve igual, con los neutros", async ({ page }) => {
+  test("si la portada falla pedida con CORS: se pide sin él y se ve igual, con los neutros", async ({ page }) => {
     await mockHome(page);
     await servePoster(page, false);
     await openHome(page);
