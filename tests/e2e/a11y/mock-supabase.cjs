@@ -47,11 +47,17 @@ function parseEmbed(item) {
 const singular = (t) => (t.endsWith("s") ? t.slice(0, -1) : t);
 
 function embed(row, parentTable, spec) {
+  // `alias:columna_id(...)` (PostgREST embebe por la clave ajena): la tabla sale
+  // de la columna (`user_id` → `users`, `media_id` → `media`).
+  if (!tables[spec.table] && spec.table.endsWith("_id")) {
+    const base = spec.table.slice(0, -3);
+    spec = { ...spec, hint: spec.table, table: tables[`${base}s`] ? `${base}s` : base };
+  }
   const related = tables[spec.table] ?? [];
   const cols = Object.keys(row);
   // Muchos a uno: una columna del padre apunta al id del embebido.
   let fkCol =
-    (spec.hint && cols.find((c) => spec.hint === c || spec.hint.includes(c))) ||
+    (spec.hint && (cols.find((c) => spec.hint === c) || cols.find((c) => spec.hint.includes(c)))) ||
     cols.find((c) => c === `${singular(spec.table)}_id`);
   if (fkCol && row[fkCol] !== undefined && fkCol.endsWith("_id")) {
     const target = related.find((r) => r.id === row[fkCol]);

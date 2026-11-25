@@ -75,6 +75,9 @@ vi.mock('@/components/home/sala/SalaHomeLazy', () => {
     SalaHomeContinueLazy: lazy('continue'),
     SalaHomeCircleLazy: lazy('circle'),
     SalaHomeNewsLazy: lazy('news'),
+    SalaHomeForYouLazy: lazy('foryou'),
+    SalaHomeTonightSkeletonLazy: lazy('tonightSkeleton'),
+    SalaHomeActivitySkeletonLazy: lazy('activitySkeleton'),
   }
 })
 
@@ -173,7 +176,7 @@ describe('Inicio con «Sala» (SALA_INICIO=1)', () => {
       'hero',
       'continue',
       'TonightOnMyPlatforms',
-      'AiRecommendations',
+      'foryou',
       'FriendsActivity',
       'circle',
       'news',
@@ -189,6 +192,11 @@ describe('Inicio con «Sala» (SALA_INICIO=1)', () => {
     expect(html).not.toContain('data-stub="ContinueRow"')
     expect(html).not.toContain('data-stub="PopularInCircle"')
     expect(html).not.toContain('data-stub="GenreNews"')
+    // I2b-2: «Esta noche» y la actividad, con los mismos datos y en «Sala»;
+    // «Para ti», en «Sala» con las recomendaciones de hoy (sin pedir nada).
+    expect(html).not.toContain('data-stub="AiRecommendations"')
+    expect(html).toContain('data-props="{&quot;userId&quot;:&quot;user-1&quot;,&quot;locale&quot;:&quot;es&quot;,&quot;sala&quot;:true}"')
+    expect(state.sala?.foryou).toEqual({ initial: null })
     // El hero recibe la misma fila que hoy `HeroSection`, con su progreso.
     expect(state.sala?.hero).toEqual({
       item: expect.objectContaining({

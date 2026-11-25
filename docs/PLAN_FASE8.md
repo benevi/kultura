@@ -277,7 +277,7 @@ Plan de PRs: [`fase8/8-5-pantallas.md`](fase8/8-5-pantallas.md).
 | Ficha | F1 #270 · F2 #273–#278 · F3 #279 · F4 #281–#283 · F5 #284–#286 · F6 (preparación) #287–#290 | `SALA_FICHA` | `prueba` |
 | Biblioteca | B1 #291 · B2 #292 | `SALA_BIBLIOTECA` | `prueba` |
 | Descubrir | D1 #299 · D2 #300 · nombres de plataforma #301 | `SALA_DESCUBRIR` | `prueba` |
-| Inicio | I1 #303 · I2a #306 · I2b-1 #311 | `SALA_INICIO` | apagada |
+| Inicio | I1 #303 · I2a #306 · I2b-1 #311 · I2b-2 #312 | `SALA_INICIO` | apagada |
 
 Ninguna pantalla ha pasado todavía P-Uso ni está al 100 %.
 

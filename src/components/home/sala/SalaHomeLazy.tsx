@@ -14,5 +14,12 @@ export const SalaHomeHeroLazy = dynamic(() => import('./SalaHome').then((m) => m
 export const SalaHomeContinueLazy = dynamic(() => import('./SalaHome').then((m) => m.SalaHomeContinue))
 export const SalaHomeCircleLazy = dynamic(() => import('./SalaHome').then((m) => m.SalaHomeCircle))
 export const SalaHomeNewsLazy = dynamic(() => import('./SalaHome').then((m) => m.SalaHomeNews))
+// I2b-2: «Esta noche», «Para ti» y la actividad de amigos, cada una en su módulo.
+export const SalaHomeTonightLazy = dynamic(() => import('./SalaHomeTonight').then((m) => m.SalaHomeTonight))
+export const SalaHomeTonightSetupLazy = dynamic(() => import('./SalaHomeTonight').then((m) => m.SalaHomeTonightSetup))
+export const SalaHomeTonightSkeletonLazy = dynamic(() => import('./SalaHomeTonight').then((m) => m.SalaHomeTonightSkeleton))
+export const SalaHomeForYouLazy = dynamic(() => import('./SalaHomeForYou').then((m) => m.SalaHomeForYou))
+export const SalaHomeActivityLazy = dynamic(() => import('./SalaHomeActivity').then((m) => m.SalaHomeActivity))
+export const SalaHomeActivitySkeletonLazy = dynamic(() => import('./SalaHomeActivity').then((m) => m.SalaHomeActivitySkeleton))
 export const SalaHomeDeletionLazy = dynamic(() => import('./SalaHome').then((m) => m.SalaHomeDeletion))
 export const SalaHomeSkeletonLazy = dynamic(() => import('./SalaHomeSkeleton').then((m) => m.SalaHomeSkeleton))
