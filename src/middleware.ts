@@ -188,11 +188,23 @@ export async function middleware(request: NextRequest) {
   return intlResponse;
 }
 
+/**
+ * API que no necesitan nada del middleware: no leen sesión (ni la refrescan),
+ * no escriben (la demo no tiene nada que cortar) y no pintan HTML (sin nonce
+ * ni idioma). El middleware de Vercel cuenta en el cupo de Fluid Active CPU y
+ * corre ANTES de la caché de la CDN: `/api/discover` pagaba el middleware
+ * aunque su respuesta saliera de la caché. `csp-report` ya salía al principio
+ * del middleware.
+ *
+ * La lista va escrita a mano en las dos últimas entradas del `matcher` (Next lo
+ * lee al compilar y solo admite literales, no variables): si se cambia, en las
+ * dos. `tests/unit/plataforma/matcher.test.ts` lo comprueba.
+ */
 export const config = {
   matcher: [
     "/",
     "/(es|en)/:path*",
-    "/api/:path*",
-    "/((?!_next|_vercel|dev(?:/.*)?|.*\\..*).*)",
+    "/api/((?!(?:health|csp-report|discover|landing/sources|cron/daily)(?:/|$)).*)",
+    "/((?!_next|_vercel|dev(?:/.*)?|api/(?:health|csp-report|discover|landing/sources|cron/daily)(?:/|$)|.*\\..*).*)",
   ],
 };
