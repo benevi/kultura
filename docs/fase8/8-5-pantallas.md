@@ -8,7 +8,7 @@
 - El respaldo sin portada de «Sala» es el campo de color con el título (franja con la paleta de la obra o neutros): sustituye a **los dos** degradados (`posterGradient` de tarjetas y `posterGradientFeature` de la ficha).
 
 ## Orden
-1. Ficha (`/media/[type]/[id]`, pública) → 2. Biblioteca → 3. Descubrir (con búsqueda) → 4. Inicio (con el hero mensual, #245) → 5. Perfil y páginas públicas → 6. Listas → resto (ajustes, amigos, grupos, chat, calendario, avisos) → landing, login y bienvenida al final.
+1. Ficha (`/media/[type]/[id]`, pública) → 2. Biblioteca → 3. Descubrir (con búsqueda) → 4. Inicio → 5. Perfil y páginas públicas → 6. Listas → resto (ajustes, amigos, grupos, chat, calendario, avisos) → landing, login y bienvenida al final.
 
 ## Banderas
 Una por pantalla, leída en el servidor como `QUICK_ADD`: `SALA_FICHA`, `SALA_BIBLIOTECA`, `SALA_DESCUBRIR`… y `SALA_FICHA_3D` aparte. Valores `0` / `prueba` / `1`: con `prueba` solo la ve quien tiene la cookie de prueba (enlace que se da a los 3 usuarios de P-Uso). Caducan a 60 días: al pasar P-Uso se enciende y se quita el camino viejo.
@@ -29,7 +29,7 @@ B1 rejilla con SalaWorkList/SalaWorkCard + edición rápida en SalaDialog · B2 
 D1 buscador, tipos (botones con aria-pressed desde `sm`; en el móvil, un `<select>` nativo como los de B2), «Sorpréndeme», rejilla con SalaWorkList/SalaWorkCard y paginación (arregla de paso: imagen rota —las obras sin portada ya no se esconden—, × repetidas, error no anunciado —con «Reintentar»—, aria-pressed) · D2 filtros en un panel como B2 (botones con aria-pressed para los de varias opciones, `<select>` para los de una y para el orden, URL con `pushState`) y foco en la lista al cambiar de página · tráiler al pasar: aparte, necesita preferencia o cambio en `/privacy` · P-Uso.
 
 ## Inicio
-Bandera `SALA_INICIO`. I1 `h1` (no había), «Continúa donde lo dejaste» y las filas de «Popular entre tus amigos» y novedades con SalaWorkList/SalaWorkCard, mismos datos que hoy (arregla de paso: sin `h1`, filas sin nombre, obras sin portada escondidas, barra de la fila oculta —sin rueda horizontal no se llegaba al final— y anillo de foco cortado por la fila) · I2 el hero «Continuando» en «Sala», el «+1» con SalaButton y el aviso de terminar en SalaDialog, «Esta noche» con «Sorpréndeme», «Para ti», la actividad de amigos, el aviso de borrado, el esqueleto de `loading.tsx` y qué hacer si una fila falla · P-Uso. El hero mensual de la landing pública (#269) es otra cosa y no entra aquí.
+Bandera `SALA_INICIO`. I1 `h1` (no había), «Continúa donde lo dejaste» y las filas de «Popular entre tus amigos» y novedades con SalaWorkList/SalaWorkCard, mismos datos que hoy (arregla de paso: sin `h1`, filas sin nombre, obras sin portada escondidas, barra de la fila oculta —sin rueda horizontal no se llegaba al final— y anillo de foco cortado por la fila) · I2 el hero «Continuando» en «Sala», el «+1» con SalaButton y el aviso de terminar en SalaDialog, «Esta noche» con «Sorpréndeme», «Para ti», la actividad de amigos, el aviso de borrado, el esqueleto de `loading.tsx` y qué hacer si una fila falla · P-Uso. El hero mensual de la landing pública (#269, #245) es otra cosa y no entra aquí: espera al texto de `/privacy` (#271) y su hueco está por decidir (ver `PLAN_FASE8.md` §12).
 
 ## Decisiones (Víctor, 21-11-2026)
 1. `KButton sm` 32→44: **no se toca**; cada pantalla migrada pasa a `SalaButton` (48 px) y `KButton` muere con la migración. 32 px ya cumple WCAG 2.2 AA (2.5.8 pide 24).
