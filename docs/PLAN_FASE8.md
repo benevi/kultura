@@ -41,6 +41,12 @@ Leyenda: **[P]** pendiente del «sí» de Víctor · **[E]** estimación orienta
 | 2026-11-18 | **Se levanta el bloqueo de §9** sobre copia propia de portadas, KTX2 y mapas de profundidad («levanta §9»). Riesgo asumido. Llevarlo a producción sigue pidiendo su texto en `/privacy` y las reglas de migraciones y de coste | Víctor |
 | 2026-11-20 | **El hero muestra lo nuevo de cada mes:** las imágenes de la portada de la app no son siempre las mismas; cada mes pasan a los estrenos o novedades de ese mes (cine, series, juegos, libros…), sin intervención manual. Se adelanta a la 8.5: reanuda `landing-media.yml` con cron mensual y criterio «novedades del mes» (#269), que no se fusiona hasta que `/privacy` declare las copias. Relacionado: la tarea `landing-media.yml`, pausada el 16-11 (#175) | Víctor |
 | 2026-11-21 | **Plan de la 8.5 aprobado** ([`fase8/8-5-pantallas.md`](fase8/8-5-pantallas.md)): ficha → biblioteca → Descubrir (con búsqueda) → inicio → perfil → listas → resto; una bandera por pantalla con modo `prueba` para P-Uso; `KButton sm` no sube a 44 px y los dos degradados no se unifican: se retiran al pasar cada pantalla a «Sala» | Víctor |
+| 2026-11-23 | **Ficha en «Sala» (F2–F4):** «Cancelar» va primero en todos los diálogos; «Denunciar» es un diálogo; el foco pasa a la primera lista. Tráiler a 2/3 de ancho, antes de «Dónde ver», con reproducción automática al pulsar y la imagen de la obra de fondo (nada de YouTube antes del clic). OVA y ONA siguen como «Anime»; las películas de TMDB siguen como «Película». El título original solo muestra el idioma si ya va bajo el rótulo. El nombre de la plataforma con modalidad espera a F6 | Víctor |
+| 2026-11-24 | **Ficha (F5):** pie «Imagen, tráiler y disponibilidad: TMDB» o «Imagen: TMDB»; cruce AniList → TMDB por Wikidata con caché de Next (30 y 7 días); textos de `/privacy` y `/terms` aprobados | Víctor |
+| 2026-11-24 | **P-Uso:** criterio de `f6-p-uso` aprobado; los probadores usan su cuenta real. `SALA_FICHA`, `SALA_BIBLIOTECA` y `SALA_DESCUBRIR` en `prueba` en producción (solo con la cookie de `/api/sala-prueba?on=1`) | Víctor |
+| 2026-11-24 | **Biblioteca (B1, B2) y Descubrir (D1, D2):** con «Sala», la edición rápida sale siempre; los contadores filtran por estado; panel «Filtros» cerrado al entrar; nota mínima en desplegable y «Solo favoritos» como interruptor; obras sin portada con respaldo (no se esconden); rejilla uniforme; barra de Descubrir no fija; tipos en desplegable en el móvil; al cambiar de página, el foco pasa a la lista; nombres oficiales de plataforma | Víctor |
+| 2026-11-25 | **Vercel pausa el proyecto** por agotar dos límites del plan Hobby: CPU de funciones (4 h) y transformaciones de imagen (5.000). **Se espera a la reanudación (hacia el 24-12-2026), sin pasar a Pro.** Mientras tanto se recorta el consumo. La fase sigue: se fusiona en `master` y sale a producción al reanudarse | Víctor |
+| 2026-11-25 | **Fondos de TMDB de la ficha:** dejan de servirse a tamaño original por el optimizador de Vercel. Pasan a cargarse directamente de TMDB, con el tamaño según la pantalla y sin cambiar el diseño | Víctor |
 
 ### Riesgos que Víctor asume (escritos para que consten)
 
@@ -82,7 +88,7 @@ Detalle en [`legal/terminos/README.md`](legal/terminos/README.md).
 | **8.2 Crecer** | **Hecha (17-11-2026):** #221–#226. Ver §6. Falta encender tres banderas en Vercel | Línea base medida; acciones rápidas fusionadas | — |
 | **8.3 Dirección visual y prototipo 3D** | **Hecha (18-11-2026).** Ver §7 | **P-Gusto** y **P-3D** pasadas: dirección «Sala» firmada y 3D dentro del plan | — |
 | **8.4 Sistema y deuda de interfaz** | **Hecha (21-11-2026):** #233–#266. Ver §11 | Componentes con estados y sin fallos graves de accesibilidad | — |
-| **8.5 Pantallas** | Rediseño pantalla a pantalla, empezando por las más usadas (ficha, biblioteca, buscar). Cada una detrás de una bandera; **P-Uso** antes del 100 %. El 3D de la ficha entra aquí si pasó P-3D. El hero se renueva cada mes con lo nuevo (§1, 20-11-2026) | Todas las pantallas con el diseño nuevo | 5–9 |
+| **8.5 Pantallas** | **En curso.** Ver §12. Rediseño pantalla a pantalla, cada una detrás de una bandera; **P-Uso** antes del 100 %. El 3D de la ficha entra aquí (P-3D pasada). El hero se renueva cada mes con lo nuevo (§1, 20-11-2026) | Todas las pantallas con el diseño nuevo | 5–9 |
 | **8.6 Observación** | **P-Números**; se retiran las banderas | Informe de una página | 0,5 |
 
 **Laboratorio (sin compromiso ni orden):** salas por formato, vuelo entre pantallas, sonido, Wrapped, perfil en 3D. Solo se sacan de aquí si el 3D de la ficha funciona y Víctor lo pide.
@@ -259,3 +265,56 @@ Recogidas enseñándole una lista de webs y apps; son sus palabras, resumidas.
 - «Buscar amigo» no tiene etiqueta accesible.
 - En Descubrir: dos botones × con el mismo nombre, un error de carga que no se anuncia y el botón de pausa cambia `aria-pressed` y `aria-label` a la vez.
 - El simulado de Supabase del arnés de accesibilidad no cubre los embebidos por columna ni `discover_groups`.
+
+## 12. Fase 8.5 · Estado y desviaciones (25-11-2026)
+
+Plan de PRs: [`fase8/8-5-pantallas.md`](fase8/8-5-pantallas.md).
+
+### Hecho (en `master`)
+
+| Pantalla | PRs | Bandera | Producción |
+|---|---|---|---|
+| Ficha | F1 #270 · F2 #273–#278 · F3 #279 · F4 #281–#283 · F5 #284–#286 · F6 (preparación) #287–#290 | `SALA_FICHA` | `prueba` |
+| Biblioteca | B1 #291 · B2 #292 | `SALA_BIBLIOTECA` | `prueba` |
+| Descubrir | D1 #299 · D2 #300 · nombres de plataforma #301 | `SALA_DESCUBRIR` | `prueba` |
+| Inicio | I1 #303 | `SALA_INICIO` | apagada |
+
+Ninguna pantalla ha pasado todavía P-Uso ni está al 100 %.
+
+### Desviaciones respecto al plan
+
+1. **Coste.** No se ha pagado nada, pero se agotaron los límites gratuitos de Vercel y la web está caída hasta la reanudación (§1, 25-11-2026). El plan solo vigilaba el presupuesto de Lighthouse, no el consumo de CPU ni de imágenes.
+   - Se está analizando qué consume y se recorta en PRs pequeños.
+   - MangaDex, ComicVine y Steam siguen por el optimizador (§1, 17-11-2026).
+2. **En anchura, sin cerrar pantallas.** Hay cuatro pantallas en «Sala» y ninguna al 100 %. Con la caída, el margen hasta las caducidades se estrecha (ver calendario).
+3. **P-Números (8.2) se aplaza.** Medir el 15-12-2026 con la web caída daría una bajada que no se debe al diseño. Se mide 4 semanas después de la reanudación.
+4. **El 3D de la ficha** (3D-1 a 3D-4) no ha empezado.
+5. **El hero mensual** (#269) depende del texto de `/privacy` (#271), que tiene conflictos desde el 21-11. Falta decidir en qué hueco de la 8.5 entra.
+6. **El saneamiento** cerró la fase 12, pero la 10 (monitorización) sigue a medias: métricas base y errores de Sentry por semana.
+
+### Calendario
+
+| Fecha | Qué |
+|---|---|
+| ~24-12-2026 | Vercel reanuda. Se comprueba la producción y el consumo |
+| 24-12 → 16-01-2027 | P-Uso de ficha, biblioteca y Descubrir (3 probadores, enlace de prueba, `f6-p-uso`) |
+| antes del 16-01-2027 | Quitar las banderas `QUICK_ADD`, `WELCOME_RATE_FIRST` y `LIBRARY_QUICK_EDIT` (caducan): queda un solo camino |
+| antes del 20-01-2027 | `SALA_FICHA` al 100 % y retirada de la ficha vieja y de `SalaButtonLazy`, o prórroga justificada en `banderas.json` |
+| antes del 23-01-2027 | Lo mismo con `SALA_BIBLIOTECA` y `SALA_DESCUBRIR` |
+| ~21-01-2027 | P-Números: 4 semanas después de la reanudación |
+
+### Sin programar
+
+- **Ficha:**
+  - Da 404 cuando el proveedor tarda (§7).
+- **Biblioteca:**
+  - Orden «Actualizados hace menos» (toca servidor).
+  - Gráficas de seguimiento (opcional).
+- **Descubrir:**
+  - Tráiler al pasar el ratón: necesita una preferencia o un cambio en `/privacy`.
+- **Amigos:**
+  - «Buscar amigo» sin etiqueta accesible (§11).
+- **Supabase:**
+  - Comprobar que la confirmación de correo sigue apagada en producción (§6).
+- **Pruebas:**
+  - Lector de pantalla real, Safari y Firefox (§7).

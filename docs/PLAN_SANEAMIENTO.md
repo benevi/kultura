@@ -275,7 +275,7 @@ Los `loading.tsx` y el componente de error con reintento pasan a la fase 8 (Q32)
    - **Sentry:** Settings → Stats & Usage, categoría Errors, 7 días. El 0 de la semana hasta el 17-11 no vale: el DSN y la clave son correctos, pero en Vercel la función se congelaba antes de enviar los eventos del servidor (el SDK solo espera en Edge). Arreglado en #208: el logger y los avisos de proveedor vacían la cola dentro de `waitUntil`.
    - **Ruido en el log:** «revalidating cache with key…» de Next.js en fichas de libro (68 de 75 errores en una hora). No era un 5xx: la ficha se servía con la copia del día anterior. Venía de `search.json` de Open Library, que agotaba los 8 s desde Vercel. Respaldo con `/works/{id}.json` en #207.
 
-## ⬜ Fase 8 · Rediseño total (con su propio plan; Q27, Q31–Q33)
+## 🟨 Fase 8 · Rediseño total (con su propio plan; Q27, Q31–Q33) — en curso: 8.0–8.4 hechas; 8.5 en marcha (ver `PLAN_FASE8.md` §12)
 
 - **Cuenta como función nueva:** solo empieza con la congelación levantada y después de las fases 6, 7 y 9. Va en su propia rama de trabajo, por pantallas y en PRs pequeños, sin mezclarse con arreglos.
 - Antes de empezar se escribe **su propio plan**.
