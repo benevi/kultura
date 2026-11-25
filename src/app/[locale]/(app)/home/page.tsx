@@ -24,11 +24,14 @@ import { localizeHeroSynopsis } from '@/lib/media/hero-synopsis'
 import { progressFromRow, type ProgressValue } from '@/lib/library/progress'
 import { salaInicioEnabled } from '@/lib/flags/sala'
 import {
+  SalaHomeActivitySkeletonLazy,
   SalaHomeCircleLazy,
   SalaHomeContinueLazy,
+  SalaHomeForYouLazy,
   SalaHomeHeroLazy,
   SalaHomeNewsLazy,
   SalaHomeTitleLazy,
+  SalaHomeTonightSkeletonLazy,
 } from '@/components/home/sala/SalaHomeLazy'
 import {
   FriendsActivity,
@@ -49,10 +52,13 @@ export async function generateMetadata(): Promise<Metadata> {
  * (o una muestra incompleta, que no se guarda) puede tardar varios segundos y
  * Inicio no debe esperarla. Mientras, el esqueleto. No gasta IA.
  */
-async function StarterForYou({ locale }: { locale: string }) {
+async function StarterForYou({ locale, sala = false }: { locale: string; sala?: boolean }) {
   const starter = await getStarterItems(locale).catch(() => [])
   // Sin muestra, el botón de siempre: la ruta también sabe devolver lo popular.
-  return <AiRecommendations starter={starter.length > 0 ? starter : undefined} />
+  const items = starter.length > 0 ? starter : undefined
+  // Fase 8.5 I2b-2: con «Sala», la misma sección con su vista (`SalaHomeForYou`).
+  if (sala) return <SalaHomeForYouLazy starter={items} />
+  return <AiRecommendations starter={items} />
 }
 
 const log = createLogger('home/page')
@@ -215,23 +221,30 @@ export default async function HomePage() {
     <AiRecommendations initial={todayRecs} />
   )
 
-  // Fase 8.5 I1 e I2a: Inicio en «Sala» (bandera SALA_INICIO: 0, prueba o 1). Con
-  // ella, el `h1`, el hero y las filas de obras (`SalaWorkList`/`SalaWorkCard`)
-  // en una columna más ancha (6xl); «Esta noche», «Para ti» y la actividad siguen como hoy (I2b). Usa los
-  // mismos datos que la página de hoy.
+  // Fase 8.5 I1, I2a e I2b-2: Inicio en «Sala» (bandera SALA_INICIO: 0, prueba o 1).
+  // Con ella, el `h1`, el hero, las filas de obras (`SalaWorkList`/`SalaWorkCard`),
+  // «Esta noche», «Para ti» y la actividad de amigos, en una columna más ancha
+  // (6xl). Usa los mismos datos que la página de hoy.
   if (await salaInicioEnabled()) {
+    const salaForYou = showStarter ? (
+      <Suspense fallback={<SalaHomeForYouLazy pending />}>
+        <StarterForYou locale={locale} sala />
+      </Suspense>
+    ) : (
+      <SalaHomeForYouLazy initial={todayRecs} />
+    )
     return (
       <main data-sala-home="" className="page-grid [&>*]:max-w-6xl py-6 md:py-8 space-y-8 md:space-y-10">
         <SalaHomeTitleLazy />
         {deletionNotice}
         <SalaHomeHeroLazy item={inProgress} />
         <SalaHomeContinueLazy title={t('continueWatching')} items={filteredRecent} />
-        <Suspense fallback={<TonightSkeleton />}>
-          <TonightOnMyPlatforms userId={user.id} locale={locale} />
+        <Suspense fallback={<SalaHomeTonightSkeletonLazy />}>
+          <TonightOnMyPlatforms userId={user.id} locale={locale} sala />
         </Suspense>
-        {forYou}
-        <Suspense fallback={<FriendsActivitySkeleton />}>
-          <FriendsActivity userId={user.id} locale={locale} />
+        {salaForYou}
+        <Suspense fallback={<SalaHomeActivitySkeletonLazy />}>
+          <FriendsActivity userId={user.id} locale={locale} sala />
         </Suspense>
         <SalaHomeCircleLazy />
         <SalaHomeNewsLazy />

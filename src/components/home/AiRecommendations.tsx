@@ -1,48 +1,18 @@
 'use client'
 
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useRef } from 'react'
 import { Link } from '@/i18n/navigation'
 import { useTranslations } from 'next-intl'
 import { KButton } from '@/components/ui/KButton'
 import { IconFlame, IconSparkles } from '@/components/icons'
 import { MediaCard } from '@/components/media/MediaCard'
-import type { AiRec, AiRecsResult } from '@/lib/claude/recommendations'
-import type { MediaItem } from '@/types/media'
-import { ApiError, apiFetch } from '@/lib/api/client'
-
-type Status = 'idle' | 'loading' | 'done' | 'starter' | 'empty' | 'error' | 'rate_limited'
+import { useAiRecommendations, type AiRecsInput } from '@/components/home/useAiRecommendations'
 
 // Un esqueleto por tipo recomendable (movie, tv, anime, book, manga, comic, game).
 const SKELETON_KEYS = [0, 1, 2, 3, 4, 5, 6]
 
-interface AiRecommendationsProps {
-  /**
-   * Las recomendaciones de hoy, si ya se generaron (las lee Inicio en el
-   * servidor sin coste). Con ellas la sección se pinta directamente.
-   */
-  initial?: AiRecsResult | null
-  /**
-   * Lo popular para una cuenta sin señal suficiente (menos de 3 títulos): se
-   * enseña directamente, sin botón, porque no hay nada que pedirle a la IA.
-   */
-  starter?: MediaItem[]
-  /**
-   * Esqueleto mientras el servidor prepara lo popular (fallback de Suspense en
-   * Inicio). No pide nada: solo pinta la espera.
-   */
-  pending?: boolean
-}
-
-function initialStatus(
-  initial: AiRecsResult | null | undefined,
-  starter: MediaItem[] | undefined,
-  pending: boolean
-): Status {
-  if (pending) return 'loading'
-  if (initial && initial.recommendations.length > 0) return 'done'
-  if (starter && starter.length > 0) return 'starter'
-  return 'idle'
-}
+/** Lo que recibe «Para ti»: ver `useAiRecommendations`. */
+type AiRecommendationsProps = AiRecsInput
 
 /**
  * "Para ti" (D-06 / ROJO-4). Nada se pide al montarse: la IA solo se llama
@@ -56,54 +26,13 @@ export function AiRecommendations({
   pending = false,
 }: AiRecommendationsProps = {}) {
   const t = useTranslations('aiRecommendations')
-  const [recs, setRecs] = useState<AiRec[]>(initial?.recommendations ?? [])
-  const [source, setSource] = useState<AiRecsResult['source']>(initial?.source ?? 'ai')
-  const [capped, setCapped] = useState(initial?.capped === true)
-  // `saved: false` → el modelo falló y no se guardó: no son "las de hoy".
-  const [saved, setSaved] = useState(initial?.saved !== false)
-  const [starter, setStarter] = useState<MediaItem[]>(initialStarter ?? [])
-  const [status, setStatus] = useState<Status>(() => initialStatus(initial, initialStarter, pending))
   const sectionRef = useRef<HTMLElement>(null)
-  const controllerRef = useRef<AbortController | null>(null)
-  // Solo se mueve el foco cuando el resultado llega por un clic: el botón que
-  // lo tenía desaparece y el lector de pantalla se quedaría en el vacío.
-  const focusOnResult = useRef(false)
-
-  useEffect(() => () => controllerRef.current?.abort(), [])
-
-  useEffect(() => {
-    if (status === 'loading' || status === 'idle' || !focusOnResult.current) return
-    focusOnResult.current = false
-    sectionRef.current?.focus()
-  }, [status])
-
-  const fetchRecs = useCallback(() => {
-    controllerRef.current?.abort()
-    const controller = new AbortController()
-    controllerRef.current = controller
-    focusOnResult.current = true
-    setStatus('loading')
-
-    apiFetch<Partial<AiRecsResult> & { starter?: MediaItem[] }>('/api/ai-recommendations', {
-      signal: controller.signal,
-    })
-      .then((data) => {
-        const list = data.recommendations ?? []
-        const popular = data.starter ?? []
-        setRecs(list)
-        setSource(data.source ?? 'ai')
-        setCapped(data.capped === true)
-        setSaved(data.saved !== false)
-        setStarter(popular)
-        // Sin recomendaciones propias se enseña lo popular, y solo si tampoco
-        // hay eso queda la tarjeta de "añade títulos" sola.
-        setStatus(list.length > 0 ? 'done' : popular.length > 0 ? 'starter' : 'empty')
-      })
-      .catch((err) => {
-        if (controller.signal.aborted) return
-        setStatus(err instanceof ApiError && err.code === 'rate_limited' ? 'rate_limited' : 'error')
-      })
-  }, [])
+  // La lógica (estados, petición y foco al llegar el resultado de un clic) es
+  // la de «Sala» (`SalaHomeForYou`): `useAiRecommendations`.
+  const { recs, source, capped, saved, starter, status, fetchRecs } = useAiRecommendations(
+    { initial, starter: initialStarter, pending },
+    sectionRef
+  )
 
   // El cartel hace de título, así que acompaña a lo que de verdad es una
   // recomendación (o está a punto de serlo), no a un error ni a un aviso.

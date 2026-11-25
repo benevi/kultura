@@ -16,19 +16,30 @@ import { PosterFrame } from '@/components/media/PosterFrame'
 import { platformNames, readPlatforms } from '@/lib/platforms/platforms'
 import { availableTonight, type TonightCandidate } from '@/lib/home/tonight'
 import { TonightClient } from './TonightClient'
+import {
+  SalaHomeActivityLazy,
+  SalaHomeTonightLazy,
+  SalaHomeTonightSetupLazy,
+} from '@/components/home/sala/SalaHomeLazy'
+import type { SalaActivityEntry } from '@/components/home/sala/SalaHomeActivity'
 
 /** Pendientes que se miran (los más recientes); `availableTonight` comprueba 24. */
 const TONIGHT_CANDIDATES = 40
 const FEED_LIMIT = 8
 const PROFILE_FEED_LIMIT = 6
 
-export async function TonightOnMyPlatforms({ userId, locale }: { userId: string; locale: string }) {
+/**
+ * `sala` (fase 8.5 I2b-2, solo con `SALA_INICIO`): los mismos datos, pintados
+ * con «Sala» (`SalaHomeTonight`, por `next/dynamic`).
+ */
+export async function TonightOnMyPlatforms({ userId, locale, sala = false }: { userId: string; locale: string; sala?: boolean }) {
   const supabase = await createClient()
   const platforms = await readPlatforms(supabase, userId, locale)
   if (!platforms) return null
   const t = await getTranslations('platforms')
 
   if (platforms.services.length === 0) {
+    if (sala) return <SalaHomeTonightSetupLazy />
     return (
       <section
         aria-labelledby="tonight-setup-title"
@@ -59,7 +70,9 @@ export async function TonightOnMyPlatforms({ userId, locale }: { userId: string;
     .map((r) => ({ mediaId: r.media_id, title: r.media!.title, poster: r.media!.poster, type: r.media!.type }))
 
   const picks = await availableTonight(candidates, platforms.services, platforms.region, locale).catch(() => [])
-  return <TonightClient picks={picks} platforms={platformNames(platforms.services, platforms.region)} />
+  const names = platformNames(platforms.services, platforms.region)
+  if (sala) return <SalaHomeTonightLazy picks={picks} platforms={names} />
+  return <TonightClient picks={picks} platforms={names} />
 }
 
 export function TonightSkeleton() {
@@ -95,7 +108,8 @@ const STATUS_KEY: Record<FeedEntry['status'], string> = {
   abandoned: 'activity.abandoned',
 }
 
-export async function FriendsActivity({ userId, locale }: { userId: string; locale: string }) {
+/** `sala` (fase 8.5 I2b-2): los mismos apuntes, pintados con «Sala» (`SalaHomeActivity`). */
+export async function FriendsActivity({ userId, locale, sala = false }: { userId: string; locale: string; sala?: boolean }) {
   const t = await getTranslations('home')
   let friendIds: string[]
   let entries: FeedEntry[]
@@ -107,6 +121,28 @@ export async function FriendsActivity({ userId, locale }: { userId: string; loca
   }
 
   const visible = entries.filter((e) => e.media)
+  if (sala) {
+    const now = Date.now()
+    const salaEntries: SalaActivityEntry[] = visible.map((entry) => {
+      const media = entry.media!
+      return {
+        id: entry.id,
+        status: entry.status,
+        username: entry.user.username,
+        avatarInitials: entry.user.avatar_initials,
+        avatarColor: entry.user.avatar_color,
+        mediaId: media.id,
+        mediaTitle: media.title,
+        mediaPoster: media.poster,
+        href: `/media/${media.type}/${media.id.split('_').slice(1).join('_')}`,
+        score: entry.score,
+        updatedAt: entry.updatedAt,
+        when: relativeTime(entry.updatedAt, locale, now),
+      }
+    })
+    const state = visible.length > 0 ? 'list' : friendIds.length === 0 ? 'no-friends' : 'no-activity'
+    return <SalaHomeActivityLazy entries={salaEntries} state={state} />
+  }
   return (
     <section aria-labelledby="friends-activity-title" className="flex flex-col gap-3">
       <h2 id="friends-activity-title" className="font-display text-xl font-bold text-text-primary">

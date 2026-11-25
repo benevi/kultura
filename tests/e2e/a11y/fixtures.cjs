@@ -304,6 +304,17 @@ const tables = {
       created_at: NOW,
       updated_at: NOW,
     },
+    // Actividad de la amiga (fase 8.5 I2b-2): Inicio la enseña en «Actividad reciente».
+    {
+      id: "00000000-0000-4000-8000-0000000000ac",
+      user_id: FRIEND_ID,
+      media_id: "movie_603",
+      status: "completed",
+      rating10: 8,
+      watched_at: null,
+      created_at: NOW,
+      updated_at: NOW,
+    },
   ],
   groups: [group],
   group_members: [{ group_id: GROUP_ID, user_id: USER_ID, role: "owner", joined_at: NOW }],

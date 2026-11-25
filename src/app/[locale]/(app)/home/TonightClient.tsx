@@ -14,18 +14,14 @@ import { KButton } from '@/components/ui/KButton'
 import { PosterFrame } from '@/components/media/PosterFrame'
 import { IconDice } from '@/components/icons'
 import type { TonightPick } from '@/lib/home/tonight'
+import { pickIndex } from '@/lib/home/tonight-pick'
 
 function hrefOf(item: TonightPick): string {
   return `/media/${item.type}/${item.mediaId.split('_').slice(1).join('_')}`
 }
 
-/** Índice al azar distinto de `previous` (si hay más de uno). */
-export function pickIndex(length: number, previous: number | null, random: () => number = Math.random): number {
-  if (length <= 1) return 0
-  let next = Math.floor(random() * length)
-  if (next === previous) next = (next + 1) % length
-  return next
-}
+// Compartido con «Sala» (`SalaHomeTonight`).
+export { pickIndex }
 
 function Poster({ item, sizes }: { item: TonightPick; sizes: string }) {
   return (
