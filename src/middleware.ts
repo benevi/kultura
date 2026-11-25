@@ -12,6 +12,7 @@ import {
   isStaticCspRoute,
 } from "@/lib/csp";
 import { DEMO_READ_ONLY_ERROR, isBlockedForDemo, isDemoUser } from "@/lib/demo";
+import { bypassesMiddleware } from "@/lib/middleware-bypass";
 
 const intlMiddleware = createIntlMiddleware(routing);
 
@@ -36,6 +37,13 @@ export async function middleware(request: NextRequest) {
   // Informes de CSP (SEG-10): los manda el navegador solo, a veces varios por
   // página; no necesitan sesión ni idioma. Sin pasar por Supabase.
   if (pathname === CSP_REPORT_PATH) {
+    return NextResponse.next();
+  }
+
+  // Tarjetas para compartir: sin sesión, sin idioma y sin nonce, y sobre todo
+  // sin `Set-Cookie`, que impediría guardarlas en la CDN (`lib/middleware-bypass`).
+  // Un ranking inventado no entra: sigue a la 404 de abajo (`isInvalidBestPath`).
+  if (request.method === "GET" && bypassesMiddleware(pathname) && !isInvalidBestPath(pathname)) {
     return NextResponse.next();
   }
 
