@@ -293,3 +293,38 @@ describe("revisión #47 — rankings inexistentes fuera de la caché ISR", () =>
     expect(res.headers.get("content-security-policy")).toBeNull();
   });
 });
+
+describe("cupo de CPU — tarjetas para compartir sin el trabajo del middleware", () => {
+  const year = new Date().getFullYear();
+  const CARDS = [
+    "/es/opengraph-image/card",
+    "/en/login/opengraph-image/card",
+    `/es/best/anime/${year}/opengraph-image`,
+    "/es/u/ana/opengraph-image/profile",
+    "/en/u/ana/l/l1/opengraph-image",
+    "/es/u/ana/r/movie/603/opengraph-image",
+    "/es/u/ana/r/movie/603/card/firma",
+  ];
+
+  it.each(CARDS)("%s: ni sesión, ni idioma, ni CSP, ni Set-Cookie (la CDN puede guardarla)", async (path) => {
+    const res = await middleware(req("GET", path, SESSION));
+    expect(res.headers.get("x-middleware-next")).toBe("1");
+    expect(res.headers.get("set-cookie")).toBeNull();
+    expect(res.headers.get("content-security-policy")).toBeNull();
+    expect(forwarded(res, "x-next-intl-locale")).toBeNull();
+    expect(getUser).not.toHaveBeenCalled();
+  });
+
+  it("una ruta inventada no se salta nada: la 404 sigue con nonce", async () => {
+    for (const path of ["/es/media/movie/603/opengraph-image", "/es/opengraph-image-x/y/z", "/es/best/movie/1999/opengraph-image"]) {
+      const res = await middleware(req("GET", path, SESSION));
+      expect(res.headers.get("content-security-policy")).toMatch(/'nonce-/);
+    }
+  });
+
+  it("solo GET: cualquier otro método pasa por el middleware entero", async () => {
+    const res = await middleware(req("POST", "/es/opengraph-image/card", SESSION));
+    expect(getUser).toHaveBeenCalledTimes(1);
+    expect(res.headers.get("content-security-policy")).toMatch(/'nonce-/);
+  });
+});

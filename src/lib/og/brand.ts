@@ -91,3 +91,31 @@ type LoadedFont = NonNullable<Awaited<ReturnType<typeof loadFont>>>;
 export function fontsOption(fonts: LoadedFont[]): { fonts?: LoadedFont[] } {
   return fonts.length > 0 ? { fonts } : {};
 }
+
+// ── Caché de las tarjetas que no dependen de nadie ───────────────────────────
+//
+// Por defecto `ImageResponse` responde `public, immutable, max-age=31536000`:
+// sin `s-maxage`, la CDN de Vercel NO la guarda y cada bot de vista previa
+// (WhatsApp, X, Discord, buscadores) volvía a pintar la tarjeta con satori,
+// del orden de cientos de ms de CPU cada vez (cupo de Fluid Active CPU).
+//
+// Solo para tarjetas iguales para todos y sin datos de personas (la del sitio
+// y la de los rankings). Las de /u, listas y notas siguen con su caché corta
+// propia: enseñan datos que su dueño puede cerrar.
+
+/** Tarjeta del sitio: solo cambia con un despliegue. */
+export const OG_SITE_CACHE_CONTROL = "public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800";
+
+/** Tarjeta de un ranking: la selección cambia como mucho una vez al día. */
+export const OG_RANKING_CACHE_CONTROL = "public, max-age=3600, s-maxage=21600, stale-while-revalidate=86400";
+
+/**
+ * Tarjeta a medias (sin tipografía o sin alguna portada porque un proveedor
+ * no respondió): caché corta, para no dejarla un día entero así.
+ */
+export const OG_DEGRADED_CACHE_CONTROL = "public, max-age=300, s-maxage=600";
+
+/** Cabecera `cache-control` de una tarjeta: la larga solo si salió completa. */
+export function ogCacheHeaders(cacheControl: string, complete: boolean): { headers: Record<string, string> } {
+  return { headers: { "cache-control": complete ? cacheControl : OG_DEGRADED_CACHE_CONTROL } };
+}
