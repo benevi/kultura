@@ -26,6 +26,7 @@ import { salaInicioEnabled } from '@/lib/flags/sala'
 import {
   SalaHomeCircleLazy,
   SalaHomeContinueLazy,
+  SalaHomeHeroLazy,
   SalaHomeNewsLazy,
   SalaHomeTitleLazy,
 } from '@/components/home/sala/SalaHomeLazy'
@@ -214,16 +215,16 @@ export default async function HomePage() {
     <AiRecommendations initial={todayRecs} />
   )
 
-  // Fase 8.5 I1: Inicio en «Sala» (bandera SALA_INICIO: 0, prueba o 1). Con
-  // ella, el `h1` y las filas de obras (`SalaWorkList`/`SalaWorkCard`); el
-  // hero, «Esta noche», «Para ti» y la actividad siguen como hoy (I2). Usa los
+  // Fase 8.5 I1 e I2a: Inicio en «Sala» (bandera SALA_INICIO: 0, prueba o 1). Con
+  // ella, el `h1`, el hero y las filas de obras (`SalaWorkList`/`SalaWorkCard`)
+  // en una columna más ancha (6xl); «Esta noche», «Para ti» y la actividad siguen como hoy (I2b). Usa los
   // mismos datos que la página de hoy.
   if (await salaInicioEnabled()) {
     return (
-      <main data-sala-home="" className="page-grid [&>*]:max-w-4xl py-6 md:py-8 space-y-8 md:space-y-10">
+      <main data-sala-home="" className="page-grid [&>*]:max-w-6xl py-6 md:py-8 space-y-8 md:space-y-10">
         <SalaHomeTitleLazy />
         {deletionNotice}
-        <HeroSection item={inProgress} />
+        <SalaHomeHeroLazy item={inProgress} />
         <SalaHomeContinueLazy title={t('continueWatching')} items={filteredRecent} />
         <Suspense fallback={<TonightSkeleton />}>
           <TonightOnMyPlatforms userId={user.id} locale={locale} />

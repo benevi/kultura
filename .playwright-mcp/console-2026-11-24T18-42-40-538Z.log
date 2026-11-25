@@ -1,0 +1,6 @@
+[   10225ms] [ERROR] Failed to load resource: the server responded with a status of 409 () @ https://kulturaapp.vercel.app/en/media/tv/1396:1
+[   10283ms] [ERROR] Failed to load resource: the server responded with a status of 409 () @ https://kulturaapp.vercel.app/es/media/anime/al-1535:1
+[   10340ms] [ERROR] Failed to load resource: the server responded with a status of 409 () @ https://kulturaapp.vercel.app/es/media/game/game_3498:1
+[   10396ms] [ERROR] Failed to load resource: the server responded with a status of 409 () @ https://kulturaapp.vercel.app/es/media/manga/al-30013:1
+[   10454ms] [ERROR] Failed to load resource: the server responded with a status of 409 () @ https://kulturaapp.vercel.app/en/media/movie/129:1
+[   10521ms] [ERROR] Failed to load resource: the server responded with a status of 409 () @ https://kulturaapp.vercel.app/es/media/book/OL82563W:1

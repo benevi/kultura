@@ -194,3 +194,131 @@ test.describe("con «Sala»", () => {
     await expect(page.getByRole("list", { name: "Novedades en Drama", exact: true }).getByRole("listitem")).toHaveCount(8);
   });
 });
+
+/**
+ * Fase 8.5 I2a: el hero «Continuando», las flechas de las filas en
+ * escritorio, el aviso con «Reintentar» si una fila falla, «N amigos» y el
+ * «+1» con su diálogo de terminar, todo en «Sala».
+ */
+test.describe("con «Sala» (I2a)", () => {
+  test.beforeEach(async ({ context, baseURL }) => {
+    await salaCookie(context, baseURL!);
+  });
+
+  const SLIME = "転生したらスライムだった件";
+
+  test("hero «Continuando»: encabezado con nombre, «Continuar» descrito por la obra, columna ancha y axe limpio", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await mockHome(page);
+    await openHome(page);
+    const hero = page.locator("[data-sala-home-hero]");
+    const heading = hero.getByRole("heading", { level: 2 });
+    await expect(heading).toHaveAccessibleName(`${es.home.continuing} ${SLIME}`);
+    await expect(hero).toContainText(es.discoverFilters.typeBadge.manga);
+    const cta = hero.getByRole("link", { name: es.home.continue, exact: true });
+    await expect(cta).toHaveAttribute("href", "/es/media/manga/108556");
+    await expect(cta).toHaveAccessibleDescription(`${es.home.continuing} ${SLIME}`);
+    // Acciones de 48 px (biblia §9).
+    for (const el of [cta, hero.getByTestId("progress-next")]) {
+      expect((await el.boundingBox())!.height).toBeGreaterThanOrEqual(48);
+    }
+    // Columna más ancha en escritorio (6xl, 72 rem; antes 4xl, 56 rem).
+    expect((await hero.boundingBox())!.width).toBeGreaterThan(896);
+    await expectNoBlockingViolations(page, "Inicio con «Sala»: hero");
+  });
+
+  test("«Popular entre tus amigos» dice cuántos amigos la tienen, con su plural", async ({ page }) => {
+    await mockHome(page, {
+      circle: [
+        { ...CIRCLE[0], friendCount: 3 },
+        { ...CIRCLE[0], mediaId: "movie_551", title: "Otra", friendCount: 1 },
+      ],
+    });
+    await openHome(page);
+    const items = page.getByRole("list", { name: es.home.popularInCircle, exact: true }).getByRole("listitem");
+    await expect(items.nth(0)).toContainText("3 amigos");
+    await expect(items.nth(1)).toContainText("1 amigo");
+    await expect(items.nth(1)).not.toContainText("1 amigos");
+  });
+
+  test("flechas en escritorio: controlan la fila y se paran en los extremos sin perder el foco", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await mockHome(page);
+    await openHome(page);
+    const row = page.locator(ROW("news-0"));
+    const list = page.getByRole("list", { name: "Novedades en Drama", exact: true });
+    const prev = row.getByRole("button", { name: "Anteriores en «Novedades en Drama»" });
+    const next = row.getByRole("button", { name: "Siguientes en «Novedades en Drama»" });
+    const listId = await list.getAttribute("id");
+    await expect(prev).toHaveAttribute("aria-controls", listId!);
+    await expect(next).toHaveAttribute("aria-controls", listId!);
+    for (const b of [prev, next]) {
+      const box = (await b.boundingBox())!;
+      expect(Math.min(box.width, box.height)).toBeGreaterThanOrEqual(48);
+    }
+
+    // Ocho tarjetas de 160 px no caben en la columna: la fila se puede mover.
+    await expect(prev).toHaveAttribute("aria-disabled", "true");
+    await expect(next).not.toHaveAttribute("aria-disabled");
+    await next.focus();
+    await page.keyboard.press("Enter");
+    await expect.poll(() => list.evaluate((el) => el.scrollLeft)).toBeGreaterThan(0);
+    // Al final, «Siguientes» queda desactivada y el foco sigue en ella.
+    await expect(next).toHaveAttribute("aria-disabled", "true");
+    await expect(next).toBeFocused();
+    await expect(prev).not.toHaveAttribute("aria-disabled");
+    await expectNoBlockingViolations(page, "Inicio con «Sala»: flechas");
+
+    // En el móvil no hay flechas: la fila se desliza con el dedo.
+    await page.setViewportSize({ width: 375, height: 800 });
+    await expect(next).toBeHidden();
+  });
+
+  test("si una fila falla: aviso con «Reintentar» (role=alert) y, al reintentar, la fila", async ({ page }) => {
+    let fail = true;
+    await page.route("**/api/popular-in-circle", (route) =>
+      fail
+        ? route.fulfill({ status: 500, contentType: "application/json", body: JSON.stringify({ error: { code: "internal", message: "x" } }) })
+        : json(route, CIRCLE)
+    );
+    await page.route("**/api/genre-news", (route) => json(route, NEWS));
+    await openHome(page);
+    const row = page.locator(ROW("circle"));
+    const alert = row.getByRole("alert");
+    await expect(alert).toContainText(`No hemos podido cargar «${es.home.popularInCircle}»`);
+    const retry = alert.getByRole("button", { name: es.home.sala.retry });
+    await expect(retry).toBeVisible();
+    expect((await retry.boundingBox())!.height).toBeGreaterThanOrEqual(48);
+    await expect(row.getByRole("heading", { level: 2, name: es.home.popularInCircle })).toBeVisible();
+    await expectNoBlockingViolations(page, "Inicio con «Sala»: fila con error");
+
+    fail = false;
+    await retry.click();
+    await expect(row.getByRole("heading", { level: 2 })).toBeFocused();
+    await expect(
+      page.getByRole("list", { name: es.home.popularInCircle, exact: true }).getByRole("link", { name: "El club de la lucha" })
+    ).toBeVisible();
+    await expect(alert).toBeEmpty();
+  });
+
+  test("«+1» del hero y, al llegar al final, el diálogo de «Sala» con Cancelar primero", async ({ page }) => {
+    await mockHome(page);
+    await page.route("**/api/library/progress", (route) =>
+      json(route, { progress: { chapter: 35, volume: 5 }, status: "in_progress", caughtUp: false, finished: true, diary: false })
+    );
+    await openHome(page);
+    const hero = page.locator("[data-sala-home-hero]");
+    await hero.getByTestId("progress-next").click();
+    const dialog = page.getByRole("alertdialog", { name: `¿Has terminado «${SLIME}»?` });
+    await expect(dialog).toBeVisible();
+    const buttons = dialog.getByRole("button");
+    await expect(buttons).toHaveCount(2);
+    await expect(buttons.nth(0)).toHaveText(es.progress.finishCancel);
+    await expect(buttons.nth(0)).toBeFocused();
+    await expectNoBlockingViolations(page, "Inicio con «Sala»: diálogo de terminar");
+    // Enter recién abierto cancela: no completa nada.
+    await page.keyboard.press("Enter");
+    await expect(dialog).toBeHidden();
+    await expect(hero.getByTestId("progress-label")).toContainText("35");
+  });
+});

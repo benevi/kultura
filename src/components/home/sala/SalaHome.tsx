@@ -1,11 +1,11 @@
 'use client'
 
 // ============================================================
-// KULTURA — Inicio en «Sala» (fase 8.5 I1, bandera SALA_INICIO)
-// El título de la página y las filas de obras de Inicio con `SalaWorkList` y
-// `SalaWorkCard`: «Continúa donde lo dejaste», «Popular entre tus amigos» y
-// las novedades por género. El hero «Continuando», «Esta noche», «Para ti» y
-// la actividad de amigos siguen como hoy (I2).
+// KULTURA — Inicio en «Sala» (fase 8.5 I1 e I2a, bandera SALA_INICIO)
+// El título de la página, el hero «Continuando» (`SalaHomeHero`) y las filas
+// de obras de Inicio con `SalaWorkList` y `SalaWorkCard`: «Continúa donde lo
+// dejaste», «Popular entre tus amigos» y las novedades por género. «Esta
+// noche», «Para ti» y la actividad de amigos siguen como hoy (I2b).
 //
 // Solo se carga con `next/dynamic` (`SalaHomeLazy`): con la bandera apagada
 // Inicio no descarga este código ni sus hojas.
@@ -27,13 +27,25 @@
 //   anillo de foco cabe dentro de la fila (no se corta).
 // - **Carga anunciada una vez** por fila (`SalaWorkList`), con esqueletos
 //   quietos con movimiento reducido.
+//
+// I2a:
+// - **Flechas en escritorio.** «Anteriores» y «Siguientes» (48 px) mueven la
+//   fila una pantalla. Dicen qué mueven (`aria-controls`) y en los extremos
+//   quedan desactivadas con `aria-disabled`, no con `disabled`: así el foco no
+//   se pierde cuando la flecha que se pulsa llega al final. Pulsarlas no mueve
+//   el foco a la fila. En el móvil, la fila se desliza con el dedo.
+// - **Si una fila falla, se dice** (`role="alert"`) con «Reintentar», como en
+//   Descubrir; antes la sección desaparecía sin más.
+// - **«N amigos»** en la línea de datos de «Popular entre tus amigos».
+// - **El «+1» con `SalaButton`** y el aviso de terminar en un diálogo de
+//   «Sala», con Cancelar primero (`SalaHomeProgress`).
 // ============================================================
 
 import '@/styles/sala/tokens.css'
 import '@/styles/sala/fonts.css'
 import '@/styles/sala/title.css'
 
-import { useEffect, useId, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useId, useRef, useState, type ReactNode, type RefObject } from 'react'
 import { useTranslations } from 'next-intl'
 import { apiFetch } from '@/lib/api/client'
 import { cn } from '@/lib/utils/index'
@@ -42,7 +54,9 @@ import { SalaWorkList } from '@/components/sala/SalaWorkList'
 import { SalaWorkCard } from '@/components/sala/SalaWorkCard'
 import { SalaBlockState } from '@/components/sala/SalaBlockState'
 import { SalaButton } from '@/components/sala/SalaButton'
-import { ContinueProgress, canQuickAdvance } from '@/components/home/ContinueProgress'
+import { SalaNotice } from '@/components/sala/SalaNotice'
+import { progressKindFor } from '@/lib/library/progress'
+import { SalaHomeProgress } from './SalaHomeProgress'
 import type { ContinueRowItem } from '@/components/home/ContinueRow'
 import type { CircleMediaItem } from '@/lib/social/circle'
 import type { MediaItem, MediaType } from '@/types/media'
@@ -63,6 +77,8 @@ const SIZES = '(min-width: 640px) 160px, 144px'
 const NEWS_PER_ROW = 8
 /** Esqueletos mientras llega una fila. */
 const SKELETONS = 6
+
+export { SalaHomeHero } from './SalaHomeHero'
 
 /** `movie_603` → `/media/movie/603`. */
 function hrefOf(type: string, mediaId: string): string {
@@ -88,29 +104,156 @@ interface RowProps {
   children?: ReactNode
   /** Lo que va debajo de la lista (un estado vacío). */
   after?: ReactNode
+  /** La fila no ha cargado: el aviso con «Reintentar» llama a esto. */
+  onRetry?: () => void
 }
 
-/** Una sección de Inicio: su `h2` y la fila de obras, nombrada por él. */
-function Row({ title, name, loading = false, count, children, after }: RowProps) {
+/** Flecha de la fila (dibujo; el nombre lo lleva el botón). */
+function Arrow({ dir }: { dir: 'prev' | 'next' }) {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square" className="h-5 w-5">
+      <path d={dir === 'prev' ? 'M12.5 4 6.5 10l6 6' : 'M7.5 4l6 6-6 6'} />
+    </svg>
+  )
+}
+
+/** La flecha: cuadrada, de 48 px, con el borde de tinta del `SalaButton` secundario. */
+const FLECHA =
+  'inline-flex h-sala-target w-sala-target scroll-mt-24 items-center justify-center border-2 bg-transparent touch-manipulation transition-colors duration-sala-fast ease-sala motion-reduce:transition-none sala-focused:sala-focus'
+const FLECHA_ACTIVA =
+  'cursor-pointer border-sala-ink text-sala-ink sala-hover:bg-sala-ink sala-hover:text-sala-background sala-pressed:bg-sala-ink sala-pressed:text-sala-background'
+/** Como el `SalaButton` deshabilitado: el gris del borde y el trazo discontinuo, que lo dice sin color. */
+const FLECHA_PARADA = 'cursor-not-allowed border-dashed border-sala-border text-sala-ink-disabled'
+
+/**
+ * Hasta dónde se puede mover la fila. Se mide al deslizarla, al cambiar de
+ * tamaño y cuando cambian sus tarjetas (`deps`).
+ */
+function useRowEdges(listRef: RefObject<HTMLElement | null>, deps: unknown[]) {
+  const [edges, setEdges] = useState({ start: true, end: true })
+  const measure = useCallback(() => {
+    const el = listRef.current
+    if (!el) return
+    const max = el.scrollWidth - el.clientWidth
+    // Un píxel de holgura: con zoom, `scrollLeft` lleva decimales.
+    const start = el.scrollLeft <= 1
+    const end = el.scrollLeft >= max - 1
+    setEdges((prev) => (prev.start === start && prev.end === end ? prev : { start, end }))
+  }, [listRef])
+  useEffect(() => {
+    const el = listRef.current
+    if (!el) return
+    measure()
+    el.addEventListener('scroll', measure, { passive: true })
+    const ro = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure)
+    ro?.observe(el)
+    return () => {
+      el.removeEventListener('scroll', measure)
+      ro?.disconnect()
+    }
+    // `deps`: lo que cambia el ancho de lo que hay dentro.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [measure, ...deps])
+  return edges
+}
+
+/**
+ * Una sección de Inicio: su `h2`, las flechas (desde `md`), la fila de obras,
+ * nombrada por el `h2`, y el hueco del aviso de error, montado siempre para
+ * que un lector lo anuncie al entrar.
+ */
+function Row({ title, name, loading = false, count, children, after, onRetry }: RowProps) {
   const t = useTranslations('home.sala')
   const id = useId()
+  const listId = `${id}-lista`
+  const listRef = useRef<HTMLUListElement>(null)
+  const headingRef = useRef<HTMLHeadingElement>(null)
+  const showList = loading || count > 0
+  const edges = useRowEdges(listRef, [count, loading])
+
+  function scrollRow(dir: 1 | -1) {
+    const el = listRef.current
+    if (!el) return
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    // Algo menos que el ancho de la fila: la última tarjeta que se veía sigue a la vista.
+    el.scrollBy({ left: dir * Math.max(el.clientWidth * 0.85, 160), behavior: reduce ? 'auto' : 'smooth' })
+  }
+
+  function retry() {
+    // «Reintentar» desaparece al pulsarlo: el foco pasa al encabezado de la
+    // sección en vez de perderse, y la fila anuncia la carga.
+    headingRef.current?.focus()
+    onRetry?.()
+  }
+
+  const arrow = (dir: 'prev' | 'next') => {
+    const stopped = dir === 'prev' ? edges.start : edges.end
+    return (
+      <button
+        type="button"
+        aria-controls={listId}
+        aria-label={t(dir, { title })}
+        aria-disabled={stopped || undefined}
+        data-sala-home-arrow={dir}
+        onClick={() => {
+          if (!stopped) scrollRow(dir === 'prev' ? -1 : 1)
+        }}
+        className={cn(FLECHA, stopped ? FLECHA_PARADA : FLECHA_ACTIVA)}
+      >
+        <Arrow dir={dir} />
+      </button>
+    )
+  }
+
   return (
     <section aria-labelledby={id} data-sala-home-row={name} className="font-sala-text text-sala-ink">
-      <h2 id={id} className="mb-3 sala-type-data [overflow-wrap:anywhere]">
-        {title}
-      </h2>
+      <div className="mb-3 flex items-end justify-between gap-4">
+        <h2 id={id} ref={headingRef} tabIndex={-1} className="scroll-mt-24 outline-none sala-type-data [overflow-wrap:anywhere]">
+          {title}
+        </h2>
+        {showList ? (
+          // Si todo cabe, no hay nada que mover: las flechas no se ven ni se
+          // alcanzan con Tab, pero guardan su sitio (nada salta al medir).
+          <div
+            data-sala-home-arrows=""
+            className={cn('hidden shrink-0 gap-2 md:flex', edges.start && edges.end && 'invisible')}
+          >
+            {arrow('prev')}
+            {arrow('next')}
+          </div>
+        ) : null}
+      </div>
       {/* Montada siempre mientras haya algo que enseñar: así anuncia la carga una vez. */}
       <SalaWorkList
+        ref={listRef}
+        id={listId}
         aria-labelledby={id}
         loading={loading}
         loadingLabel={t('loading', { title })}
         loadedLabel={t('results', { count })}
         skeletons={SKELETONS}
         itemClassName={TARJETA}
-        className={loading || count > 0 ? cn(FILA) : 'hidden'}
+        className={showList ? cn(FILA) : 'hidden'}
       >
         {children}
       </SalaWorkList>
+      {/* Montado siempre: un lector anuncia el error al entrar el aviso. */}
+      <div role="alert" data-sala-home-error="">
+        {onRetry ? (
+          <SalaNotice
+            tone="error"
+            live="off"
+            title={t('errorTitle', { title })}
+            action={
+              <SalaButton variant="secondary" onClick={retry}>
+                {t('retry')}
+              </SalaButton>
+            }
+          >
+            {t('errorBody')}
+          </SalaNotice>
+        ) : null}
+      </div>
       {after}
     </section>
   )
@@ -118,8 +261,8 @@ function Row({ title, name, loading = false, count, children, after }: RowProps)
 
 /**
  * «Continúa donde lo dejaste»: lo que está en curso y lo pendiente, con su
- * progreso y «+1» (el mismo `ContinueProgress` de hoy, fuera del enlace de la
- * tarjeta y después de él en el orden del teclado).
+ * progreso y «+1» (`SalaHomeProgress`, fuera del enlace de la tarjeta y
+ * después de él en el orden del teclado).
  */
 export function SalaHomeContinue({ title, items }: { title: string; items: ContinueRowItem[] }) {
   const tType = useTranslations('discoverFilters.typeBadge')
@@ -139,8 +282,8 @@ export function SalaHomeContinue({ title, items }: { title: string; items: Conti
             priority={i < 4}
             headingLevel={3}
           />
-          {canQuickAdvance(item.type) ? (
-            <ContinueProgress
+          {progressKindFor(item.type) !== null ? (
+            <SalaHomeProgress
               mediaId={item.mediaId}
               mediaType={item.type}
               title={item.title}
@@ -157,10 +300,14 @@ export function SalaHomeContinue({ title, items }: { title: string; items: Conti
 
 type Status = 'loading' | 'done' | 'empty' | 'error'
 
-/** Pide una ruta de Inicio al montarse (las mismas que hoy) y la cancela al salir. */
-function useHomeFetch<T>(url: string, isEmpty: (data: T) => boolean): { data: T | null; status: Status } {
+/**
+ * Pide una ruta de Inicio al montarse (las mismas que hoy) y la cancela al
+ * salir. `retry` la vuelve a pedir tras un error.
+ */
+function useHomeFetch<T>(url: string, isEmpty: (data: T) => boolean): { data: T | null; status: Status; retry: () => void } {
   const [data, setData] = useState<T | null>(null)
   const [status, setStatus] = useState<Status>('loading')
+  const [attempt, setAttempt] = useState(0)
   useEffect(() => {
     const controller = new AbortController()
     apiFetch<T>(url, { signal: controller.signal })
@@ -174,24 +321,28 @@ function useHomeFetch<T>(url: string, isEmpty: (data: T) => boolean): { data: T 
     return () => controller.abort()
     // `isEmpty` es una función fija de quien llama: no vuelve a pedir.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [url])
-  return { data, status }
+  }, [url, attempt])
+  const retry = useCallback(() => {
+    setStatus('loading')
+    setAttempt((n) => n + 1)
+  }, [])
+  return { data, status, retry }
 }
 
 /** «Popular entre tus amigos» (`/api/popular-in-circle`, como `PopularInCircle`). */
 export function SalaHomeCircle() {
   const t = useTranslations('home')
+  const tS = useTranslations('home.sala')
   const tType = useTranslations('discoverFilters.typeBadge')
-  const { data, status } = useHomeFetch<CircleMediaItem[]>('/api/popular-in-circle', (list) => list.length === 0)
-  // Como hoy: si falla, la sección no sale (I2 decide si avisa).
-  if (status === 'error') return null
-  const items = data ?? []
+  const { data, status, retry } = useHomeFetch<CircleMediaItem[]>('/api/popular-in-circle', (list) => list.length === 0)
+  const items = status === 'error' ? [] : (data ?? [])
   return (
     <Row
       title={t('popularInCircle')}
       name="circle"
       loading={status === 'loading'}
       count={items.length}
+      onRetry={status === 'error' ? retry : undefined}
       after={
         status === 'empty' ? (
           <SalaBlockState
@@ -215,6 +366,7 @@ export function SalaHomeCircle() {
           format={item.type as MediaType}
           formatLabel={tType(item.type)}
           year={item.year ?? undefined}
+          detail={item.friendCount > 0 ? tS('friends', { count: item.friendCount }) : undefined}
           poster={item.poster}
           ratio="2/3"
           sizes={SIZES}
@@ -234,16 +386,18 @@ interface GenreNewsData {
 /**
  * Novedades (`/api/genre-news`, como `GenreNews`): «Novedades en {género}» y
  * «Series en {género}» o, sin géneros, «Tendencias». La primera fila está
- * montada desde la carga (con el título «Tendencias») para que anuncie el final.
+ * montada desde la carga (con el título «Tendencias») para que anuncie el final;
+ * si la ruta falla, esa fila dice que no ha cargado y ofrece «Reintentar».
  */
 export function SalaHomeNews() {
   const t = useTranslations('home')
   const tType = useTranslations('discoverFilters.typeBadge')
-  const { data, status } = useHomeFetch<GenreNewsData>('/api/genre-news', (d) => d.movies.length === 0 && d.tv.length === 0)
-  if (status === 'error' || status === 'empty') return null
+  const { data, status, retry } = useHomeFetch<GenreNewsData>('/api/genre-news', (d) => d.movies.length === 0 && d.tv.length === 0)
+  if (status === 'empty') return null
 
   const rows: { title: string; items: MediaItem[] }[] = []
-  if (!data) {
+  // Cargando o con error: la fila de «Tendencias» (la misma que anuncia la carga).
+  if (!data || status === 'error') {
     rows.push({ title: t('trends'), items: [] })
   } else {
     const genres = data.genres.slice(0, 3)
@@ -260,7 +414,14 @@ export function SalaHomeNews() {
   return (
     <>
       {rows.map((row, r) => (
-        <Row key={r} title={row.title} name={`news-${r}`} loading={status === 'loading'} count={row.items.length}>
+        <Row
+          key={r}
+          title={row.title}
+          name={`news-${r}`}
+          loading={status === 'loading'}
+          count={row.items.length}
+          onRetry={status === 'error' ? retry : undefined}
+        >
           {row.items.map((item) => (
             <SalaWorkCard
               key={item.id}
