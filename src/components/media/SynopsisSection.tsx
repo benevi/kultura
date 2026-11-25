@@ -12,6 +12,8 @@ interface Props {
    * tokens. Sin él, la de siempre.
    */
   variant?: 'sala'
+  /** Nombre del idioma de `lang` en el de la página («inglés»): la nota de «Sala» (F6). */
+  langName?: string | null
 }
 
 const CHAR_LIMIT = 280
@@ -34,7 +36,7 @@ const SALA_CLASSES = {
   ].join(' '),
 }
 
-export function SynopsisSection({ text, lang, variant }: Props) {
+export function SynopsisSection({ text, lang, variant, langName }: Props) {
   const t = useTranslations('media_detail')
   const [expanded, setExpanded] = useState(false)
   const textId = useId()
@@ -44,8 +46,17 @@ export function SynopsisSection({ text, lang, variant }: Props) {
   const displayed = isLong && !expanded ? chars.slice(0, CHAR_LIMIT).join('') + '…' : text
   const c = variant === 'sala' ? SALA_CLASSES : CLASSES
 
+  // F6: en «Sala», si la sinopsis va en otro idioma (sin sesión no se traduce,
+  // decisión de Víctor), una nota discreta lo dice: «Sinopsis en inglés».
+  const languageNote = variant === 'sala' && lang ? langName : undefined
+
   return (
     <div>
+      {languageNote && (
+        <p data-sala-synopsis-lang="" className="sala-type-small mb-2 text-sala-ink-secondary">
+          {t('salaSynopsisLanguage', { language: languageNote })}
+        </p>
+      )}
       <p id={textId} lang={lang} className={c.text}>{displayed}</p>
       {isLong && (
         <button
@@ -61,3 +72,4 @@ export function SynopsisSection({ text, lang, variant }: Props) {
     </div>
   )
 }
+

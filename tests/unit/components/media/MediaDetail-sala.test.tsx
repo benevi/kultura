@@ -334,7 +334,11 @@ describe("MediaDetail con sala=true (F2a)", () => {
       expect(el).toHaveAttribute("data-skin", "sala");
     }
     const more = screen.getByRole("region", { name: "salaMoreActionsLabel" });
-    expect(within(more).getByRole("heading", { level: 2, name: "salaMoreActionsLabel" })).toHaveClass("sr-only");
+    // F6: «Más acciones» al pie, con el encabezado a la vista y «Denunciar» dentro.
+    expect(within(more).getByRole("heading", { level: 2, name: "salaMoreActionsLabel" })).not.toHaveClass("sr-only");
+    expect(within(more).getByTestId("report-button")).toBeInTheDocument();
+    const lists = screen.getByRole("region", { name: "salaListActionsLabel" });
+    expect(within(lists).getByTestId("add-to-list-button")).toBeInTheDocument();
     // Sin adaptaciones con «Sala» (decisión de Víctor), aunque la página las pase.
     expect(screen.queryByTestId("adaptations-slot")).toBeNull();
     // «Dónde ver» es el de «Sala», no el de hoy.
@@ -366,12 +370,14 @@ describe("MediaDetail con sala=true (F2a)", () => {
           .find((n) => n.startsWith("data-sala-ficha-"))
     );
     expect(order).toEqual([
-      "data-sala-ficha-more-actions",
+      "data-sala-ficha-list-actions",
       undefined, // «Por qué te lo recomendamos» (sin data-)
       "data-sala-ficha-watch",
       "data-sala-ficha-steam",
       "data-sala-ficha-trailer",
       "data-sala-ficha-sources",
+      // F6: «Más acciones» (Denunciar), al pie, después de las fuentes.
+      "data-sala-ficha-more-actions",
     ]);
   });
 
@@ -713,9 +719,19 @@ describe("MediaDetail con sala=true (F2a)", () => {
     expect(screen.getByText("anime")).toBeInTheDocument();
   });
 
-  it("sin sinopsis ni créditos ni miga: solo la franja", async () => {
+  it("F6: migas de libro con el nivel del tipo; la ficha vieja no cambia", async () => {
+    const { unmount } = render(await sala(book));
+    const nav = screen.getByRole("navigation", { name: "breadcrumbLabel" });
+    expect(within(nav).getByRole("link", { name: "books" })).toHaveAttribute("href", "/es/discover?type=book");
+    unmount();
+    render(await MediaDetail({ item: book, initialEntry: null, isAuthenticated: false, ...full, sala: false }));
+    expect(screen.queryByRole("link", { name: "books" })).toBeNull();
+  });
+
+  it("sin sinopsis ni créditos ni miga: la franja y el estado vacío de la sinopsis (F6)", async () => {
     const { container } = render(await sala(bare, { breadcrumbs: [] }));
-    expect(screen.queryByRole("heading", { name: "synopsis" })).toBeNull();
+    expect(screen.getByRole("heading", { name: "synopsis" })).toBeInTheDocument();
+    expect(container.querySelector("[data-sala-synopsis-empty]")).toHaveTextContent("salaSynopsisEmpty");
     expect(screen.queryByRole("region", { name: "details" })).toBeNull();
     expect(container.querySelector("[data-sala-ficha-band]")).not.toBeNull();
   });
