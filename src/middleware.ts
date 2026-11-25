@@ -20,6 +20,7 @@ import {
   isFichaIsrInternalPath,
   isRouterFetchFromFicha,
 } from "@/lib/ficha-isr";
+import { bypassesMiddleware } from "@/lib/middleware-bypass";
 
 const intlMiddleware = createIntlMiddleware(routing);
 
@@ -44,6 +45,13 @@ export async function middleware(request: NextRequest) {
   // Informes de CSP (SEG-10): los manda el navegador solo, a veces varios por
   // página; no necesitan sesión ni idioma. Sin pasar por Supabase.
   if (pathname === CSP_REPORT_PATH) {
+    return NextResponse.next();
+  }
+
+  // Tarjetas para compartir: sin sesión, sin idioma y sin nonce, y sobre todo
+  // sin `Set-Cookie`, que impediría guardarlas en la CDN (`lib/middleware-bypass`).
+  // Un ranking inventado no entra: sigue a la 404 de abajo (`isInvalidBestPath`).
+  if (request.method === "GET" && bypassesMiddleware(pathname) && !isInvalidBestPath(pathname)) {
     return NextResponse.next();
   }
 
@@ -214,11 +222,23 @@ export async function middleware(request: NextRequest) {
   return intlResponse;
 }
 
+/**
+ * API que no necesitan nada del middleware: no leen sesión (ni la refrescan),
+ * no escriben (la demo no tiene nada que cortar) y no pintan HTML (sin nonce
+ * ni idioma). El middleware de Vercel cuenta en el cupo de Fluid Active CPU y
+ * corre ANTES de la caché de la CDN: `/api/discover` pagaba el middleware
+ * aunque su respuesta saliera de la caché. `csp-report` ya salía al principio
+ * del middleware.
+ *
+ * La lista va escrita a mano en las dos últimas entradas del `matcher` (Next lo
+ * lee al compilar y solo admite literales, no variables): si se cambia, en las
+ * dos. `tests/unit/plataforma/matcher.test.ts` lo comprueba.
+ */
 export const config = {
   matcher: [
     "/",
     "/(es|en)/:path*",
-    "/api/:path*",
-    "/((?!_next|_vercel|dev(?:/.*)?|.*\\..*).*)",
+    "/api/((?!(?:health|csp-report|discover|landing/sources|cron/daily)(?:/|$)).*)",
+    "/((?!_next|_vercel|dev(?:/.*)?|api/(?:health|csp-report|discover|landing/sources|cron/daily)(?:/|$)|.*\\..*).*)",
   ],
 };

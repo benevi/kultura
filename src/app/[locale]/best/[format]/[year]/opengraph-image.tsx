@@ -1,5 +1,5 @@
 import { ImageResponse } from "next/og";
-import { C, loadFont, fontsOption } from "@/lib/og/brand";
+import { C, loadFont, fontsOption, ogCacheHeaders, OG_RANKING_CACHE_CONTROL } from "@/lib/og/brand";
 import { posterDataUri } from "@/lib/og/poster";
 import { getBestOf, parseBestParams, type BestFormat } from "@/lib/best/best-of";
 
@@ -59,6 +59,8 @@ export default async function Image({ params }: { params: Params | Promise<Param
       loadFont("Figtree", 700, `${BADGE[l]}#1${top}`),
     ])
   ).filter((f) => f !== null);
+  // Caché larga solo con la tarjeta entera: ranking válido, sus tres portadas y las dos tipografías.
+  const complete = Boolean(parsed) && fan.length === 3 && posters.every(Boolean) && fonts.length === 2;
 
   return new ImageResponse(
     (
@@ -153,6 +155,6 @@ export default async function Image({ params }: { params: Params | Promise<Param
         </div>
       </div>
     ),
-    { ...size, ...fontsOption(fonts) },
+    { ...size, ...fontsOption(fonts), ...ogCacheHeaders(OG_RANKING_CACHE_CONTROL, complete) },
   );
 }

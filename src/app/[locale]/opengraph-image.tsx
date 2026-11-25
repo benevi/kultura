@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 import { getTranslations } from "next-intl/server";
-import { C, FORMAT_HEX, loadFont, fontsOption } from "@/lib/og/brand";
+import { C, FORMAT_HEX, loadFont, fontsOption, ogCacheHeaders, OG_SITE_CACHE_CONTROL } from "@/lib/og/brand";
 import { parseTitle } from "@/lib/landing/immersive";
 import es from "../../../messages/es.json";
 import en from "../../../messages/en.json";
@@ -174,6 +174,6 @@ export default async function Image({ params }: { params: Params | Promise<Param
         <div style={{ display: "flex", fontSize: 34, fontWeight: 700, marginTop: 30, color: C.muted }}>{lema}</div>
       </div>
     ),
-    { ...size, ...fontsOption(fonts) },
+    { ...size, ...fontsOption(fonts), ...ogCacheHeaders(OG_SITE_CACHE_CONTROL, fonts.length === 2) },
   );
 }

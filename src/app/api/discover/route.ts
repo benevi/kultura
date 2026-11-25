@@ -14,7 +14,7 @@
 import type { NextRequest } from "next/server";
 import { fetchDiscoverData, type DiscoverResult } from "@/lib/api/discover";
 import { fetchAggregateResult } from "@/lib/api/aggregate";
-import { CATALOG_EDGE_CACHE, NO_STORE, parseDiscoverParams } from "@/lib/api/discover-params";
+import { DISCOVER_EDGE_CACHE, NO_STORE, parseDiscoverParams } from "@/lib/api/discover-params";
 import { LIMITS } from "@/lib/rate-limit";
 import { ok, rateLimit } from "@/lib/api/route";
 
@@ -96,7 +96,7 @@ export async function GET(request: NextRequest) {
   };
   return ok(body, {
     headers: {
-      "Cache-Control": result.fetchErrorKind || partial ? NO_STORE : CATALOG_EDGE_CACHE,
+      "Cache-Control": result.fetchErrorKind || partial ? NO_STORE : DISCOVER_EDGE_CACHE,
     },
   });
 }
