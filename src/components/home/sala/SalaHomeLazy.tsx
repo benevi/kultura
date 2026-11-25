@@ -21,3 +21,5 @@ export const SalaHomeTonightSkeletonLazy = dynamic(() => import('./SalaHomeTonig
 export const SalaHomeForYouLazy = dynamic(() => import('./SalaHomeForYou').then((m) => m.SalaHomeForYou))
 export const SalaHomeActivityLazy = dynamic(() => import('./SalaHomeActivity').then((m) => m.SalaHomeActivity))
 export const SalaHomeActivitySkeletonLazy = dynamic(() => import('./SalaHomeActivity').then((m) => m.SalaHomeActivitySkeleton))
+export const SalaHomeDeletionLazy = dynamic(() => import('./SalaHome').then((m) => m.SalaHomeDeletion))
+export const SalaHomeSkeletonLazy = dynamic(() => import('./SalaHomeSkeleton').then((m) => m.SalaHomeSkeleton))

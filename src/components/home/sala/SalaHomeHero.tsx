@@ -15,6 +15,15 @@
 // - **Imagen rota.** Sin portada, o si falla, el campo de color con el título
 //   (`SalaPoster`); antes, un degradado de adorno.
 // - El «+1» y el aviso de terminar, en «Sala» (`SalaHomeProgress`).
+//
+// I2b:
+// - **El color de la obra.** Como en la ficha (biblia §4): ya cargada la
+//   portada, su color tiñe el hero (`sala-work`, `SalaPoster` con
+//   `readPalette`), ajustado a AA en claro y en oscuro. Todo en el
+//   navegador, con la imagen que ya está en pantalla. Mientras llega, si su
+//   origen no deja leerla o no da color útil, los neutros.
+// - **El título de la obra, como los demás `h2`** (`sala-type-data`): con
+//   `heading` se veía igual que el `h1` «Inicio».
 // ============================================================
 
 import { useId } from 'react'
@@ -23,6 +32,8 @@ import { Link } from '@/i18n/navigation'
 import { SalaPoster } from '@/components/sala/SalaPoster'
 import { SalaButton } from '@/components/sala/SalaButton'
 import { progressKindFor } from '@/lib/library/progress'
+import { SALA_WORK_CLASS } from '@/lib/design/sala-palette'
+import { cn } from '@/lib/utils/index'
 import type { HeroItem } from '@/components/home/HeroSection'
 import { SalaHomeProgress } from './SalaHomeProgress'
 
@@ -40,7 +51,10 @@ export function SalaHomeHero({ item }: { item: HeroItem | null }) {
     <section
       aria-labelledby={titleId}
       data-sala-home-hero=""
-      className="flex items-start gap-4 bg-sala-panel p-4 font-sala-text text-sala-ink sm:gap-6 sm:p-6 md:gap-8 md:p-8"
+      className={cn(
+        SALA_WORK_CLASS,
+        'flex items-start gap-4 bg-sala-panel p-4 font-sala-text text-sala-ink sm:gap-6 sm:p-6 md:gap-8 md:p-8'
+      )}
     >
       <SalaPoster
         src={media.poster}
@@ -49,6 +63,7 @@ export function SalaHomeHero({ item }: { item: HeroItem | null }) {
         ratio="2/3"
         sizes="(min-width: 768px) 12rem, (min-width: 640px) 10rem, 6rem"
         priority
+        readPalette
         className="w-24 shrink-0 sm:w-40 md:w-48"
       />
       <div className="flex min-w-0 flex-1 flex-col items-start gap-3">
@@ -56,7 +71,7 @@ export function SalaHomeHero({ item }: { item: HeroItem | null }) {
           <span className="mb-1 block text-sala-ink-secondary sala-type-label">{t('continuing')}</span>
           {/* El espacio separa las dos partes en el nombre del encabezado. */}
           {' '}
-          <span className="block sala-type-heading">{media.title}</span>
+          <span className="block sala-type-data">{media.title}</span>
         </h2>
         <p className="sala-type-small">
           <span className="mr-1 font-semibold">{tType(media.type)}</span>

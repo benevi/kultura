@@ -6,6 +6,7 @@ import { watchBox } from "@/lib/design/box-watch";
 import { posterFit, type PixelSize, type PosterFit } from "@/lib/design/image-fit";
 import { measureImageFile } from "@/lib/images/file-size";
 import { posterLoader } from "@/lib/images/poster-url";
+import { applyImagePalette, paletteReadable } from "@/lib/design/image-palette-dom";
 
 /**
  * Lo único de cliente de `SalaPoster`: la imagen. No se usa suelta; la monta
@@ -29,6 +30,13 @@ export interface SalaPosterImageProps {
   fit?: "cover" | "contain";
   focus?: string;
   onLoadError?: () => void;
+  /**
+   * Saca el color de la imagen ya cargada y lo pone en el `sala-work` más
+   * cercano (biblia §4; `image-palette-dom`). La imagen se pide con CORS
+   * donde el origen lo permite; si así falla, se pide otra vez sin él y el
+   * contenedor se queda en los neutros. Solo `SalaPosterImage`.
+   */
+  readPalette?: boolean;
 }
 
 export interface SalaPosterCappedImageProps extends SalaPosterImageProps {
@@ -56,14 +64,29 @@ function marcarCargada(event: React.SyntheticEvent<HTMLImageElement>) {
   event.currentTarget.parentElement?.setAttribute("data-sala-poster-image", "loaded");
 }
 
-export function SalaPosterImage({ src, alt, sizes, priority = false, loading, fit = "cover", focus, onLoadError }: SalaPosterImageProps) {
-  // El único estado: qué imagen ha fallado. Otra imagen vuelve a intentarlo.
-  const [rota, setRota] = React.useState<string | null>(null);
-  if (rota === src) return <Rota alt={alt} />;
-  if (rota !== null) setRota(null);
+export function SalaPosterImage({
+  src,
+  alt,
+  sizes,
+  priority = false,
+  loading,
+  fit = "cover",
+  focus,
+  onLoadError,
+  readPalette = false,
+}: SalaPosterImageProps) {
+  // El único estado: qué imagen ha fallado y cómo. Otra imagen vuelve a intentarlo.
+  // Con `readPalette`, un fallo con CORS no la rompe: se pide otra vez sin él.
+  const [fallo, setFallo] = React.useState<{ src: string; cors: boolean } | null>(null);
+  const corsPrimero = readPalette && paletteReadable(src);
+  const actual = fallo?.src === src ? fallo : null;
+  const rota = actual !== null && (!actual.cors || !corsPrimero);
+  if (fallo !== null && fallo.src !== src) setFallo(null);
+  if (rota) return <Rota alt={alt} />;
+  const cors = corsPrimero && actual === null;
   return (
-    // `key`: con otra imagen el marco es otro y vuelve a nacer en `loading`.
-    <span key={src} data-sala-poster-image="loading" data-sala-poster-frame="fill" className="absolute inset-0">
+    // `key`: con otra imagen (o sin CORS) el marco es otro y vuelve a nacer en `loading`.
+    <span key={`${src} ${cors}`} data-sala-poster-image="loading" data-sala-poster-frame="fill" className="absolute inset-0">
       <Image
         loader={posterLoader}
         src={src}
@@ -72,11 +95,19 @@ export function SalaPosterImage({ src, alt, sizes, priority = false, loading, fi
         sizes={sizes}
         priority={priority}
         loading={priority ? undefined : loading}
+        crossOrigin={cors ? "anonymous" : undefined}
         className={fit === "contain" ? "object-contain" : "object-cover"}
         style={focus ? { objectPosition: focus } : undefined}
-        onLoad={marcarCargada}
+        onLoad={(event) => {
+          marcarCargada(event);
+          if (cors) applyImagePalette(event.currentTarget);
+        }}
         onError={() => {
-          setRota(src);
+          if (cors) {
+            setFallo({ src, cors: true });
+            return;
+          }
+          setFallo({ src, cors: false });
           onLoadError?.();
         }}
       />

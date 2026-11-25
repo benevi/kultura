@@ -28,6 +28,7 @@ import {
   SalaHomeCircleLazy,
   SalaHomeContinueLazy,
   SalaHomeForYouLazy,
+  SalaHomeDeletionLazy,
   SalaHomeHeroLazy,
   SalaHomeNewsLazy,
   SalaHomeTitleLazy,
@@ -192,17 +193,20 @@ export default async function HomePage() {
     }))
 
   // ROJO-7: aviso de borrado programado, arriba de todo.
-  const deletionNotice = deletionRequestedAt ? (
+  const deletionMessage = deletionRequestedAt
+    ? tSettings('deletionPending', {
+        date: new Intl.DateTimeFormat(locale === 'en' ? 'en-GB' : 'es-ES', {
+          day: 'numeric', month: 'long', year: 'numeric',
+        }).format(purgeDate(deletionRequestedAt)),
+      })
+    : null
+  const deletionNotice = deletionMessage ? (
     <div
       role="status"
       className="flex flex-wrap items-center justify-between gap-3 rounded-bento border-2 border-accent-danger/50 bg-surface-default px-5 py-4"
     >
       <p className="font-body text-sm text-text-primary">
-        {tSettings('deletionPending', {
-          date: new Intl.DateTimeFormat(locale === 'en' ? 'en-GB' : 'es-ES', {
-            day: 'numeric', month: 'long', year: 'numeric',
-          }).format(purgeDate(deletionRequestedAt)),
-        })}
+        {deletionMessage}
       </p>
       <Link
         href="/settings"
@@ -221,10 +225,11 @@ export default async function HomePage() {
     <AiRecommendations initial={todayRecs} />
   )
 
-  // Fase 8.5 I1, I2a e I2b-2: Inicio en «Sala» (bandera SALA_INICIO: 0, prueba o 1).
-  // Con ella, el `h1`, el hero, las filas de obras (`SalaWorkList`/`SalaWorkCard`),
-  // «Esta noche», «Para ti» y la actividad de amigos, en una columna más ancha
-  // (6xl). Usa los mismos datos que la página de hoy.
+  // Fase 8.5 I1, I2a e I2b: Inicio en «Sala» (bandera SALA_INICIO: 0, prueba o 1).
+  // Con ella, el `h1`, el aviso de borrado, el hero teñido con el color de la
+  // obra, las filas de obras (`SalaWorkList`/`SalaWorkCard`), «Esta noche»,
+  // «Para ti» y la actividad de amigos, en una columna más ancha (6xl). Usa
+  // los mismos datos que la página de hoy.
   if (await salaInicioEnabled()) {
     const salaForYou = showStarter ? (
       <Suspense fallback={<SalaHomeForYouLazy pending />}>
@@ -236,7 +241,7 @@ export default async function HomePage() {
     return (
       <main data-sala-home="" className="page-grid [&>*]:max-w-6xl py-6 md:py-8 space-y-8 md:space-y-10">
         <SalaHomeTitleLazy />
-        {deletionNotice}
+        {deletionMessage ? <SalaHomeDeletionLazy message={deletionMessage} cta={tSettings('cancelDeletion')} /> : null}
         <SalaHomeHeroLazy item={inProgress} />
         <SalaHomeContinueLazy title={t('continueWatching')} items={filteredRecent} />
         <Suspense fallback={<SalaHomeTonightSkeletonLazy />}>

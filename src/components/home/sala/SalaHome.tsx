@@ -52,6 +52,7 @@ import { Link } from '@/i18n/navigation'
 import { SalaWorkCard } from '@/components/sala/SalaWorkCard'
 import { SalaBlockState } from '@/components/sala/SalaBlockState'
 import { SalaButton } from '@/components/sala/SalaButton'
+import { SalaNotice } from '@/components/sala/SalaNotice'
 import { progressKindFor } from '@/lib/library/progress'
 import { SalaHomeProgress } from './SalaHomeProgress'
 import type { ContinueRowItem } from '@/components/home/ContinueRow'
@@ -67,6 +68,25 @@ export { SalaHomeHero } from './SalaHomeHero'
 /** `movie_603` → `/media/movie/603`. */
 function hrefOf(type: string, mediaId: string): string {
   return `/media/${type}/${mediaId.split('_').slice(1).join('_')}`
+}
+
+/**
+ * El aviso de borrado programado (ROJO-7), arriba de todo, en «Sala» (I2b).
+ * Los textos llegan ya traducidos y con la fecha puesta (los da la página,
+ * como hoy). Un aviso (`warning`, con su dibujo y su borde: no solo color)
+ * que se anuncia como hoy (`role="status"`, solo el texto) y la salida a
+ * Ajustes como botón de 48 px.
+ */
+export function SalaHomeDeletion({ message, cta }: { message: string; cta: string }) {
+  return (
+    <SalaNotice tone="warning" data-sala-home-deletion="" className="font-sala-text" action={
+      <SalaButton asChild variant="secondary">
+        <Link href="/settings">{cta}</Link>
+      </SalaButton>
+    }>
+      {message}
+    </SalaNotice>
+  )
 }
 
 /** El título de la página: Inicio no tenía `h1`. */
