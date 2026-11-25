@@ -43,6 +43,8 @@ const ZONES = [
   { dir: "welcome", list: WELCOME_CLIENT_NAMESPACES, file: "src/app/[locale]/welcome/WelcomeFlow.tsx", shell: [] },
   { dir: "u", list: PUBLIC_PROFILE_CLIENT_NAMESPACES, file: "src/components/collection/InviteLinkButton.tsx", shell: [] },
   { dir: "media", list: MEDIA_CLIENT_NAMESPACES, file: "src/components/library/LibraryAction.tsx", shell: ["layout.tsx"] },
+  // Ficha cacheable sin sesión (FICHA_ISR): la misma ficha y el mismo proveedor.
+  { dir: "media-anonima", list: MEDIA_CLIENT_NAMESPACES, file: "src/components/library/LibraryAction.tsx", shell: ["layout.tsx"] },
 ].map((z) => {
   const dir = path.join(SRC, "app", "[locale]", z.dir) + path.sep;
   return { ...z, path: dir, shellFiles: z.shell.map((f) => dir + f) };

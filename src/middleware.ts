@@ -7,11 +7,19 @@ import { publicEnv } from "@/lib/env.public";
 import {
   CSP_REPORT_PATH,
   buildCsp,
+  buildStaticCsp,
   isInvalidBestPath,
   isRouterFetchFromStaticRoute,
   isStaticCspRoute,
 } from "@/lib/csp";
 import { DEMO_READ_ONLY_ERROR, isBlockedForDemo, isDemoUser } from "@/lib/demo";
+import {
+  fichaIsrEnabled,
+  fichaIsrPath,
+  isAnonymousForFichaIsr,
+  isFichaIsrInternalPath,
+  isRouterFetchFromFicha,
+} from "@/lib/ficha-isr";
 import { bypassesMiddleware } from "@/lib/middleware-bypass";
 
 const intlMiddleware = createIntlMiddleware(routing);
@@ -61,7 +69,10 @@ export async function middleware(request: NextRequest) {
   // Un ranking que no existe (/es/best/movie/abc) no llega a la página: se
   // guardaría en la caché ISR, una entrada por URL inventada. Va a la 404
   // dinámica (abajo), con nonce y sin caché.
-  const invalidBest = isInvalidBestPath(pathname);
+  // La copia cacheable de la ficha (FICHA_ISR) tampoco se abre por su nombre:
+  // misma 404 dinámica.
+  const invalidBest = isInvalidBestPath(pathname) || isFichaIsrInternalPath(pathname);
+  const isDev = process.env.NODE_ENV === "development";
 
   if (isStaticCspRoute(pathname) && !invalidBest) {
     const response = intlMiddleware(request);
@@ -71,20 +82,43 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
+  // FICHA_ISR (apagada por defecto, docs/banderas.json): la ficha de un
+  // visitante sin sesión ni cookie de prueba de «Sala» sale de la caché ISR.
+  // Como las rutas de D-02: sin nonce en la petición (Next no se lo pone a sus
+  // scripts y el HTML es el mismo para todos), la CSP fija en la respuesta y
+  // ninguna cookie (sin next-intl: el idioma va en la URL).
+  const fichaIsr =
+    fichaIsrEnabled() && isAnonymousForFichaIsr(request.cookies.getAll().map((c) => c.name));
+  if (fichaIsr && (request.method === "GET" || request.method === "HEAD")) {
+    const target = fichaIsrPath(pathname);
+    if (target) {
+      const response = NextResponse.rewrite(new URL(target, request.url), {
+        request: { headers: request.headers },
+      });
+      response.headers.set("Content-Security-Policy", buildStaticCsp({ isDev }));
+      return response;
+    }
+  }
+
   // Defensa en profundidad (revisión #47): una navegación del router de Next
   // desde una página con la CSP fija hacia una con nonce pintaría el destino
   // dentro del documento de origen, que conserva su CSP `'unsafe-inline'`. Las
   // páginas cacheables solo enlazan con `<a>` (test del grafo de imports),
   // pero si algo se cuela, una respuesta que no es RSC hace que el router
-  // cargue el documento entero (`doMpaNavigation`), con su propia CSP.
-  if (!pathname.startsWith("/api/") && isRouterFetchFromStaticRoute(request.headers)) {
+  // cargue el documento entero (`doMpaNavigation`), con su propia CSP. La
+  // ficha cacheable sí navega con el router (enlaces de next-intl): con la
+  // bandera encendida y sin sesión, toda navegación que salga de ella a una
+  // página con nonce recarga el documento por este camino.
+  if (
+    !pathname.startsWith("/api/") &&
+    (isRouterFetchFromStaticRoute(request.headers) || (fichaIsr && isRouterFetchFromFicha(request.headers)))
+  ) {
     return new NextResponse(null, { status: 409, headers: { "Cache-Control": "no-store" } });
   }
 
   // C7: nonce único por request — habilita script-src sin 'unsafe-inline' en
   // producción. crypto.randomUUID() está disponible en el runtime Edge.
   const nonce = crypto.randomUUID();
-  const isDev = process.env.NODE_ENV === "development";
   const csp = buildCsp({ nonce, isDev });
 
   // Cabeceras para el render, en la PETICIÓN (nunca en la respuesta, SEG-10):

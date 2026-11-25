@@ -82,8 +82,15 @@ export interface MediaDetailData {
 }
 
 class MediaUnavailable extends Error {
-  constructor(id: string) {
+  /**
+   * `true` si el título no existe seguro (el proveedor lo devolvió sin
+   * título); `false` si no se sabe (un proveedor que se tragó su fallo y
+   * devolvió `null`). Solo lo usa la ficha cacheable (`loadMediaDetailResult`).
+   */
+  readonly definitive: boolean;
+  constructor(id: string, definitive: boolean) {
     super(`ficha no disponible: ${id}`);
+    this.definitive = definitive;
   }
 }
 
@@ -207,12 +214,12 @@ export async function loadMediaDetailUncached(
   locale: string
 ): Promise<MediaDetailData> {
   const parsed = parseMediaId(`${type}_${id}`);
-  if (!parsed) throw new MediaUnavailable(`${type}_${id}`);
+  if (!parsed) throw new MediaUnavailable(`${type}_${id}`, true);
 
   const resolved = await resolve(parsed.type, parsed.externalId, locale);
   const item = resolved?.item;
   if (!resolved || !item || typeof item.title !== "string" || !item.title.trim()) {
-    throw new MediaUnavailable(parsed.id);
+    throw new MediaUnavailable(parsed.id, Boolean(item));
   }
   const { rawgSlug, ...data } = resolved;
   return {
@@ -233,6 +240,51 @@ function isMissingIncrementalCache(e: unknown): boolean {
 }
 
 /**
+ * Resultado de cargar una ficha (bandera `FICHA_ISR`). La ficha cacheable
+ * necesita distinguir:
+ * - `missing`: el título no existe (id imposible, 404 del proveedor o título
+ *   vacío). Su 404 se puede guardar en la caché ISR.
+ * - `unavailable`: no se sabe (proveedor caído, cuota, red). No se guarda: la
+ *   página lanza y la siguiente visita lo vuelve a intentar.
+ */
+export type MediaDetailResult =
+  | { status: "ok"; data: MediaDetailData }
+  | { status: "missing" }
+  | { status: "unavailable" };
+
+function failureStatus(e: unknown): "missing" | "unavailable" {
+  if (e instanceof MediaUnavailable) return e.definitive ? "missing" : "unavailable";
+  if (e instanceof ProviderError && e.status === 404) return "missing";
+  return "unavailable";
+}
+
+/** Como `loadMediaDetail`, pero dice por qué no hay ficha. Nunca lanza. */
+export async function loadMediaDetailResult(
+  type: string,
+  id: string,
+  locale: string
+): Promise<MediaDetailResult> {
+  // Antes de la caché: un id imposible no ocupa una entrada ni llama a nadie.
+  if (!parseMediaId(`${type}_${id}`)) return { status: "missing" };
+  try {
+    return { status: "ok", data: await cachedLoad(type, id, resolveApiLocale(locale)) };
+  } catch (e) {
+    if (isMissingIncrementalCache(e)) {
+      // Fuera de Next (tests, scripts) no hay caché incremental.
+      return loadMediaDetailUncached(type, id, resolveApiLocale(locale)).then(
+        (data) => ({ status: "ok" as const, data }),
+        (err) => ({ status: failureStatus(err) }),
+      );
+    }
+    // Los fallos del proveedor ya los registra `providerFetch`.
+    if (!(e instanceof MediaUnavailable) && !(e instanceof ProviderError)) {
+      log.warn("no se pudo cargar la ficha", { type, id, err: e });
+    }
+    return { status: failureStatus(e) };
+  }
+}
+
+/**
  * Ficha lista para pintar o `null` (id con forma imposible, título que el
  * proveedor no da o proveedor caído). Nunca lanza. La usan la página y sus
  * metadatos: dentro de una petición la segunda llamada sale de la caché.
@@ -242,19 +294,6 @@ export async function loadMediaDetail(
   id: string,
   locale: string
 ): Promise<MediaDetailData | null> {
-  // Antes de la caché: un id imposible no ocupa una entrada ni llama a nadie.
-  if (!parseMediaId(`${type}_${id}`)) return null;
-  try {
-    return await cachedLoad(type, id, resolveApiLocale(locale));
-  } catch (e) {
-    if (isMissingIncrementalCache(e)) {
-      // Fuera de Next (tests, scripts) no hay caché incremental.
-      return loadMediaDetailUncached(type, id, resolveApiLocale(locale)).catch(() => null);
-    }
-    // Los fallos del proveedor ya los registra `providerFetch`.
-    if (!(e instanceof MediaUnavailable) && !(e instanceof ProviderError)) {
-      log.warn("no se pudo cargar la ficha", { type, id, err: e });
-    }
-    return null;
-  }
+  const result = await loadMediaDetailResult(type, id, locale);
+  return result.status === "ok" ? result.data : null;
 }
