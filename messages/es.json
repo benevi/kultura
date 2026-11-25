@@ -900,7 +900,11 @@
       "pending": "<who>{user}</who> ha apuntado <what>{title}</what>",
       "abandoned": "<who>{user}</who> ha dejado <what>{title}</what>"
     },
-    "activityScore": "{score, plural, one {# estrella} other {# estrellas}}"
+    "activityScore": "{score, plural, one {# estrella} other {# estrellas}}",
+    "sala": {
+      "loading": "Cargando «{title}»",
+      "results": "{count, plural, one {# obra} other {# obras}}"
+    }
   },
   "friends": {
     "title": "Amigos",

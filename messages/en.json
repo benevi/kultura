@@ -900,7 +900,11 @@
       "pending": "<who>{user}</who> saved <what>{title}</what> for later",
       "abandoned": "<who>{user}</who> dropped <what>{title}</what>"
     },
-    "activityScore": "{score, plural, one {# star} other {# stars}}"
+    "activityScore": "{score, plural, one {# star} other {# stars}}",
+    "sala": {
+      "loading": "Loading “{title}”",
+      "results": "{count, plural, one {# title} other {# titles}}"
+    }
   },
   "friends": {
     "title": "Friends",

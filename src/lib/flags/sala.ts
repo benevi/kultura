@@ -101,3 +101,12 @@ export function salaBibliotecaEnabled(): Promise<boolean> {
 export function salaDescubrirEnabled(): Promise<boolean> {
   return salaFlagEnabled(process.env.SALA_DESCUBRIR);
 }
+
+/**
+ * Inicio en «Sala» (`SALA_INICIO`, fase 8.5 I1): el título, «Continúa donde
+ * lo dejaste» y las filas de amigos y novedades. La misma cookie y la misma
+ * lógica que las otras: con `0` Inicio sale como hoy.
+ */
+export function salaInicioEnabled(): Promise<boolean> {
+  return salaFlagEnabled(process.env.SALA_INICIO);
+}
