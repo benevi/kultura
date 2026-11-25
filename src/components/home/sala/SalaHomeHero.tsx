@@ -86,10 +86,8 @@ export function SalaHomeHero({ item }: { item: HeroItem | null }) {
           <span className="mb-1 block text-sala-ink-secondary sala-type-label">{t('continuing')}</span>
           {/* El espacio separa las dos partes en el nombre del encabezado. */}
           {' '}
-          {/* El nombre, con el título tal cual: los saltos del rótulo (`<br>`) meten un espacio en el
-              nombre accesible de los títulos sin espacios (japonés, coreano). El rótulo se ve y no se lee. */}
-          <span className="sr-only">{media.title}</span>
-          <SalaTitleText title={media.title} aria-hidden="true" className={cn('block hyphens-auto', HERO_ROTULO)} />
+          {/* Con un título sin espacios (japonés, coreano), `SalaTitleText` pone el nombre tal cual en texto oculto. */}
+          <SalaTitleText title={media.title} className={cn('block hyphens-auto', HERO_ROTULO)} />
         </h2>
         {escrituras.length > 0 ? <SalaScriptFonts scripts={escrituras} /> : null}
         <p className="sala-type-small">
