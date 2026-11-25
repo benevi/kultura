@@ -22,20 +22,35 @@
 //   `readPalette`), ajustado a AA en claro y en oscuro. Todo en el
 //   navegador, con la imagen que ya está en pantalla. Mientras llega, si su
 //   origen no deja leerla o no da color útil, los neutros.
-// - **El título de la obra, como los demás `h2`** (`sala-type-data`): con
-//   `heading` se veía igual que el `h1` «Inicio».
+// - **El título de la obra, como rótulo** (`SalaTitleText`, decisión de
+//   Víctor del 25-11-2026): el de la ficha, compuesto para el ancho de la
+//   columna. Con tope (`HERO_ROTULO`) para que nunca iguale al `h1` «Inicio»
+//   (`heading`, 30–40 px): a cualquier ancho queda por debajo.
 // ============================================================
 
-import { useId } from 'react'
+import { useId, type CSSProperties } from 'react'
 import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 import { SalaPoster } from '@/components/sala/SalaPoster'
 import { SalaButton } from '@/components/sala/SalaButton'
+import { SalaTitleText } from '@/components/sala/SalaTitle'
+import { SalaScriptFonts } from '@/components/sala/SalaScriptFonts'
+import { SALA_TITLE_CSS } from '@/lib/design/sala-title-css'
+import { salaScripts } from '@/lib/design/sala-title'
 import { progressKindFor } from '@/lib/library/progress'
 import { SALA_WORK_CLASS } from '@/lib/design/sala-palette'
 import { cn } from '@/lib/utils/index'
 import type { HeroItem } from '@/components/home/HeroSection'
 import { SalaHomeProgress } from './SalaHomeProgress'
+
+/**
+ * Suelo y tope del rótulo: no baja del papel `data` (22 px) y no llega al
+ * `h1` (`heading`: `clamp(1.875rem, 3vw, 2.5rem)`): 2,6vw < 3vw y 36 px < 40 px.
+ */
+const HERO_ROTULO = {
+  [SALA_TITLE_CSS.vars.floor]: '1.375rem',
+  [SALA_TITLE_CSS.vars.cap]: 'clamp(1.375rem, 2.6vw, 2.25rem)',
+} as CSSProperties
 
 export function SalaHomeHero({ item }: { item: HeroItem | null }) {
   const t = useTranslations('home')
@@ -46,6 +61,7 @@ export function SalaHomeHero({ item }: { item: HeroItem | null }) {
   if (!item?.media) return null
   const { media } = item
   const href = `/media/${media.type}/${media.id.split('_').slice(1).join('_')}`
+  const escrituras = salaScripts(media.title)
 
   return (
     <section
@@ -67,12 +83,17 @@ export function SalaHomeHero({ item }: { item: HeroItem | null }) {
         className="w-24 shrink-0 sm:w-40 md:w-48"
       />
       <div className="flex min-w-0 flex-1 flex-col items-start gap-3">
-        <h2 id={titleId} className="[overflow-wrap:anywhere]">
+        {/* El h2 es el contenedor del rótulo (`container-type`): de su ancho sale el tamaño. */}
+        <h2 id={titleId} className="w-full [container-type:inline-size] [overflow-wrap:anywhere]">
           <span className="mb-1 block text-sala-ink-secondary sala-type-label">{t('continuing')}</span>
           {/* El espacio separa las dos partes en el nombre del encabezado. */}
           {' '}
-          <span className="block sala-type-data">{media.title}</span>
+          {/* El nombre, con el título tal cual: los saltos del rótulo (`<br>`) meten un espacio en el
+              nombre accesible de los títulos sin espacios (japonés, coreano). El rótulo se ve y no se lee. */}
+          <span className="sr-only">{media.title}</span>
+          <SalaTitleText title={media.title} aria-hidden="true" className="block hyphens-auto" style={HERO_ROTULO} />
         </h2>
+        {escrituras.length > 0 ? <SalaScriptFonts scripts={escrituras} /> : null}
         <p className="sala-type-small">
           <span className="mr-1 font-semibold">{tType(media.type)}</span>
           {media.year ? (
