@@ -132,14 +132,26 @@ test("«Dónde ver» con enlaces: Tab recorre la fila y el anillo se ve entero",
   expect((await focusState(page)).inRow, "tras la última plataforma, el foco sale de la fila").toBe(false);
 });
 
-test("«Dónde ver» sin enlaces: la fila recibe el foco y se mueve con las flechas", async ({ page }) => {
+test("«Dónde ver» a 320 px: los grupos van en varias líneas, sin fila que desplazar (F6)", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 700 });
+  for (const path of ["/es/media/movie/550", "/es/media/movie/603"]) {
+    await open(page, path);
+    const row = page.locator(ROW);
+    expect(await row.evaluate((el) => el.scrollWidth - el.clientWidth), `${path}: la fila no desborda`).toBeLessThanOrEqual(1);
+  }
+});
+
+test("«Dónde ver» sin enlaces: la fila recibe el foco y se mueve con las flechas", async ({ page }) => {
+  // Desde `sm` es una fila que se desliza; a 640 px, la de 603 desborda.
+  await page.setViewportSize({ width: 640, height: 700 });
   await open(page, "/es/media/movie/603");
   const row = page.locator(ROW);
   await expect(row).toHaveAttribute("tabindex", "0");
   await expect(row).toHaveAttribute("role", "group");
   await expect(row).toHaveAccessibleName("Dónde ver");
   await expect(row.locator("a")).toHaveCount(0);
+  // A 640 px la fila de 603 cabe: se ensanchan las tarjetas para que desborde.
+  await page.addStyleTag({ content: `${ROW} li { width: 12rem !important; }` });
 
   // Llega con Tab desde lo anterior (foco de teclado, con anillo).
   await row.focus();
@@ -152,7 +164,7 @@ test("«Dónde ver» sin enlaces: la fila recibe el foco y se mueve con las flec
   });
   expect(ring, "anillo de la fila").toBeGreaterThanOrEqual(2);
   const overflow = await row.evaluate((el) => el.scrollWidth - el.clientWidth);
-  expect(overflow, "la fila desborda a 320 px").toBeGreaterThan(0);
+  expect(overflow, "la fila desborda a 640 px").toBeGreaterThan(0);
 
   const before = await row.evaluate((el) => el.scrollLeft);
   await page.keyboard.press("ArrowRight");

@@ -1,5 +1,6 @@
 import { useLocale, useTranslations } from "next-intl";
 import { SalaLink } from "@/components/sala/SalaLink";
+import { groupProviderVariants } from "@/lib/media/provider-groups";
 import { cn } from "@/lib/utils/index";
 import type { StreamingProvider } from "@/types/media";
 import { groupProviders, JUSTWATCH_LOGO_URL, justWatchUrl, safeTmdbHref } from "../StreamingProviders";
@@ -27,6 +28,13 @@ const HEADING_ID = "sala-ficha-watch";
  * - **La cita de JustWatch va siempre** (TMDB la exige, PRO-2): texto y logo
  *   con enlace, sin ocultarse ni encogerse.
  *
+ * - **Por debajo de `sm` no hay fila**: los grupos y las plataformas se
+ *   parten en varias líneas y no se corta nada (F6). Desde `sm`, la fila.
+ * - **Variantes de un servicio juntas** (F6, decisión de Víctor): «Amazon
+ *   Prime Video» y «… with Ads» van en una tarjeta con el nombre y el logo
+ *   literales de la principal; las demás se abren con «+N» (`<details>`),
+ *   cada una con su nombre literal y su enlace (`provider-groups.ts`).
+ *
  * Server Component: todo sale en el HTML. El único JS es el de la fila.
  */
 export function SalaWhereToWatch({
@@ -43,10 +51,10 @@ export function SalaWhereToWatch({
   const locale = useLocale();
   const groups = groupProviders(providers).map((g) => ({
     ...g,
-    items: g.items.map((p) => ({ ...p, href: safeTmdbHref(p.url ?? link) })),
+    items: groupProviderVariants(g.items.map((p) => ({ ...p, href: safeTmdbHref(p.url ?? link) }))),
   }));
   if (groups.length === 0) return null;
-  const allLinked = groups.every((g) => g.items.every((p) => p.href));
+  const allLinked = groups.every((g) => g.items.every(({ main, variants }) => main.href && variants.every((v) => v.href)));
 
   return (
     <SalaFichaSection id={HEADING_ID} heading={title} data-sala-ficha-watch="">
@@ -62,16 +70,19 @@ export function SalaWhereToWatch({
         {...(allLinked ? {} : { tabIndex: 0, role: "group", "aria-labelledby": HEADING_ID })}
         className={cn(
           // Sale hasta el borde de la retícula (`page-grid`: 16 px, 32 px desde md).
-          "-mx-4 flex gap-10 overflow-x-auto overscroll-x-contain px-4 pb-4 pt-1 md:-mx-8 md:px-8",
-          "scroll-px-4 md:scroll-px-8 [scrollbar-width:thin]",
+          // Por debajo de `sm`, en varias líneas (F6); desde `sm`, la fila que se desliza.
+          // El relleno deja sitio al anillo de foco dentro de la fila (2.4.11).
+          "-mx-2 flex flex-wrap gap-x-10 gap-y-6 px-2 pb-4 pt-1",
+          "sm:-mx-4 sm:flex-nowrap sm:overflow-x-auto sm:overscroll-x-contain sm:px-4 md:-mx-8 md:px-8",
+          "sm:scroll-px-4 md:scroll-px-8 [scrollbar-width:thin]",
           !allLinked && "sala-focused:sala-focus"
         )}
       >
         {groups.map((group) => (
-          <div key={group.type} className="shrink-0">
+          <div key={group.type} className="min-w-0 sm:shrink-0">
             <h3 className="sala-type-small mb-3 text-sala-ink-secondary">{t(`watchType.${group.type}`)}</h3>
-            <ul role="list" className="flex list-none gap-4">
-              {group.items.map((p) => {
+            <ul role="list" className="flex list-none flex-wrap gap-4 sm:flex-nowrap">
+              {group.items.map(({ main: p, variants }) => {
                 const tile = (
                   <>
                     {/* img nativo intencionado: logos pequeños, muchos providers */}
@@ -104,7 +115,7 @@ export function SalaWhereToWatch({
                   </>
                 );
                 return (
-                  <li key={p.name} className="w-20 shrink-0">
+                  <li key={p.name} className="w-20 shrink-0" data-sala-watch-service="">
                     {p.href ? (
                       <a
                         href={p.href}
@@ -125,6 +136,39 @@ export function SalaWhereToWatch({
                         {/* Sin enlace, el nombre visible es el texto: el logo es adorno. */}
                         {tile}
                       </div>
+                    )}
+                    {variants.length > 0 && (
+                      <details data-sala-watch-variants="" className="mt-1 sala-type-small">
+                        <summary
+                          aria-label={t("salaProviderVariantsLabel", { name: p.name, count: variants.length })}
+                          className={cn(
+                            "flex min-h-sala-target cursor-pointer list-none items-center justify-center text-sala-ink-secondary",
+                            "underline underline-offset-4 sala-hover:text-sala-ink sala-focused:sala-focus",
+                            "[&::-webkit-details-marker]:hidden"
+                          )}
+                        >
+                          {t("salaProviderVariants", { count: variants.length })}
+                        </summary>
+                        <ul role="list" className="mt-1 grid list-none gap-1">
+                          {variants.map((v) => (
+                            <li key={v.name} className="[overflow-wrap:anywhere]">
+                              {v.href ? (
+                                <a
+                                  href={v.href}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  aria-label={t("salaProviderLinkLabel", { name: v.name, type: group.type })}
+                                  className="inline-flex min-h-sala-target items-center text-sala-ink underline underline-offset-4 sala-focused:sala-focus"
+                                >
+                                  {v.name}
+                                </a>
+                              ) : (
+                                <span className="inline-flex min-h-sala-target items-center text-sala-ink">{v.name}</span>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      </details>
                     )}
                   </li>
                 );

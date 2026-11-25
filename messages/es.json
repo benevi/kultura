@@ -285,6 +285,8 @@
     "justwatchAttribution": "Datos de disponibilidad:",
     "justwatchLinkLabel": "JustWatch (se abre en una pestaña nueva)",
     "providerLinkLabel": "{name}: dónde verlo, en TMDB (se abre en una pestaña nueva)",
+    "salaProviderVariants": "+{count, plural, one {# variante} other {# variantes}}",
+    "salaProviderVariantsLabel": "{name}: {count, plural, one {# variante más} other {# variantes más}}",
     "salaProviderLinkLabel": "{name}, {type, select, flatrate {suscripción} free {gratis} ads {gratis con anuncios} rent {alquiler} buy {compra} other {}}: dónde verlo, en TMDB (se abre en una pestaña nueva)",
     "genres": "Géneros",
     "notFound": "Título no encontrado",
