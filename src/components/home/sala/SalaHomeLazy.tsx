@@ -14,3 +14,5 @@ export const SalaHomeHeroLazy = dynamic(() => import('./SalaHome').then((m) => m
 export const SalaHomeContinueLazy = dynamic(() => import('./SalaHome').then((m) => m.SalaHomeContinue))
 export const SalaHomeCircleLazy = dynamic(() => import('./SalaHome').then((m) => m.SalaHomeCircle))
 export const SalaHomeNewsLazy = dynamic(() => import('./SalaHome').then((m) => m.SalaHomeNews))
+export const SalaHomeDeletionLazy = dynamic(() => import('./SalaHome').then((m) => m.SalaHomeDeletion))
+export const SalaHomeSkeletonLazy = dynamic(() => import('./SalaHomeSkeleton').then((m) => m.SalaHomeSkeleton))

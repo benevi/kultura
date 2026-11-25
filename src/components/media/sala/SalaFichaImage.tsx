@@ -3,8 +3,7 @@
 import * as React from "react";
 import Image from "next/image";
 import { backdropLoader, posterLoader } from "@/lib/images/poster-url";
-import { paletteFromPixels } from "@/lib/design/image-palette";
-import { SALA_WORK_CLASS, workPaletteVars } from "@/lib/design/sala-palette";
+import { applyImagePalette as applyPalette, paletteReadable } from "@/lib/design/image-palette-dom";
 import { SALA_POSTER_MAX_SCALE, salaPosterFill } from "@/lib/design/sala-poster";
 
 /**
@@ -39,45 +38,8 @@ export interface SalaFichaImageProps {
   vertical?: boolean;
 }
 
-/**
- * Sin CORS fiable: Google Books no lo manda; AniList lo manda a `curl`, pero
- * al navegador le llega a menudo sin él (su caché no distingue el origen) y
- * la imagen se tendría que pedir dos veces. Se quedan en los neutros.
- */
-const NO_CORS_HOSTS = ["books.google.com", "s4.anilist.co"];
-
-/** ¿Se pueden leer los píxeles de esta imagen sin romperla? */
-export function paletteReadable(src: string): boolean {
-  let host: string;
-  try {
-    host = new URL(src).hostname;
-  } catch {
-    // Relativa: mismo origen.
-    return true;
-  }
-  return !(NO_CORS_HOSTS.includes(host) || host.endsWith(".googleusercontent.com"));
-}
-
-const SAMPLE = 32;
-
-function applyPalette(img: HTMLImageElement) {
-  const work = img.closest<HTMLElement>(`.${SALA_WORK_CLASS}`);
-  if (!work) return;
-  try {
-    const canvas = document.createElement("canvas");
-    canvas.width = SAMPLE;
-    canvas.height = SAMPLE;
-    const ctx = canvas.getContext("2d", { willReadFrequently: true });
-    if (!ctx) return;
-    ctx.drawImage(img, 0, 0, SAMPLE, SAMPLE);
-    const palette = paletteFromPixels(ctx.getImageData(0, 0, SAMPLE, SAMPLE).data);
-    if (palette.neutral) return;
-    for (const [name, value] of Object.entries(workPaletteVars(palette))) work.style.setProperty(name, value);
-    work.dataset.salaPalette = "image";
-  } catch {
-    // Lienzo «manchado» (sin CORS): neutros.
-  }
-}
+// Compartido con el hero de Inicio (`SalaPoster` con `readPalette`).
+export { paletteReadable };
 
 /**
  * F4: la sala con vertical (`data-sala-fill`) se queda llenando solo si la

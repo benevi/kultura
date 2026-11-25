@@ -206,6 +206,49 @@ describe("SalaPoster", () => {
     });
   });
 
+  describe("color de la imagen (readPalette, I2b)", () => {
+    it("por defecto se pide sin CORS", () => {
+      const { container } = render(<SalaPoster src={SRC} alt="" title="Parásitos" sizes="160px" />);
+      expect(container.querySelector("img")).not.toHaveAttribute("crossorigin");
+    });
+
+    it("con readPalette se pide con CORS; si así falla, otra vez sin él, y solo después se da por rota", () => {
+      const onLoadError = vi.fn();
+      const { container } = render(
+        <div className="sala-work">
+          <SalaPoster src={SRC} alt="" title="Parásitos" sizes="160px" readPalette onLoadError={onLoadError} />
+        </div>
+      );
+      expect(container.querySelector("img")).toHaveAttribute("crossorigin", "anonymous");
+      fireEvent.error(container.querySelector("img")!);
+      const segunda = container.querySelector("img")!;
+      expect(segunda).not.toHaveAttribute("crossorigin");
+      expect(onLoadError).not.toHaveBeenCalled();
+      fireEvent.error(segunda);
+      expect(container.querySelector("img")).toBeNull();
+      expect(onLoadError).toHaveBeenCalledTimes(1);
+    });
+
+    it("un origen que no deja leer la imagen (Google Books) se pide sin CORS", () => {
+      const { container } = render(
+        <SalaPoster src="https://books.google.com/books/content?id=x" alt="" title="Libro" sizes="160px" readPalette />
+      );
+      expect(container.querySelector("img")).not.toHaveAttribute("crossorigin");
+    });
+
+    it("al cargar, si el lienzo no se puede leer, el contenedor se queda en los neutros", () => {
+      const { container } = render(
+        <div className="sala-work" data-testid="obra">
+          <SalaPoster src={SRC} alt="" title="Parásitos" sizes="160px" readPalette />
+        </div>
+      );
+      fireEvent.load(container.querySelector("img")!);
+      const obra = screen.getByTestId("obra");
+      expect(obra).not.toHaveAttribute("data-sala-palette");
+      expect(estado(container)).toBe("loaded");
+    });
+  });
+
   describe("sin tope de ampliación (por defecto)", () => {
     it("la portada llena la caja mida lo que mida, sin medir nada ni observar la caja", () => {
       const observador = vi.fn();

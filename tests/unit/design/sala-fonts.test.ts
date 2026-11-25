@@ -193,10 +193,13 @@ describe("las pantallas de hoy solo descargan «Sala» donde ya la usan", () => 
     // - `SalaDiscoverView` (fase 8.5, D1): Descubrir, por `next/dynamic` y solo
     //   con la bandera `SALA_DESCUBRIR` encendida.
     // - `SalaHome` (fase 8.5, I1): Inicio, por `next/dynamic` y solo con la
-    //   bandera `SALA_INICIO` encendida.
+    //   bandera `SALA_INICIO` encendida. `SalaHomeSkeleton` (I2b): el esqueleto
+    //   de su `loading.tsx`, que se pinta antes que la página; igual, por
+    //   `next/dynamic` y solo con la bandera.
     expect(importers.sort()).toEqual([
       "src/components/discover/sala/SalaDiscoverView.tsx",
       "src/components/home/sala/SalaHome.tsx",
+      "src/components/home/sala/SalaHomeSkeleton.tsx",
       "src/components/layout/ErrorState.tsx",
       "src/components/library/sala/SalaLibraryGrid.tsx",
       "src/components/media/sala/SalaFichaStyles.tsx",

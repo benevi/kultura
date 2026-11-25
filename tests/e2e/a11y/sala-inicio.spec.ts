@@ -322,3 +322,97 @@ test.describe("con «Sala» (I2a)", () => {
     await expect(hero.getByTestId("progress-label")).toContainText("35");
   });
 });
+
+/**
+ * Fase 8.5 I2b-1: el hero se tiñe con el color de la portada (en el
+ * navegador, ajustado a AA en claro y oscuro, con los neutros de respaldo) y
+ * los `h2` de sección no se ven como el `h1`.
+ */
+test.describe("con «Sala» (I2b-1)", () => {
+  test.beforeEach(async ({ context, baseURL }) => {
+    await salaCookie(context, baseURL!);
+  });
+
+  const HERO = "[data-sala-home-hero]";
+  const PORTADA = "**/t/p/*/a11y-slime.jpg";
+  /** Una portada de dos colores vivos (como imagen; el navegador la pinta en el lienzo). */
+  const COLOR = `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="60"><rect width="40" height="60" fill="#1f7a3a"/><rect y="40" width="40" height="20" fill="#e8c21a"/></svg>`;
+
+  /**
+   * La portada de color. `cors: false` hace de CDN que falla al pedirla con
+   * CORS (lo que pasa con AniList detrás de su caché): Playwright añade la
+   * cabecera de CORS a lo que sirve, así que el fallo se simula cortando la
+   * petición con CORS.
+   */
+  async function servePoster(page: Page, cors: boolean) {
+    await page.route(PORTADA, async (route) => {
+      // Pedida con CORS, el navegador manda `Origin`; sin él, no.
+      const headers = await route.request().allHeaders();
+      if (!cors && ("origin" in headers || headers["sec-fetch-mode"] === "cors")) return route.abort();
+      return route.fulfill({
+        status: 200,
+        contentType: "image/svg+xml",
+        headers: { "Access-Control-Allow-Origin": "*" },
+        body: COLOR,
+      });
+    });
+  }
+
+  const heroColors = (page: Page) =>
+    page.locator(HERO).evaluate((el) => ({
+      palette: (el as HTMLElement).dataset.salaPalette ?? null,
+      bg: getComputedStyle(el).backgroundColor,
+    }));
+
+  for (const scheme of ["light", "dark"] as const) {
+    test(`hero teñido con el color de la portada (${scheme}) y axe limpio`, async ({ page }) => {
+      await page.emulateMedia({ colorScheme: scheme });
+      await mockHome(page);
+      await servePoster(page, true);
+      await openHome(page);
+      await expect(page.locator(`${HERO} img`)).toHaveAttribute("crossorigin", "anonymous");
+      await expect.poll(async () => (await heroColors(page)).palette).toBe("image");
+      const tinted = await heroColors(page);
+      // Fuera del hero, el panel sigue en los neutros.
+      const neutral = await page.locator(HOME).evaluate((el) => {
+        const probe = document.createElement("div");
+        probe.className = "bg-sala-panel";
+        el.appendChild(probe);
+        const bg = getComputedStyle(probe).backgroundColor;
+        probe.remove();
+        return bg;
+      });
+      expect(tinted.bg, "el panel del hero cambia de color").not.toBe(neutral);
+      await expectNoBlockingViolations(page, `Inicio con «Sala»: hero teñido (${scheme})`, HERO);
+    });
+  }
+
+  test("si la portada falla pedida con CORS: se pide sin él y se ve igual, con los neutros", async ({ page }) => {
+    await mockHome(page);
+    await servePoster(page, false);
+    await openHome(page);
+    // Con CORS falla; se pide otra vez sin él y se ve, sin teñir.
+    await expect(page.locator(`${HERO} [data-sala-poster-image="loaded"] img`)).not.toHaveAttribute("crossorigin");
+    expect((await heroColors(page)).palette).toBeNull();
+    await expectNoBlockingViolations(page, "Inicio con «Sala»: hero sin color", HERO);
+  });
+
+  test("papel tipográfico: el h1 y los h2 de sección no se ven iguales", async ({ page }) => {
+    await mockHome(page);
+    for (const width of [375, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      await openHome(page);
+      const font = (sel: string) =>
+        page.locator(sel).first().evaluate((el) => {
+          const cs = getComputedStyle(el);
+          return { size: parseFloat(cs.fontSize), weight: cs.fontWeight, stretch: cs.fontStretch };
+        });
+      const h1 = await font(`${HOME} h1`);
+      for (const sel of [`${HERO} h2 > span:last-child`, `${ROW("continue")} h2`, `${ROW("news-0")} h2`]) {
+        const h2 = await font(sel);
+        expect(h2.size, `${sel} a ${width} px: más pequeño que el h1`).toBeLessThan(h1.size);
+        expect([h2.weight, h2.stretch], `${sel} a ${width} px: otro peso o anchura`).not.toEqual([h1.weight, h1.stretch]);
+      }
+    }
+  });
+});

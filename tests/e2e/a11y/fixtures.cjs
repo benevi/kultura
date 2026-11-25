@@ -210,10 +210,19 @@ function tmdbResponse(pathname) {
 
 /**
  * Dos obras de otros formatos para la biblioteca (fase 8.5 B1): un manga con
- * el título en japonés y un videojuego. Sin portada: se ve el respaldo.
+ * el título en japonés y un videojuego. El videojuego, sin portada: se ve el respaldo.
  */
 const OTHER_MEDIA = [
-  { id: "manga_108556", external_id: "108556", type: "manga", title: "転生したらスライムだった件", year: 2014 },
+  // Con portada (fase 8.5 I2b): es el hero de Inicio, que se tiñe con su color.
+  // Sin red, el navegador recibe un píxel; `sala-inicio.spec.ts` sirve una imagen de color.
+  {
+    id: "manga_108556",
+    external_id: "108556",
+    type: "manga",
+    title: "転生したらスライムだった件",
+    year: 2014,
+    poster: "https://image.tmdb.org/t/p/w500/a11y-slime.jpg",
+  },
   { id: "game_326243", external_id: "326243", type: "game", title: "Elden Ring", year: 2022 },
 ];
 
@@ -232,7 +241,7 @@ const mediaRows = MOVIES.slice(0, 4).map((m) => ({
   updated_at: NOW,
 }));
 for (const m of OTHER_MEDIA) {
-  mediaRows.push({ ...m, poster: null, backdrop: null, synopsis: `Sinopsis de prueba de ${m.title}.`, genres: [], metadata: null, updated_at: NOW });
+  mediaRows.push({ ...m, poster: m.poster ?? null, backdrop: null, synopsis: `Sinopsis de prueba de ${m.title}.`, genres: [], metadata: null, updated_at: NOW });
 }
 
 const list = {

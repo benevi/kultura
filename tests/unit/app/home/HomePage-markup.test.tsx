@@ -70,6 +70,7 @@ vi.mock('@/components/home/sala/SalaHomeLazy', () => {
     }
   return {
     SalaHomeTitleLazy: lazy('title'),
+    SalaHomeDeletionLazy: lazy('deletion'),
     SalaHomeHeroLazy: lazy('hero'),
     SalaHomeContinueLazy: lazy('continue'),
     SalaHomeCircleLazy: lazy('circle'),
@@ -168,7 +169,7 @@ describe('Inicio con «Sala» (SALA_INICIO=1)', () => {
     const order = [...html.matchAll(/data-(?:sala-)?stub="([^"]+)"|role="status"/g)].map((m) => m[1] ?? 'aviso')
     expect(order).toEqual([
       'title',
-      'aviso',
+      'deletion',
       'hero',
       'continue',
       'TonightOnMyPlatforms',
@@ -178,6 +179,12 @@ describe('Inicio con «Sala» (SALA_INICIO=1)', () => {
       'news',
     ])
     expect(html).toContain('<main data-sala-home=""')
+    // I2b: el aviso de borrado, en «Sala» (el de hoy no sale) con los mismos textos.
+    expect(html).not.toContain('role="status"')
+    expect(state.sala?.deletion).toEqual({
+      message: 'settings.deletionPending(8 de noviembre de 2026)',
+      cta: 'settings.cancelDeletion',
+    })
     expect(html).not.toContain('data-stub="HeroSection"')
     expect(html).not.toContain('data-stub="ContinueRow"')
     expect(html).not.toContain('data-stub="PopularInCircle"')
