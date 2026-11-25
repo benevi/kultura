@@ -1,5 +1,5 @@
-import Image from "next/image";
 import { useTranslations } from "next-intl";
+import { SteamShot } from "@/components/media/SteamShot";
 import { SalaLink } from "@/components/sala/SalaLink";
 import { cn } from "@/lib/utils/index";
 import type { SteamInfo } from "@/lib/api/steam";
@@ -84,7 +84,7 @@ export function SalaSteam({ steam }: { steam: SteamInfo }) {
                       "sala-focused:sala-focus"
                     )}
                   >
-                    <Image src={shot.thumb} alt="" fill sizes="(max-width: 1024px) 45vw, 28vw" className="object-cover" />
+                    <SteamShot src={shot.thumb} sizes="(max-width: 1024px) 45vw, 28vw" className="object-cover" />
                   </a>
                 </li>
               ))}

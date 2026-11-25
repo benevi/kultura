@@ -197,6 +197,11 @@ const nextConfig = {
     // pedir y recomprimir cada una al minuto de caducar (TTL por defecto: 60 s),
     // y la galería de la landing paga ese coste en frío en cada visita.
     minimumCacheTTL: 60 * 60 * 24 * 7,
+    // Una sola calidad (`OPTIMIZER_QUALITY` en src/lib/images/poster-url.ts):
+    // cada calidad distinta de la misma imagen es otra transformación del cupo
+    // de Hobby (5.000 al mes), y sin esta lista el optimizador acepta cualquier
+    // `q` de 1 a 100 que le llegue en la URL.
+    qualities: [70],
     remotePatterns: [
       {
         protocol: "https",

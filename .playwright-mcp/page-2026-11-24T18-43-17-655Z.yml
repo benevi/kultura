@@ -1,0 +1,137 @@
+- generic [active] [ref=f5e1]:
+  - link "Saltar al contenido" [ref=f5e2] [cursor=pointer]:
+    - /url: "#main"
+  - generic [ref=f5e3]:
+    - banner [ref=f5e4]:
+      - generic [ref=f5e5]:
+        - link "kultura" [ref=f5e6] [cursor=pointer]:
+          - /url: /es
+        - navigation [ref=f5e15]:
+          - link "Entra" [ref=f5e16] [cursor=pointer]:
+            - /url: /es/login?mode=login
+          - link "Registrarse" [ref=f5e18] [cursor=pointer]:
+            - /url: /es/login?mode=register
+    - main [ref=f5e20]:
+      - generic [ref=f5e21]:
+        - region "JUJUTSU KAISEN Season 2" [ref=f5e22]:
+          - generic [ref=f5e23]:
+            - heading "JUJUTSU KAISEN Season 2" [level=1] [ref=f5e25]
+            - paragraph [ref=f5e28]: 呪術廻戦 第2期
+        - region "Datos de la obra" [ref=f5e29]:
+          - generic [ref=f5e30]:
+            - heading "Datos de la obra" [level=2] [ref=f5e31]
+            - generic [ref=f5e32]:
+              - generic [ref=f5e33]:
+                - term [ref=f5e34]: Año
+                - definition [ref=f5e35]: "2023"
+              - generic [ref=f5e36]:
+                - term [ref=f5e37]: Formato
+                - definition [ref=f5e38]: Anime
+              - generic [ref=f5e39]:
+                - term [ref=f5e40]: Episodios
+                - definition [ref=f5e41]: "23"
+              - generic [ref=f5e42]:
+                - term [ref=f5e43]:
+                  - generic [ref=f5e44]: Nota en AniList
+                  - text: AniList
+                - definition [ref=f5e45]: 8,6/10
+              - generic [ref=f5e46]:
+                - term [ref=f5e47]: Géneros
+                - definition [ref=f5e48]: Acción, Drama, Sobrenatural
+              - generic [ref=f5e49]:
+                - term [ref=f5e50]: Título original
+                - definition [ref=f5e51]:
+                  - text: Jujutsu Kaisen 2nd Season
+                  - generic [ref=f5e52]: · japonés
+        - generic [ref=f5e53]:
+          - navigation "Estás en" [ref=f5e54]:
+            - list [ref=f5e55]:
+              - listitem [ref=f5e56]:
+                - link "Inicio" [ref=f5e57] [cursor=pointer]:
+                  - /url: /es
+                - generic [aria-hidden] [ref=f5e58]: ›
+              - listitem [ref=f5e59]:
+                - link "Animes" [ref=f5e60] [cursor=pointer]:
+                  - /url: /es/best/anime/2026
+                - generic [aria-hidden] [ref=f5e61]: ›
+              - listitem [ref=f5e62]:
+                - generic [ref=f5e63]: JUJUTSU KAISEN Season 2
+          - region "Tu biblioteca" [ref=f5e64]:
+            - heading "Tu biblioteca" [level=2] [ref=f5e65]
+            - generic [ref=f5e66]:
+              - link "Añadir a mi biblioteca" [ref=f5e67] [cursor=pointer]:
+                - /url: /es/login?mode=register&next=%2Fes%2Fmedia%2Fanime%2Fal-145064
+              - paragraph [ref=f5e73]:
+                - text: Gratis y sin anuncios. Al crear tu cuenta vuelves a esta ficha.
+                - link "¿Ya tienes cuenta? Entra" [ref=f5e74] [cursor=pointer]:
+                  - /url: /es/login?mode=login&next=%2Fes%2Fmedia%2Fanime%2Fal-145064
+          - generic [ref=f5e75]:
+            - region "Sinopsis" [ref=f5e76]:
+              - heading "Sinopsis" [level=2] [ref=f5e77]
+              - generic [ref=f5e78]:
+                - paragraph [ref=f5e79]: The past comes to light when second-year students Satoru Gojou and Suguru Getou are tasked with escorting young Riko Amanai to Master Tengen. But when a non-sorcerer user tries to kill them, their mission to protect the Star Plasma Vessel threatens to turn them into bitter enemie…
+                - button "Leer más" [ref=f5e80] [cursor=pointer]
+            - region "Detalles" [ref=f5e81]:
+              - heading "Detalles" [level=2] [ref=f5e82]
+              - generic [ref=f5e84]:
+                - term [ref=f5e85]: Estudio
+                - definition [ref=f5e86]: MAPPA
+          - generic [ref=f5e87]:
+            - region "Más acciones" [ref=f5e88]:
+              - heading "Más acciones" [level=2] [ref=f5e89]
+              - link "Denunciar este título" [ref=f5e91] [cursor=pointer]:
+                - /url: /es/report?target=media&id=anime_al-145064
+            - region "Tráiler" [ref=f5e93]:
+              - heading "Tráiler" [level=2] [ref=f5e94]
+              - generic [ref=f5e95]:
+                - button "Reproducir el tráiler de JUJUTSU KAISEN Season 2" [ref=f5e99] [cursor=pointer]:
+                  - generic [ref=f5e100]: Reproducir el tráiler
+                - paragraph [ref=f5e105]: El vídeo se carga desde YouTube al pulsar.
+            - generic [ref=f5e106]:
+              - paragraph [ref=f5e107]:
+                - generic [ref=f5e108]: "Datos del título:"
+                - link "AniList (se abre en una pestaña nueva)" [ref=f5e109] [cursor=pointer]:
+                  - /url: https://anilist.co/anime/145064
+                  - generic [ref=f5e110]:
+                    - text: AniList
+                    - generic [ref=f5e113]: (se abre en una pestaña nueva)
+              - paragraph [ref=f5e114]:
+                - generic [ref=f5e115]: "Imagen:"
+                - link "TMDB (se abre en una pestaña nueva)" [ref=f5e116] [cursor=pointer]:
+                  - /url: https://www.themoviedb.org/tv/95479
+                  - generic [ref=f5e117]:
+                    - text: TMDB
+                    - generic [ref=f5e120]: (se abre en una pestaña nueva)
+    - contentinfo [ref=f5e122]:
+      - navigation "Información" [ref=f5e123]:
+        - list [ref=f5e124]:
+          - listitem [ref=f5e125]:
+            - link "Privacidad" [ref=f5e126] [cursor=pointer]:
+              - /url: /es/privacy
+          - listitem [ref=f5e127]:
+            - link "Términos" [ref=f5e128] [cursor=pointer]:
+              - /url: /es/terms
+          - listitem [ref=f5e129]:
+            - link "Aviso legal" [ref=f5e130] [cursor=pointer]:
+              - /url: /es/legal
+          - listitem [ref=f5e131]:
+            - link "Accesibilidad" [ref=f5e132] [cursor=pointer]:
+              - /url: /es/accessibility
+      - generic [ref=f5e133]: © 2026 KULTURA
+      - paragraph [ref=f5e134]:
+        - text: Datos de
+        - link "TMDB" [ref=f5e135] [cursor=pointer]:
+          - /url: https://www.themoviedb.org
+        - text: ","
+        - link "RAWG" [ref=f5e136] [cursor=pointer]:
+          - /url: https://rawg.io
+        - text: ", Steam, AniList, MangaDex, Open Library, Google Books y"
+        - link "Comic Vine" [ref=f5e137] [cursor=pointer]:
+          - /url: https://comicvine.gamespot.com
+        - text: ". Datos de disponibilidad en plataformas:"
+        - link "JustWatch" [ref=f5e138] [cursor=pointer]:
+          - /url: https://www.justwatch.com
+        - text: ". Carátulas y descripciones de videojuegos:"
+        - link "Steam" [ref=f5e139] [cursor=pointer]:
+          - /url: https://store.steampowered.com
+        - text: . Este producto usa la API de TMDB, pero TMDB no lo respalda ni lo certifica. Steam y el logotipo de Steam son marcas de Valve Corporation; KULTURA no está afiliada a Valve.

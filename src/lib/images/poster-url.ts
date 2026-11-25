@@ -27,16 +27,40 @@ function pick(widths: readonly number[], want: number): number | null {
   return null;
 }
 
-/** Respaldo: el optimizador de Next, mismo origen. */
-function optimizer(src: string, width: number, quality = 70): string {
-  return `/_next/image?url=${encodeURIComponent(src)}&w=${width}&q=${quality}`;
+/**
+ * Anchos que se piden al optimizador (cupo de Vercel Hobby, 5.000
+ * transformaciones al mes). Cada combinación de imagen, ancho y calidad es una
+ * transformación aparte, y `next/image` ofrece hasta 16 anchos en el `srcset`
+ * (de 16 a 3840): cada pantalla pedía el suyo. Redondeando HACIA ARRIBA a tres
+ * cubos, cada portada cuesta como mucho tres. Por encima de 1080 se sirve 1080:
+ * el optimizador nunca amplía, y las fuentes que pasan por aquí (miniaturas de
+ * MangaDex de 512 px, capturas de Steam de 600 px, portadas `medium` de
+ * ComicVine) no llegan a ese ancho. Son anchos de `images.deviceSizes`/
+ * `imageSizes` por defecto (el optimizador rechaza los demás).
+ */
+export const OPTIMIZER_WIDTHS = [256, 640, 1080] as const;
+
+/** Calidad única del optimizador (`images.qualities` en next.config). */
+export const OPTIMIZER_QUALITY = 70;
+
+function optimizerWidth(width: number): number {
+  return pick(OPTIMIZER_WIDTHS, width) ?? OPTIMIZER_WIDTHS[OPTIMIZER_WIDTHS.length - 1];
+}
+
+/**
+ * Respaldo: el optimizador de Next, mismo origen, con el ancho redondeado a
+ * `OPTIMIZER_WIDTHS` y una sola calidad (`quality` se ignora: otra calidad
+ * sería otra transformación, y next.config solo acepta `OPTIMIZER_QUALITY`).
+ */
+function optimizer(src: string, width: number): string {
+  return `/_next/image?url=${encodeURIComponent(src)}&w=${optimizerWidth(width)}&q=${OPTIMIZER_QUALITY}`;
 }
 
 /**
  * `loader` de `next/image`: recibe el `src` original y el ancho que el
  * navegador va a pintar (ya multiplicado por la densidad de pantalla).
  */
-export function posterLoader({ src, width, quality }: { src: string; width: number; quality?: number }): string {
+export function posterLoader({ src, width }: { src: string; width: number; quality?: number }): string {
   let url: URL;
   try {
     url = new URL(src);
@@ -89,11 +113,14 @@ export function posterLoader({ src, width, quality }: { src: string; width: numb
   // se pide la miniatura AL optimizador (no se enlaza directo a su CDN).
   if (host === "uploads.mangadex.org" && /\.(jpe?g|png|webp)$/i.test(url.pathname)) {
     const base = src.replace(/\.(256|512)\.jpg$/, "");
-    const thumb = `${base}.${width <= 256 ? 256 : 512}.jpg`;
-    return optimizer(thumb, width, quality);
+    const small = width <= 256;
+    const thumb = `${base}.${small ? 256 : 512}.jpg`;
+    // La miniatura grande mide 512 px: con 640 basta (1080 sería la misma
+    // imagen con otra transformación).
+    return optimizer(thumb, small ? 256 : 640);
   }
 
-  return optimizer(src, width, quality);
+  return optimizer(src, width);
 }
 
 /**
@@ -109,7 +136,7 @@ const TMDB_BACKDROP_WIDTHS = [300, 780, 1280] as const;
  * pide, con 1280 como tope. Las demás imágenes van como en `posterLoader`,
  * que no cambia.
  */
-export function backdropLoader({ src, width, quality }: { src: string; width: number; quality?: number }): string {
+export function backdropLoader({ src, width }: { src: string; width: number; quality?: number }): string {
   let url: URL;
   try {
     url = new URL(src);
@@ -133,5 +160,5 @@ export function backdropLoader({ src, width, quality }: { src: string; width: nu
     }
     return src;
   }
-  return posterLoader({ src, width, quality });
+  return posterLoader({ src, width });
 }

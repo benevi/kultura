@@ -1,0 +1,155 @@
+- generic [active] [ref=f4e1]:
+  - link "Saltar al contenido" [ref=f4e2] [cursor=pointer]:
+    - /url: "#main"
+  - generic [ref=f4e3]:
+    - banner [ref=f4e4]:
+      - generic [ref=f4e5]:
+        - link "kultura" [ref=f4e6] [cursor=pointer]:
+          - /url: /es
+        - navigation [ref=f4e15]:
+          - link "Iniciar sesión" [ref=f4e16] [cursor=pointer]:
+            - /url: /es/login?mode=login
+          - link "Registrarse" [ref=f4e18] [cursor=pointer]:
+            - /url: /es/login?mode=register
+    - main [ref=f4e20]:
+      - generic [ref=f4e21]:
+        - region "Death Note" [ref=f4e22]:
+          - generic [ref=f4e23]:
+            - heading "Death Note" [level=1] [ref=f4e25]
+            - paragraph [ref=f4e28]: DEATH NOTE
+        - region "Datos de la obra" [ref=f4e29]:
+          - generic [ref=f4e30]:
+            - heading "Datos de la obra" [level=2] [ref=f4e31]
+            - generic [ref=f4e32]:
+              - generic [ref=f4e33]:
+                - term [ref=f4e34]: Año
+                - definition [ref=f4e35]: "2006"
+              - generic [ref=f4e36]:
+                - term [ref=f4e37]: Formato
+                - definition [ref=f4e38]: Anime
+              - generic [ref=f4e39]:
+                - term [ref=f4e40]: Episodios
+                - definition [ref=f4e41]: "37"
+              - generic [ref=f4e42]:
+                - term [ref=f4e43]:
+                  - generic [ref=f4e44]: Nota en AniList
+                  - text: AniList
+                - definition [ref=f4e45]: 8,4/10
+              - generic [ref=f4e46]:
+                - term [ref=f4e47]: Géneros
+                - definition [ref=f4e48]: Misterio, Psicológico, Sobrenatural, Suspense
+              - generic [ref=f4e49]:
+                - term [ref=f4e50]: Idioma original
+                - definition [ref=f4e51]: japonés
+        - generic [ref=f4e52]:
+          - navigation "Estás en" [ref=f4e53]:
+            - list [ref=f4e54]:
+              - listitem [ref=f4e55]:
+                - link "Inicio" [ref=f4e56] [cursor=pointer]:
+                  - /url: /es
+                - generic [aria-hidden] [ref=f4e57]: ›
+              - listitem [ref=f4e58]:
+                - link "Animes" [ref=f4e59] [cursor=pointer]:
+                  - /url: /es/best/anime/2026
+                - generic [aria-hidden] [ref=f4e60]: ›
+              - listitem [ref=f4e61]:
+                - generic [ref=f4e62]: Death Note
+          - region "Tu biblioteca" [ref=f4e63]:
+            - heading "Tu biblioteca" [level=2] [ref=f4e64]
+            - generic [ref=f4e65]:
+              - link "Añadir a mi biblioteca" [ref=f4e66] [cursor=pointer]:
+                - /url: /es/login?mode=register&next=%2Fes%2Fmedia%2Fanime%2Fal-1535
+              - paragraph [ref=f4e72]:
+                - text: Gratis y sin anuncios. Al crear tu cuenta vuelves a esta ficha.
+                - link "¿Ya tienes cuenta? Entra" [ref=f4e73] [cursor=pointer]:
+                  - /url: /es/login?mode=login&next=%2Fes%2Fmedia%2Fanime%2Fal-1535
+          - generic [ref=f4e74]:
+            - region "Sinopsis" [ref=f4e75]:
+              - heading "Sinopsis" [level=2] [ref=f4e76]
+              - generic [ref=f4e77]:
+                - paragraph [ref=f4e78]: Light Yagami is a genius high school student who is about to learn about life through a book of death. When a bored shinigami, a God of Death, named Ryuk drops a black notepad called a Death Note, Light receives power over life and death with the stroke of a pen. Determined to us…
+                - button "Leer más" [ref=f4e79] [cursor=pointer]
+            - region "Detalles" [ref=f4e80]:
+              - heading "Detalles" [level=2] [ref=f4e81]
+              - generic [ref=f4e83]:
+                - term [ref=f4e84]: Estudio
+                - definition [ref=f4e85]: MADHOUSE
+          - generic [ref=f4e86]:
+            - region "Más acciones" [ref=f4e87]:
+              - heading "Más acciones" [level=2] [ref=f4e88]
+              - link "Denunciar este título" [ref=f4e90] [cursor=pointer]:
+                - /url: /es/report?target=media&id=anime_al-1535
+            - region "Dónde ver" [ref=f4e92]:
+              - heading "Dónde ver" [level=2] [ref=f4e93]
+              - generic [ref=f4e95]:
+                - heading "Suscripción" [level=3] [ref=f4e96]
+                - list [ref=f4e97]:
+                  - listitem [ref=f4e98]:
+                    - 'link "Netflix, suscripción: dónde verlo, en TMDB (se abre en una pestaña nueva)" [ref=f4e99] [cursor=pointer]':
+                      - /url: https://www.themoviedb.org/tv/13916-death-note/watch?locale=ES
+                      - generic [ref=f4e100]: Netflix
+                  - listitem [ref=f4e103]:
+                    - 'link "Netflix Standard with Ads, suscripción: dónde verlo, en TMDB (se abre en una pestaña nueva)" [ref=f4e104] [cursor=pointer]':
+                      - /url: https://www.themoviedb.org/tv/13916-death-note/watch?locale=ES
+                      - generic [ref=f4e105]: Netflix Standard with Ads
+                  - listitem [ref=f4e108]:
+                    - 'link "Crunchyroll, suscripción: dónde verlo, en TMDB (se abre en una pestaña nueva)" [ref=f4e109] [cursor=pointer]':
+                      - /url: https://www.themoviedb.org/tv/13916-death-note/watch?locale=ES
+                      - generic [ref=f4e110]: Crunchyroll
+                  - listitem [ref=f4e113]:
+                    - 'link "Crunchyroll Amazon Channel, suscripción: dónde verlo, en TMDB (se abre en una pestaña nueva)" [ref=f4e114] [cursor=pointer]':
+                      - /url: https://www.themoviedb.org/tv/13916-death-note/watch?locale=ES
+                      - generic [ref=f4e115]: Crunchyroll Amazon Channel
+              - paragraph [ref=f4e118]:
+                - generic [ref=f4e119]: "Datos de disponibilidad:"
+                - link "JustWatch (se abre en una pestaña nueva)" [ref=f4e120] [cursor=pointer]:
+                  - /url: https://www.justwatch.com/es
+                  - generic [ref=f4e121]:
+                    - img "JustWatch" [ref=f4e123]
+                    - generic [ref=f4e126]: (se abre en una pestaña nueva)
+            - region "Tráiler" [ref=f4e127]:
+              - heading "Tráiler" [level=2] [ref=f4e128]
+              - generic [ref=f4e129]:
+                - button "Reproducir el tráiler de Death Note" [ref=f4e133] [cursor=pointer]:
+                  - generic [ref=f4e134]: Reproducir el tráiler
+                - paragraph [ref=f4e139]: El vídeo se carga desde YouTube al pulsar.
+            - paragraph [ref=f4e141]:
+              - generic [ref=f4e142]: "Datos del título:"
+              - link "AniList (se abre en una pestaña nueva)" [ref=f4e143] [cursor=pointer]:
+                - /url: https://anilist.co/anime/1535
+                - generic [ref=f4e144]:
+                  - text: AniList
+                  - generic [ref=f4e147]: (se abre en una pestaña nueva)
+    - contentinfo [ref=f4e149]:
+      - navigation "Información" [ref=f4e150]:
+        - list [ref=f4e151]:
+          - listitem [ref=f4e152]:
+            - link "Privacidad" [ref=f4e153] [cursor=pointer]:
+              - /url: /es/privacy
+          - listitem [ref=f4e154]:
+            - link "Términos" [ref=f4e155] [cursor=pointer]:
+              - /url: /es/terms
+          - listitem [ref=f4e156]:
+            - link "Aviso legal" [ref=f4e157] [cursor=pointer]:
+              - /url: /es/legal
+          - listitem [ref=f4e158]:
+            - link "Accesibilidad" [ref=f4e159] [cursor=pointer]:
+              - /url: /es/accessibility
+      - generic [ref=f4e160]: © 2026 KULTURA
+      - paragraph [ref=f4e161]:
+        - text: Datos de
+        - link "TMDB" [ref=f4e162] [cursor=pointer]:
+          - /url: https://www.themoviedb.org
+        - text: ","
+        - link "RAWG" [ref=f4e163] [cursor=pointer]:
+          - /url: https://rawg.io
+        - text: ", Steam, AniList, MangaDex, Open Library, Google Books y"
+        - link "Comic Vine" [ref=f4e164] [cursor=pointer]:
+          - /url: https://comicvine.gamespot.com
+        - text: ". Datos de disponibilidad en plataformas:"
+        - link "JustWatch" [ref=f4e165] [cursor=pointer]:
+          - /url: https://www.justwatch.com
+        - text: ". Carátulas y descripciones de videojuegos:"
+        - link "Steam" [ref=f4e166] [cursor=pointer]:
+          - /url: https://store.steampowered.com
+        - text: . Este producto usa la API de TMDB, pero TMDB no lo respalda ni lo certifica. Steam y el logotipo de Steam son marcas de Valve Corporation; KULTURA no está afiliada a Valve.

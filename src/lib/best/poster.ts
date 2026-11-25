@@ -16,7 +16,7 @@
 // TMDB y RAWG ya sirven el tamaño justo desde su CDN: siguen sin optimizador.
 // ============================================================
 
-import { posterLoader } from "@/lib/images/poster-url";
+import { OPTIMIZER_QUALITY, posterLoader } from "@/lib/images/poster-url";
 
 /** Anchos permitidos por `images.imageSizes`/`deviceSizes` por defecto de Next. */
 export const BEST_POSTER_BUCKETS = [256, 640] as const;
@@ -33,7 +33,6 @@ function bucket(width: number): number {
 export function bestPosterLoader({
   src,
   width,
-  quality,
 }: {
   src: string;
   width: number;
@@ -43,8 +42,8 @@ export function bestPosterLoader({
   try {
     host = new URL(src).hostname;
   } catch {
-    return posterLoader({ src, width, quality });
+    return posterLoader({ src, width });
   }
-  if (!OPTIMIZED_HOSTS.has(host)) return posterLoader({ src, width, quality });
-  return `/_next/image?url=${encodeURIComponent(src)}&w=${bucket(width)}&q=${quality ?? 70}`;
+  if (!OPTIMIZED_HOSTS.has(host)) return posterLoader({ src, width });
+  return `/_next/image?url=${encodeURIComponent(src)}&w=${bucket(width)}&q=${OPTIMIZER_QUALITY}`;
 }

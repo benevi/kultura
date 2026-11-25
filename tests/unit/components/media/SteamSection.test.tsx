@@ -81,11 +81,22 @@ describe("SteamSection", () => {
     expect(shots).toHaveLength(2);
     // alt="" a propósito: son decorativas, el enlace ya lleva el texto.
     expect(shots[0]).toHaveAttribute("alt", "");
-    expect(shots[0]).toHaveAttribute("src", FULL.screenshots![0].thumb);
     expect(shots[0].closest("a")).toHaveAttribute(
       "href",
       FULL.screenshots![0].full
     );
+  });
+
+  // Cupo de transformaciones de Vercel Hobby: la captura sigue pasando por el
+  // optimizador (Steam no se carga directo), pero solo con los anchos de
+  // OPTIMIZER_WIDTHS y una calidad, no con los 16 anchos del loader de serie.
+  it("las capturas van al optimizador con pocos anchos y una sola calidad", async () => {
+    const { container } = render(await SteamSection({ steam: FULL }));
+    const shot = container.querySelector("img")!;
+    const urls = [shot.getAttribute("src")!, ...shot.getAttribute("srcset")!.split(", ").map((c) => c.split(" ")[0])];
+    const encoded = encodeURIComponent(FULL.screenshots![0].thumb);
+    for (const u of urls) expect(u).toMatch(new RegExp(`^/_next/image\\?url=${encoded.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}&w=(256|640|1080)&q=70$`));
+    expect(new Set(urls).size).toBeLessThanOrEqual(3);
   });
 
   it("juego gratuito → etiqueta de gratis, sin precio", async () => {

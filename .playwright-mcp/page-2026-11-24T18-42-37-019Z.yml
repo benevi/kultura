@@ -1,0 +1,34 @@
+- generic [active] [ref=f2e1]:
+  - link "Saltar al contenido" [ref=f2e2] [cursor=pointer]:
+    - /url: "#main"
+  - main [ref=f2e3]:
+    - generic [ref=f2e4]:
+      - link "Volver a la portada de KULTURA" [ref=f2e5] [cursor=pointer]:
+        - /url: /es
+        - text: ← KULTURA
+      - generic [ref=f2e6]:
+        - generic [ref=f2e7]:
+          - generic [ref=f2e8]: kultura
+          - paragraph [ref=f2e16]: Tu watchlist de cine, series, anime, manga, juegos, libros y cómics. Gratis y sin anuncios.
+        - heading "Ey, ¡qué bien verte!" [level=1] [ref=f2e17]
+        - button "Continuar con Google" [disabled] [ref=f2e18]
+        - generic [ref=f2e24]: o
+        - generic [ref=f2e28]:
+          - generic [ref=f2e29]:
+            - generic [ref=f2e30]: Correo electrónico
+            - textbox "Correo electrónico" [ref=f2e31]:
+              - /placeholder: tucorreo@ejemplo.com
+          - generic [ref=f2e32]:
+            - generic [ref=f2e33]:
+              - generic [ref=f2e34]: Contraseña
+              - textbox "Contraseña" [ref=f2e35]:
+                - /placeholder: ••••••••
+            - button "Mostrar contraseña" [ref=f2e36] [cursor=pointer]: Mostrar
+          - button "Iniciar sesión" [disabled]
+        - link "¿Olvidaste tu contraseña?" [ref=f2e38] [cursor=pointer]:
+          - /url: /es/login?mode=reset&next=%2Fes%2Fsearch%3Fq%3Djujutsu
+        - paragraph [ref=f2e39]:
+          - text: ¿No tienes cuenta?
+          - link "Regístrate" [ref=f2e40] [cursor=pointer]:
+            - /url: /es/login?mode=register&next=%2Fes%2Fsearch%3Fq%3Djujutsu
+  - alert [ref=f2e41]
