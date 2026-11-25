@@ -8,9 +8,9 @@
 // Server Component (usa getTranslations), mobile-first.
 // ============================================================
 
-import Image from "next/image";
 import { getTranslations } from "next-intl/server";
 import type { SteamInfo } from "@/lib/api/steam";
+import { SteamShot } from "@/components/media/SteamShot";
 
 export async function SteamSection({ steam }: { steam: SteamInfo }) {
   const t = await getTranslations("media_detail");
@@ -98,10 +98,8 @@ export async function SteamSection({ steam }: { steam: SteamInfo }) {
                   rel="noopener noreferrer"
                   className="block relative aspect-video max-w-full overflow-hidden rounded-2xl border border-surface-border hover:border-text-tertiary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-pink"
                 >
-                  <Image
+                  <SteamShot
                     src={shot.thumb}
-                    alt=""
-                    fill
                     sizes="(max-width: 768px) 50vw, 25vw"
                     className="object-cover"
                   />
