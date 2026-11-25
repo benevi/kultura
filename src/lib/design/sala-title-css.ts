@@ -69,6 +69,8 @@ export const SALA_TITLE_CSS = {
     veil: '--sala-stage-veil',
     /** Opacidad mínima del velo: la sube `prefers-contrast: more`. */
     veilMin: '--sala-stage-veil-min',
+    /** Fondo negro fijo bajo el velo (0–1): suelo de contraste que no depende de la paleta. */
+    scrim: '--sala-stage-scrim',
     /** Fondo del fundido en la caja estrecha y en la ancha. */
     fuseNarrow: '--sala-fuse-n',
     fuseWide: '--sala-fuse-w',
@@ -248,6 +250,18 @@ ${fallbackFaces()}
   bottom: 100%;
   height: 12cqw;
   background: linear-gradient(to top, ${veilColor}, transparent);
+}
+
+/* Con \`scrim\` (la ficha, F6): encima del velo, un negro de opacidad fija que
+   no depende de la paleta. Solo entonces lleva capa de imagen: sin él, axe
+   sigue midiendo el velo como un color liso. */
+.${c.stage}[data-sala-scrim] .${c.stageVeil} {
+  background-image: linear-gradient(rgb(0 0 0 / var(${v.scrim})), rgb(0 0 0 / var(${v.scrim})));
+}
+
+.${c.stage}[data-sala-scrim] .${c.stageVeil}::before {
+  background-image: linear-gradient(to top, rgb(0 0 0 / var(${v.scrim})), transparent),
+    linear-gradient(to top, ${veilColor}, transparent);
 }
 
 /* La figura solo se pinta con el fundido encendido. */

@@ -393,6 +393,18 @@
   background: linear-gradient(to top, color-mix(in srgb, var(--sala-background) calc(max(var(--sala-stage-veil, 0.7), var(--sala-stage-veil-min, 0)) * 100%), transparent), transparent);
 }
 
+/* Con `scrim` (la ficha, F6): encima del velo, un negro de opacidad fija que
+   no depende de la paleta. Solo entonces lleva capa de imagen: sin él, axe
+   sigue midiendo el velo como un color liso. */
+.sala-stage[data-sala-scrim] .sala-stage-veil {
+  background-image: linear-gradient(rgb(0 0 0 / var(--sala-stage-scrim)), rgb(0 0 0 / var(--sala-stage-scrim)));
+}
+
+.sala-stage[data-sala-scrim] .sala-stage-veil::before {
+  background-image: linear-gradient(to top, rgb(0 0 0 / var(--sala-stage-scrim)), transparent),
+    linear-gradient(to top, color-mix(in srgb, var(--sala-background) calc(max(var(--sala-stage-veil, 0.7), var(--sala-stage-veil-min, 0)) * 100%), transparent), transparent);
+}
+
 /* La figura solo se pinta con el fundido encendido. */
 .sala-stage-figure {
   display: none;

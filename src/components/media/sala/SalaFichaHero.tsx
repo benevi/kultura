@@ -1,3 +1,4 @@
+import { useLocale } from "next-intl";
 import type { ReactNode } from "react";
 import { SalaStage } from "@/components/sala/SalaStage";
 import { SalaTitle } from "@/components/sala/SalaTitle";
@@ -49,6 +50,31 @@ export function salaFichaLayout(item: Pick<MediaItem, "type" | "backdrop" | "pos
 const POSTER_FOCUS = "center 25%";
 
 /**
+ * Negro fijo bajo el velo de la sala de la ficha (F6). Con una imagen blanca
+ * y sin contar el velo, deja el fondo del título en #666 o más oscuro: la
+ * tinta clara de cualquier paleta pasa de 4,5:1 (lo mide `sala-ficha-contrast.test.ts`).
+ */
+export const SALA_FICHA_SCRIM = 0.6;
+
+/**
+ * Idioma del título que se enseña, si se sabe y no es el de la interfaz
+ * («The Lord of the Rings» en /es → `en`). Solo cuando el título mostrado es
+ * el original (su idioma está declarado); si no, `undefined`.
+ */
+export function salaFichaTitleLang(
+  item: Pick<MediaItem, "title" | "originalTitle" | "metadata">,
+  locale: string
+): string | undefined {
+  const raw = item.metadata?.originalLanguage;
+  const lang = typeof raw === "string" ? raw.trim().toLowerCase() : "";
+  // `xx`/`zxx`: sin idioma; `cn`: el cantonés de TMDB.
+  if (!/^[a-z]{2,3}$/.test(lang) || lang === "xx" || lang === "zxx") return undefined;
+  if (item.originalTitle?.trim() !== item.title.trim()) return undefined;
+  const code = lang === "cn" ? "yue" : lang;
+  return code === locale.split("-")[0].toLowerCase() ? undefined : code;
+}
+
+/**
  * ¿La columna de la ficha de hoy puede enseñar el póster sin repetir la
  * imagen de la sala? (F2a). No, si la sala ya es la portada (libro, manga,
  * cómic, o la vertical de cualquier obra sin apaisada), si la apaisada es el propio `poster`
@@ -70,6 +96,7 @@ export function salaFichaColumnPoster(item: Pick<MediaItem, "type" | "backdrop" 
 const ANYBODY_LATIN = new URL("../../../../assets/fonts/anybody/Anybody-latin-wdth-wght.woff2", import.meta.url);
 
 export function SalaFichaHero({ item }: { item: MediaItem }) {
+  const titleLang = salaFichaTitleLang(item, useLocale());
   const layout = salaFichaLayout(item);
   const original = originalTitleOf(item);
   // Con idioma, el original va marcado (y con su fuente); sin él, se enseña igual, sin marcar.
@@ -84,15 +111,17 @@ export function SalaFichaHero({ item }: { item: MediaItem }) {
       <link rel="preload" href={ANYBODY_LATIN.pathname} as="font" type="font/woff2" crossOrigin="anonymous" />
       <SalaFichaAssets />
       {layout === "poster" ? (
-        <SalaFichaPoster item={item} original={marked}>
+        <SalaFichaPoster item={item} original={marked} titleLang={titleLang}>
           {unmarked}
         </SalaFichaPoster>
       ) : layout === "stage" ? (
         <SalaStage
           title={item.title}
+          titleLang={titleLang}
           original={marked}
           headingLevel={1}
           headingId="sala-ficha-title"
+          scrim={SALA_FICHA_SCRIM}
           className="w-full aspect-[4/5] sm:aspect-[16/9] lg:aspect-[2/1]"
           image={<SalaFichaImage src={salaFichaWideImage(item)!} sizes="100vw" />}
         >
@@ -107,6 +136,7 @@ export function SalaFichaHero({ item }: { item: MediaItem }) {
           ) : null}
           <SalaTitle
             title={item.title}
+            titleLang={titleLang}
             original={marked}
             headingLevel={1}
             headingId="sala-ficha-title"
@@ -123,9 +153,11 @@ export function SalaFichaHero({ item }: { item: MediaItem }) {
 function SalaFichaPoster({
   item,
   original,
+  titleLang,
   children,
 }: {
   item: MediaItem;
+  titleLang?: string;
   original: { text: string; lang: string } | null;
   children?: ReactNode;
 }) {
@@ -134,9 +166,11 @@ function SalaFichaPoster({
   return (
     <SalaStage
       title={item.title}
+      titleLang={titleLang}
       original={original}
       headingLevel={1}
       headingId="sala-ficha-title"
+      scrim={SALA_FICHA_SCRIM}
       focus={POSTER_FOCUS}
       data-sala-fill={fill}
       className="w-full aspect-[4/5] sm:aspect-[16/9] lg:aspect-[2/1]"
