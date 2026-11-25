@@ -105,25 +105,12 @@ describe("backdropLoader", () => {
   const B = (src: string, width: number) => backdropLoader({ src, width });
   const src = "https://image.tmdb.org/t/p/w1280/fondo.jpg";
 
-  // Decisión de Víctor (25-11-2026): directa de TMDB, w780 / w1280 / original
-  // según la pantalla; original solo por encima de 1280 px físicos.
-  it("TMDB: el ancho de fondo más pequeño que cubre; original por encima de w1280, directa del CDN", () => {
+  it("TMDB: el ancho de fondo más pequeño que cubre, con w1280 de tope (nunca original)", () => {
     expect(B(src, 256)).toBe("https://image.tmdb.org/t/p/w300/fondo.jpg");
     expect(B(src, 750)).toBe("https://image.tmdb.org/t/p/w780/fondo.jpg");
     expect(B(src, 1080)).toBe("https://image.tmdb.org/t/p/w1280/fondo.jpg");
-    expect(B(src, 1200)).toBe("https://image.tmdb.org/t/p/w1280/fondo.jpg");
-    for (const w of [1920, 2048, 3840]) expect(B(src, w)).toBe("https://image.tmdb.org/t/p/original/fondo.jpg");
-    expect(B("https://image.tmdb.org/t/p/original/fondo.jpg", 750)).toBe("https://image.tmdb.org/t/p/w780/fondo.jpg");
-  });
-
-  it("TMDB con sizes=100vw: el srcset solo ofrece w780, w1280 y original", () => {
-    // Anchos de `deviceSizes` por defecto: los que entran en el srcset con 100vw.
-    const urls = new Set([640, 750, 828, 1080, 1200, 1920, 2048, 3840].map((w) => B(src, w)));
-    expect(Array.from(urls)).toEqual([
-      "https://image.tmdb.org/t/p/w780/fondo.jpg",
-      "https://image.tmdb.org/t/p/w1280/fondo.jpg",
-      "https://image.tmdb.org/t/p/original/fondo.jpg",
-    ]);
+    for (const w of [1920, 2048, 3840]) expect(B(src, w)).toBe("https://image.tmdb.org/t/p/w1280/fondo.jpg");
+    expect(B("https://image.tmdb.org/t/p/original/fondo.jpg", 3840)).toBe("https://image.tmdb.org/t/p/w1280/fondo.jpg");
   });
 
   it("los pósteres no cambian: posterLoader sigue pidiendo original por encima de 780", () => {
