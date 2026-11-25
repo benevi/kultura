@@ -903,7 +903,13 @@
     "activityScore": "{score, plural, one {# star} other {# stars}}",
     "sala": {
       "loading": "Loading “{title}”",
-      "results": "{count, plural, one {# title} other {# titles}}"
+      "results": "{count, plural, one {# title} other {# titles}}",
+      "prev": "Previous in “{title}”",
+      "next": "Next in “{title}”",
+      "errorTitle": "Couldn’t load “{title}”",
+      "errorBody": "It may be a connection problem. The rest of Home is still here.",
+      "retry": "Try again",
+      "friends": "{count, plural, one {# friend} other {# friends}}"
     }
   },
   "friends": {

@@ -30,13 +30,17 @@ vi.mock('@/lib/api/client', async (orig) => ({
   ...(await orig<typeof import('@/lib/api/client')>()),
   apiFetch: (...args: unknown[]) => mockFetch(...args),
 }))
-// El «+1» de hoy, tal cual: aquí un doble que dice para qué obra es.
-vi.mock('@/components/home/ContinueProgress', () => ({
-  canQuickAdvance: (type: string) => type !== 'movie',
-  ContinueProgress: ({ title }: { title: string }) => <button type="button">+1 {title}</button>,
+// El «+1» (`SalaHomeProgress`, con su propio test): aquí un doble que dice para qué obra es.
+vi.mock('@/components/home/sala/SalaHomeProgress', () => ({
+  SalaHomeProgress: ({ title, variant }: { title: string; variant: string }) => (
+    <button type="button" data-variant={variant}>
+      +1 {title}
+    </button>
+  ),
 }))
 
-import { SalaHomeCircle, SalaHomeContinue, SalaHomeNews, SalaHomeTitle } from '@/components/home/sala/SalaHome'
+import { act, fireEvent } from '@testing-library/react'
+import { SalaHomeCircle, SalaHomeContinue, SalaHomeHero, SalaHomeNews, SalaHomeTitle } from '@/components/home/sala/SalaHome'
 import type { ContinueRowItem } from '@/components/home/ContinueRow'
 
 const CONTINUE: ContinueRowItem[] = [
@@ -119,6 +123,9 @@ describe('SalaHomeCircle', () => {
     await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('home.sala.results:{"count":2}'))
     expect(within(list).getByRole('link', { name: 'El club de la lucha' })).toHaveAttribute('href', '/media/movie/550')
     expect(within(list).getAllByRole('listitem')[0]).toHaveTextContent('1999')
+    // I2a: cuántos amigos la tienen, en la línea de datos (plural ICU).
+    expect(within(list).getAllByRole('listitem')[0]).toHaveTextContent('home.sala.friends:{"count":2}')
+    expect(within(list).getAllByRole('listitem')[1]).toHaveTextContent('home.sala.friends:{"count":1}')
   })
 
   it('vacío: dice qué habrá aquí y lleva a Amigos', async () => {
@@ -129,10 +136,106 @@ describe('SalaHomeCircle', () => {
     expect(screen.queryByRole('listitem')).toBeNull()
   })
 
-  it('si falla, como hoy: la sección no sale', async () => {
-    mockFetch.mockImplementation(() => Promise.reject(new Error('x')))
-    const { container } = render(<SalaHomeCircle />)
-    await waitFor(() => expect(container).toBeEmptyDOMElement())
+  it('si falla, lo dice (role="alert") con «Reintentar», que vuelve a pedir y deja el foco en el encabezado', async () => {
+    mockFetch.mockImplementationOnce(() => Promise.reject(new Error('x')))
+    render(<SalaHomeCircle />)
+    const alert = screen.getByRole('alert')
+    const retry = await within(alert).findByRole('button', { name: 'home.sala.retry' })
+    expect(alert).toHaveTextContent('home.sala.errorTitle:{"title":"home.popularInCircle"}')
+    // El encabezado de la sección sigue: el aviso tiene dónde estar.
+    const heading = screen.getByRole('heading', { level: 2, name: 'home.popularInCircle' })
+
+    mockFetch.mockResolvedValueOnce([
+      { mediaId: 'movie_550', title: 'El club de la lucha', poster: null, type: 'movie', year: 1999, friendCount: 3, friendNames: [] },
+    ])
+    fireEvent.click(retry)
+    expect(heading).toHaveFocus()
+    expect(mockFetch).toHaveBeenCalledTimes(2)
+    const list = screen.getByRole('list', { name: 'home.popularInCircle' })
+    await waitFor(() => expect(within(list).getAllByRole('listitem')).toHaveLength(1))
+    expect(screen.getByRole('alert')).toBeEmptyDOMElement()
+  })
+})
+
+describe('flechas de la fila', () => {
+  /** jsdom no maqueta: se le dan medidas a la fila. */
+  function size(list: HTMLElement, { scrollWidth, clientWidth }: { scrollWidth: number; clientWidth: number }) {
+    Object.defineProperty(list, 'scrollWidth', { configurable: true, value: scrollWidth })
+    Object.defineProperty(list, 'clientWidth', { configurable: true, value: clientWidth })
+  }
+
+  it('controlan la lista (aria-controls), se paran en los extremos con aria-disabled y no se llevan el foco', () => {
+    const items: ContinueRowItem[] = Array.from({ length: 10 }, (_, i) => ({
+      mediaId: `movie_${i}`, title: `Peli ${i}`, poster: null, type: 'movie', status: 'pending', progress: null,
+    }))
+    render(<SalaHomeContinue title="Continúa" items={items} />)
+    const list = screen.getByRole('list', { name: 'Continúa' })
+    const prev = screen.getByRole('button', { name: 'home.sala.prev:{"title":"Continúa"}' })
+    const next = screen.getByRole('button', { name: 'home.sala.next:{"title":"Continúa"}' })
+    expect(prev).toHaveAttribute('aria-controls', list.id)
+    expect(next).toHaveAttribute('aria-controls', list.id)
+    // Nunca `disabled`: una flecha enfocada que llega al final no pierde el foco.
+    expect(prev).not.toBeDisabled()
+    expect(next).not.toBeDisabled()
+
+    size(list, { scrollWidth: 1600, clientWidth: 800 })
+    const scrollBy = vi.fn()
+    list.scrollBy = scrollBy as unknown as typeof list.scrollBy
+    act(() => {
+      list.scrollLeft = 0
+      list.dispatchEvent(new Event('scroll'))
+    })
+    expect(prev).toHaveAttribute('aria-disabled', 'true')
+    expect(next).not.toHaveAttribute('aria-disabled')
+
+    // Al principio, «Anteriores» no hace nada.
+    fireEvent.click(prev)
+    expect(scrollBy).not.toHaveBeenCalled()
+    next.focus()
+    fireEvent.click(next)
+    expect(scrollBy).toHaveBeenCalledWith(expect.objectContaining({ left: 680 }))
+    expect(next).toHaveFocus()
+
+    // Al final, al revés; y el foco sigue en la flecha.
+    act(() => {
+      list.scrollLeft = 800
+      list.dispatchEvent(new Event('scroll'))
+    })
+    expect(next).toHaveAttribute('aria-disabled', 'true')
+    expect(prev).not.toHaveAttribute('aria-disabled')
+    expect(next).toHaveFocus()
+  })
+})
+
+describe('SalaHomeHero', () => {
+  const HERO = {
+    media_id: 'manga_108556',
+    progress: { chapter: 34 },
+    status: 'in_progress' as const,
+    media: { id: 'manga_108556', title: 'Slime', poster: null, year: 2014, type: 'manga', synopsis: 'Una sinopsis.' },
+  }
+
+  it('«Continuando» dentro del h2, el formato con palabras, la sinopsis, el «+1» del hero y «Continuar» descrito por el título', () => {
+    render(<SalaHomeHero item={HERO} />)
+    const heading = screen.getByRole('heading', { level: 2 })
+    expect(heading).toHaveTextContent('home.continuing Slime')
+    const section = screen.getByRole('region', { name: 'home.continuing Slime' })
+    expect(section).toHaveTextContent('discoverFilters.typeBadge.manga')
+    expect(section).toHaveTextContent('2014')
+    expect(section).toHaveTextContent('Una sinopsis.')
+    expect(screen.getByRole('button', { name: '+1 Slime' })).toHaveAttribute('data-variant', 'hero')
+    const link = screen.getByRole('link', { name: 'home.continue' })
+    expect(link).toHaveAttribute('href', '/media/manga/108556')
+    expect(link).toHaveAttribute('aria-describedby', heading.id)
+    // Sin portada: el campo de color con el título, nunca una imagen rota.
+    expect(section.querySelector('img')).toBeNull()
+  })
+
+  it('sin nada en curso no sale; una película no lleva «+1»', () => {
+    const { container, rerender } = render(<SalaHomeHero item={null} />)
+    expect(container).toBeEmptyDOMElement()
+    rerender(<SalaHomeHero item={{ ...HERO, media: { ...HERO.media, type: 'movie', id: 'movie_603' } }} />)
+    expect(screen.queryByRole('button')).toBeNull()
   })
 })
 
@@ -149,7 +252,19 @@ describe('SalaHomeNews', () => {
     expect(within(second).getByRole('link', { name: 'Serie 20' })).toHaveAttribute('href', '/media/tv/20')
   })
 
-  it('sin géneros: una fila de «Tendencias»; vacío o error: nada', async () => {
+  it('si falla: la fila de «Tendencias» con el aviso y «Reintentar»', async () => {
+    mockFetch.mockImplementationOnce(() => Promise.reject(new Error('x')))
+    render(<SalaHomeNews />)
+    const alert = screen.getByRole('alert')
+    await within(alert).findByRole('button', { name: 'home.sala.retry' })
+    expect(alert).toHaveTextContent('home.sala.errorTitle:{"title":"home.trends"}')
+    mockFetch.mockResolvedValueOnce({ movies: [media(1)], tv: [], genres: [] })
+    fireEvent.click(within(alert).getByRole('button'))
+    const row = screen.getByRole('list', { name: 'home.trends' })
+    await waitFor(() => expect(within(row).getAllByRole('listitem')).toHaveLength(1))
+  })
+
+  it('sin géneros: una fila de «Tendencias»; vacío: nada', async () => {
     mockFetch.mockResolvedValue({ movies: [media(1)], tv: [media(2, { id: 'tv_2', type: 'tv' })], genres: [] })
     const { unmount } = render(<SalaHomeNews />)
     const row = await screen.findByRole('list', { name: 'home.trends' })
@@ -159,10 +274,5 @@ describe('SalaHomeNews', () => {
     mockFetch.mockResolvedValue({ movies: [], tv: [], genres: [] })
     const empty = render(<SalaHomeNews />)
     await waitFor(() => expect(empty.container).toBeEmptyDOMElement())
-    empty.unmount()
-
-    mockFetch.mockImplementation(() => Promise.reject(new Error('x')))
-    const failed = render(<SalaHomeNews />)
-    await waitFor(() => expect(failed.container).toBeEmptyDOMElement())
   })
 })

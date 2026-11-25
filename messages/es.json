@@ -903,7 +903,13 @@
     "activityScore": "{score, plural, one {# estrella} other {# estrellas}}",
     "sala": {
       "loading": "Cargando «{title}»",
-      "results": "{count, plural, one {# obra} other {# obras}}"
+      "results": "{count, plural, one {# obra} other {# obras}}",
+      "prev": "Anteriores en «{title}»",
+      "next": "Siguientes en «{title}»",
+      "errorTitle": "No se ha podido cargar «{title}»",
+      "errorBody": "Puede ser un fallo de conexión. Lo demás de Inicio sigue aquí.",
+      "retry": "Reintentar",
+      "friends": "{count, plural, one {# amigo} other {# amigos}}"
     }
   },
   "friends": {

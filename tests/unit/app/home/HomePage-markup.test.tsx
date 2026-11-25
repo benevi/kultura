@@ -70,6 +70,7 @@ vi.mock('@/components/home/sala/SalaHomeLazy', () => {
     }
   return {
     SalaHomeTitleLazy: lazy('title'),
+    SalaHomeHeroLazy: lazy('hero'),
     SalaHomeContinueLazy: lazy('continue'),
     SalaHomeCircleLazy: lazy('circle'),
     SalaHomeNewsLazy: lazy('news'),
@@ -159,16 +160,16 @@ describe('Inicio sin «Sala» (SALA_INICIO apagada): marcado de hoy', () => {
 })
 
 describe('Inicio con «Sala» (SALA_INICIO=1)', () => {
-  it('el h1 y las filas de «Sala» sustituyen a las de hoy; el resto sigue igual y en el mismo orden', async () => {
+  it('el h1, el hero y las filas de «Sala» sustituyen a los de hoy; el resto sigue igual y en el mismo orden', async () => {
     process.env.SALA_INICIO = '1'
     state.deletion = '2026-11-01T10:00:00.000Z'
     const html = await renderHome()
-    // Lo que se queda como hoy (I2) y lo que pasa a «Sala», en orden.
+    // Lo que se queda como hoy (I2b) y lo que pasa a «Sala», en orden.
     const order = [...html.matchAll(/data-(?:sala-)?stub="([^"]+)"|role="status"/g)].map((m) => m[1] ?? 'aviso')
     expect(order).toEqual([
       'title',
       'aviso',
-      'HeroSection',
+      'hero',
       'continue',
       'TonightOnMyPlatforms',
       'AiRecommendations',
@@ -177,9 +178,18 @@ describe('Inicio con «Sala» (SALA_INICIO=1)', () => {
       'news',
     ])
     expect(html).toContain('<main data-sala-home=""')
+    expect(html).not.toContain('data-stub="HeroSection"')
     expect(html).not.toContain('data-stub="ContinueRow"')
     expect(html).not.toContain('data-stub="PopularInCircle"')
     expect(html).not.toContain('data-stub="GenreNews"')
+    // El hero recibe la misma fila que hoy `HeroSection`, con su progreso.
+    expect(state.sala?.hero).toEqual({
+      item: expect.objectContaining({
+        media_id: 'book_1',
+        progress: expect.objectContaining({ page: 120 }),
+        media: expect.objectContaining({ title: 'Libro', synopsis: 'Sinopsis' }),
+      }),
+    })
     // «Continúa» recibe las mismas filas que hoy (sin la del hero).
     expect(state.sala?.continue).toEqual({
       title: 'home.continueWatching',
