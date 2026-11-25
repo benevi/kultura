@@ -188,9 +188,9 @@ describe("política solo de informe con connect-src acotado (SEG-10)", () => {
     expect(mod.reportOnlyCsp("no es una url")).toBe(buildReportOnlyCsp("no es una url"));
   });
 
-  it("connect-src: solo el propio origen, Supabase (https y wss) y Sentry", () => {
+  it("connect-src: solo el propio origen, Supabase (https y wss), Sentry y los vídeos de Steam", () => {
     expect(directive(buildReportOnlyCsp(url), "connect-src")).toBe(
-      "connect-src 'self' https://abcd.supabase.co wss://abcd.supabase.co https://*.ingest.sentry.io https://*.ingest.de.sentry.io"
+      "connect-src 'self' https://abcd.supabase.co wss://abcd.supabase.co https://*.ingest.sentry.io https://*.ingest.de.sentry.io https://video.akamai.steamstatic.com"
     );
   });
 

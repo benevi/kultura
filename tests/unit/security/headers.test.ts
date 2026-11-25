@@ -69,7 +69,7 @@ describe("src/lib/csp.ts — buildCsp() (C7: nonce por request)", () => {
   it("media-src solo añade el host exacto de los vídeos de Steam", () => {
     for (const csp of [buildCsp({ nonce: NONCE, isDev: false }), buildStaticCsp({ isDev: false })]) {
       const media = csp.split(";").find((d) => d.trim().startsWith("media-src"))?.trim();
-      expect(media).toBe("media-src 'self' https://video.akamai.steamstatic.com");
+      expect(media).toBe("media-src 'self' blob: https://video.akamai.steamstatic.com");
     }
     expect(STEAM_VIDEO_HOST).toBe("video.akamai.steamstatic.com");
   });

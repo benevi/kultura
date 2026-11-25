@@ -419,7 +419,7 @@ describe("MediaDetail con sala=true (F2a)", () => {
     const canPlay = vi.spyOn(HTMLMediaElement.prototype, "canPlayType").mockReturnValue("maybe");
     const play = vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue(undefined);
     fireEvent.click(button);
-    expect(region.querySelector("video")).toHaveAttribute("src", src);
+    expect(region.querySelector("video")!.src).toBe(src);
     canPlay.mockRestore();
     play.mockRestore();
   });

@@ -9,8 +9,13 @@
 // Steam, servida directo desde `video.akamai.steamstatic.com` (ni nuestro
 // servidor ni el optimizador de imágenes). Sin `autoplay`: arranca con
 // `play()` porque el usuario acaba de pulsar «Reproducir»; si el navegador lo
-// rechaza, quedan los controles. Sin HLS nativo (Firefox, por ejemplo), un
-// enlace a la página de Steam.
+// rechaza, quedan los controles. Sin HLS nativo (Firefox, Chrome antiguo),
+// `hls.js` por import dinámico: solo se descarga al pulsar y solo en esos
+// navegadores (Safari y Chrome reciente no lo bajan). Build completa, no la
+// `light`: Steam sirve el audio como pista aparte (EXT-X-MEDIA TYPE=AUDIO) y la
+// `light` no trae audio alternativo. `enableWorker: false` para no necesitar
+// `worker-src blob:`; MSE sí usa una URL `blob:` (de ahí `media-src blob:`).
+// Si nada de eso funciona, enlace a la página de Steam.
 // ============================================================
 
 import { useEffect, useRef, useState } from "react";
@@ -36,15 +41,43 @@ export function SteamTrailerVideo({ trailer, title, storeUrl, className }: Steam
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
-    if (!video.canPlayType(HLS_TYPE)) {
-      setFailed(true);
-      return;
-    }
+    let cancelled = false;
+    let destroy: (() => void) | undefined;
+    const start = () => {
+      video.play()?.catch(() => {
+        /* Sin permiso para reproducir: quedan los controles. */
+      });
+    };
     video.focus();
-    video.play()?.catch(() => {
-      /* Sin permiso para reproducir: quedan los controles. */
-    });
-  }, []);
+    if (video.canPlayType(HLS_TYPE)) {
+      video.src = trailer.src;
+      start();
+    } else {
+      import("hls.js")
+        .then(({ default: Hls }) => {
+          if (cancelled) return;
+          if (!Hls.isSupported()) {
+            setFailed(true);
+            return;
+          }
+          const hls = new Hls({ enableWorker: false });
+          destroy = () => hls.destroy();
+          hls.on(Hls.Events.ERROR, (_event, data) => {
+            if (data.fatal) setFailed(true);
+          });
+          hls.on(Hls.Events.MANIFEST_PARSED, start);
+          hls.loadSource(trailer.src);
+          hls.attachMedia(video);
+        })
+        .catch(() => {
+          if (!cancelled) setFailed(true);
+        });
+    }
+    return () => {
+      cancelled = true;
+      destroy?.();
+    };
+  }, [trailer.src]);
 
   if (failed) {
     return (
@@ -63,7 +96,6 @@ export function SteamTrailerVideo({ trailer, title, storeUrl, className }: Steam
       controls
       playsInline
       preload="none"
-      src={trailer.src}
       poster={trailer.poster}
       aria-label={title}
       tabIndex={0}

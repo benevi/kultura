@@ -123,7 +123,7 @@ function directives(scriptSrc: string, connectSrc: string, isDev: boolean, repor
     "img-src 'self' data: blob: https:",
     connectSrc,
     "font-src 'self' data:",
-    "media-src 'self' https://video.akamai.steamstatic.com",
+    "media-src 'self' blob: https://video.akamai.steamstatic.com",
     "object-src 'none'",
     "base-uri 'self'",
     // SEG-10: nadie de fuera puede enmarcar la app (equivale a X-Frame-Options
@@ -167,7 +167,8 @@ export function buildStaticCsp({ isDev }: { isDev: boolean }): string {
 /**
  * `connect-src` acotado a lo que la app pide desde el navegador: su propio
  * origen (API, `/_vercel/insights`), Supabase (REST, Auth y Realtime) y la
- * ingesta de Sentry. Solo para la política de informe: con una semana de
+ * ingesta de Sentry, y los vídeos de Steam (los pide `hls.js` en navegadores
+ * sin HLS nativo). Solo para la política de informe: con una semana de
  * informes limpios pasa a la de verdad (SEG-10).
  */
 export function narrowConnectSrc(supabaseUrl: string | undefined): string {
@@ -180,7 +181,7 @@ export function narrowConnectSrc(supabaseUrl: string | undefined): string {
   } catch {
     // URL inválida: se queda solo 'self' y los informes lo dirán.
   }
-  sources.push("https://*.ingest.sentry.io", "https://*.ingest.de.sentry.io");
+  sources.push("https://*.ingest.sentry.io", "https://*.ingest.de.sentry.io", "https://video.akamai.steamstatic.com");
   return `connect-src ${sources.join(" ")}`;
 }
 
