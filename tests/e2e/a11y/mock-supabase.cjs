@@ -57,7 +57,7 @@ function embed(row, parentTable, spec) {
   const cols = Object.keys(row);
   // Muchos a uno: una columna del padre apunta al id del embebido.
   let fkCol =
-    (spec.hint && cols.find((c) => spec.hint === c || spec.hint.includes(c))) ||
+    (spec.hint && (cols.find((c) => spec.hint === c) || cols.find((c) => spec.hint.includes(c)))) ||
     cols.find((c) => c === `${singular(spec.table)}_id`);
   if (fkCol && row[fkCol] !== undefined && fkCol.endsWith("_id")) {
     const target = related.find((r) => r.id === row[fkCol]);

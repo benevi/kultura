@@ -322,3 +322,120 @@ test.describe("con «Sala» (I2a)", () => {
     await expect(hero.getByTestId("progress-label")).toContainText("35");
   });
 });
+
+/**
+ * Fase 8.5 I2b-2: «Esta noche», «Para ti» y la actividad de amigos en
+ * «Sala». En los datos de prueba la cuenta no tiene plataformas (sale la
+ * invitación a ponerlas), «Para ti» empieza con su botón (no tiene señal
+ * suficiente ni recomendaciones de hoy, y lo popular no llega sin red) y la
+ * amiga ha terminado Matrix.
+ */
+test.describe("con «Sala» (I2b-2)", () => {
+  test.beforeEach(async ({ context, baseURL }) => {
+    await salaCookie(context, baseURL!);
+  });
+
+  const TONIGHT = "[data-sala-home-tonight]";
+  const FORYOU = "[data-sala-home-foryou]";
+  const ACTIVITY = "[data-sala-home-activity]";
+  const AI = es.aiRecommendations;
+  const REC = {
+    item: { id: "movie_603", externalId: "603", type: "movie", title: "Matrix", year: 1999, poster: null, genres: ["Ciencia ficción"] },
+    matchScore: 80,
+    reason: "Mismo tono que tus favoritas.",
+  };
+
+  test("«Esta noche» sin plataformas: su h2 y la salida a Ajustes, de 48 px", async ({ page }) => {
+    await mockHome(page);
+    await openHome(page);
+    const section = page.locator(TONIGHT);
+    await expect(section).toHaveAttribute("data-sala-home-tonight", "setup");
+    await expect(section.getByRole("heading", { level: 2, name: es.platforms.tonightTitle })).toBeVisible();
+    const cta = section.getByRole("link", { name: es.platforms.tonightSetupCta });
+    await expect(cta).toHaveAttribute("href", "/es/settings#platforms");
+    expect((await cta.boundingBox())!.height).toBeGreaterThanOrEqual(48);
+    await expectNoBlockingViolations(page, "Inicio con «Sala»: Esta noche", TONIGHT);
+  });
+
+  test("«Para ti»: nada se pide al entrar; botón, la línea de privacidad y su enlace; al pulsar, las obras y el foco en el h2", async ({ page }) => {
+    await mockHome(page);
+    let calls = 0;
+    await page.route("**/api/ai-recommendations", (route) => {
+      calls++;
+      return json(route, { recommendations: [REC], source: "ai", saved: true });
+    });
+    await openHome(page);
+    const section = page.locator(FORYOU);
+    await expect(section.getByRole("heading", { level: 2, name: AI.title, exact: true })).toBeVisible();
+    expect(calls, "sin petición a la IA al entrar").toBe(0);
+    await expect(section).toContainText(AI.askPrivacy);
+    await expect(section.getByRole("link", { name: AI.privacyLink })).toHaveAttribute("href", "/es/privacy");
+    const ask = section.getByRole("button", { name: AI.askButton });
+    expect((await ask.boundingBox())!.height).toBeGreaterThanOrEqual(48);
+    await expectNoBlockingViolations(page, "Inicio con «Sala»: Para ti (botón)", FORYOU);
+
+    await ask.click();
+    const list = page.getByRole("list", { name: AI.title, exact: true });
+    await expect(list.getByRole("link", { name: "Matrix", exact: true })).toHaveAttribute("href", "/es/media/movie/603");
+    await expect(section).toContainText(REC.reason);
+    await expect(section.getByRole("heading", { level: 2, name: AI.title, exact: true })).toBeFocused();
+    expect(calls).toBe(1);
+    await expectNoBlockingViolations(page, "Inicio con «Sala»: Para ti (obras)", FORYOU);
+  });
+
+  for (const [status, key] of [
+    [500, "error"],
+    [429, "rateLimited"],
+  ] as const) {
+    test(`«Para ti» con ${status}: aviso con «Reintentar» (role=alert)`, async ({ page }) => {
+      await mockHome(page);
+      await page.route("**/api/ai-recommendations", (route) =>
+        route.fulfill({
+          status,
+          contentType: "application/json",
+          body: JSON.stringify({ error: { code: status === 429 ? "rate_limited" : "internal", message: "x" } }),
+        })
+      );
+      await openHome(page);
+      const section = page.locator(FORYOU);
+      await section.getByRole("button", { name: AI.askButton }).click();
+      const alert = section.getByRole("alert");
+      await expect(alert).toContainText(AI[key]);
+      const retry = alert.getByRole("button", { name: AI.retry });
+      expect((await retry.boundingBox())!.height).toBeGreaterThanOrEqual(48);
+      await expectNoBlockingViolations(page, `Inicio con «Sala»: Para ti (${status})`, FORYOU);
+    });
+  }
+
+  test("actividad de amigos: lista con nombre, enlaces a la amiga y a la obra, axe limpio", async ({ page }) => {
+    await mockHome(page);
+    await openHome(page);
+    const list = page.getByRole("list", { name: es.home.recentActivity, exact: true });
+    const item = list.getByRole("listitem").first();
+    await expect(item.getByRole("link", { name: "lucia_lee" })).toHaveAttribute("href", "/es/profile/lucia_lee");
+    await expect(item.getByRole("link", { name: "Matrix" })).toHaveAttribute("href", "/es/media/movie/603");
+    // Un solo enlace a la obra: la portada pequeña es adorno.
+    await expect(item.getByRole("link")).toHaveCount(2);
+    await expect(item.locator("time")).toBeVisible();
+    await expectNoBlockingViolations(page, "Inicio con «Sala»: actividad", ACTIVITY);
+  });
+
+  test("los h2 de «Esta noche», «Para ti» y la actividad no se ven como el h1", async ({ page }) => {
+    await mockHome(page);
+    for (const width of [375, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      await openHome(page);
+      const font = (sel: string) =>
+        page.locator(sel).first().evaluate((el) => {
+          const cs = getComputedStyle(el);
+          return { size: parseFloat(cs.fontSize), weight: cs.fontWeight };
+        });
+      const h1 = await font(`${HOME} h1`);
+      for (const sel of [`${TONIGHT} h2`, `${FORYOU} h2`, `${ACTIVITY} h2`]) {
+        const h2 = await font(sel);
+        expect(h2.size, `${sel} a ${width} px`).toBeLessThan(h1.size);
+        expect(h2.weight, `${sel} a ${width} px`).not.toBe(h1.weight);
+      }
+    }
+  });
+});

@@ -68,7 +68,6 @@ export function SalaHomeForYou(props: AiRecsInput) {
   // Qué es lo que se ve (el cartel de hoy, como texto): solo con obras o mientras llegan.
   const kind =
     status === 'starter' ? t('starterBadge') : status === 'done' && source === 'match' ? t('matchBadge') : t('aiPickBadge')
-  const showKind = status === 'done' || status === 'loading' || status === 'starter'
   const showList = status === 'done' || status === 'loading' || status === 'starter'
 
   return (
@@ -82,7 +81,7 @@ export function SalaHomeForYou(props: AiRecsInput) {
         <h2 id={titleId} ref={headingRef} tabIndex={-1} className="scroll-mt-24 outline-none sala-type-data">
           {t('title')}
         </h2>
-        {showKind ? (
+        {showList ? (
           <p data-sala-home-foryou-kind="" className="text-sala-ink-secondary sala-type-small">
             {kind}
           </p>
