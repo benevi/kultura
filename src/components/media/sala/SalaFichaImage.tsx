@@ -116,7 +116,7 @@ export function SalaFichaImage({ src, sizes, fit = "cover", vertical = false }: 
   return (
     <Image
       key={`${src} ${attempt}`}
-      // La apaisada (`cover`) con tope en w1280 de TMDB; la portada (y la vertical que llena la sala), como siempre.
+      // La apaisada (`cover`) directa de TMDB (w780, w1280 u original según la pantalla); la portada (y la vertical que llena la sala), como siempre.
       loader={fit === "cover" && !vertical ? backdropLoader : posterLoader}
       src={src}
       alt=""
