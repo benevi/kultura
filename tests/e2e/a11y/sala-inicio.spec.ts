@@ -285,7 +285,7 @@ test.describe("con «Sala» (I2a)", () => {
     await openHome(page);
     const row = page.locator(ROW("circle"));
     const alert = row.getByRole("alert");
-    await expect(alert).toContainText(`No se ha podido cargar «${es.home.popularInCircle}»`);
+    await expect(alert).toContainText(`No hemos podido cargar «${es.home.popularInCircle}»`);
     const retry = alert.getByRole("button", { name: es.home.sala.retry });
     await expect(retry).toBeVisible();
     expect((await retry.boundingBox())!.height).toBeGreaterThanOrEqual(48);
