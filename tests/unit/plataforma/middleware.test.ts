@@ -293,3 +293,105 @@ describe("revisión #47 — rankings inexistentes fuera de la caché ISR", () =>
     expect(res.headers.get("content-security-policy")).toBeNull();
   });
 });
+
+describe("FICHA_ISR — ficha cacheable para visitantes sin sesión", () => {
+  const ROUTER = (from: string, extra: Record<string, string> = {}) => ({
+    ...extra,
+    "sec-fetch-dest": "empty",
+    referer: `https://kultura.test${from}`,
+  });
+  const rewrite = (res: Response) => {
+    const target = res.headers.get("x-middleware-rewrite");
+    return target ? new URL(target).pathname : null;
+  };
+
+  beforeEach(() => {
+    vi.stubEnv("FICHA_ISR", "1");
+    return () => {
+      vi.unstubAllEnvs();
+    };
+  });
+
+  it.each(["/es/media/movie/603", "/en/media/manga/abc-123", "/es/media/book/OL1W"])(
+    "%s sin sesión → copia cacheable, CSP fija, sin nonce, sin cookies ni sesión",
+    async (path) => {
+      const res = await middleware(req("GET", path));
+      const [, locale, , type, id] = path.split("/");
+      expect(rewrite(res)).toBe(`/${locale}/media-anonima/${type}/${id}`);
+      const csp = res.headers.get("content-security-policy") ?? "";
+      expect(csp).toMatch(/script-src 'self' 'unsafe-inline'/);
+      expect(csp).not.toMatch(/'nonce-/);
+      expect(forwarded(res, "content-security-policy")).toBeNull();
+      expect(forwarded(res, "x-nonce")).toBeNull();
+      expect(res.headers.get("set-cookie")).toBeNull();
+      expect(getUser).not.toHaveBeenCalled();
+    },
+  );
+
+  it("HEAD también; otros métodos no", async () => {
+    expect(rewrite(await middleware(req("HEAD", "/es/media/movie/603")))).toBe("/es/media-anonima/movie/603");
+    expect(rewrite(await middleware(req("POST", "/es/media/movie/603")))).toBeNull();
+  });
+
+  it("con sesión: la ficha de siempre, con nonce", async () => {
+    const res = await middleware(req("GET", "/es/media/movie/603", SESSION));
+    expect(rewrite(res)).toBeNull();
+    expect(res.headers.get("content-security-policy")).toMatch(/'nonce-/);
+    expect(getUser).toHaveBeenCalledTimes(1);
+  });
+
+  it("con la cookie de prueba de «Sala»: la ficha de siempre, con nonce", async () => {
+    const res = await middleware(req("GET", "/es/media/movie/603", { cookie: "kultura_sala_prueba=1" }));
+    expect(rewrite(res)).toBeNull();
+    expect(res.headers.get("content-security-policy")).toMatch(/'nonce-/);
+  });
+
+  it("con la bandera apagada (0 o vacía): nada cambia", async () => {
+    for (const value of ["0", ""]) {
+      vi.stubEnv("FICHA_ISR", value);
+      const res = await middleware(req("GET", "/es/media/movie/603"));
+      expect(rewrite(res)).toBeNull();
+      expect(res.headers.get("content-security-policy")).toMatch(/'nonce-/);
+    }
+  });
+
+  it("lo que no es una ficha no se toca (tipos desconocidos, subrutas)", async () => {
+    for (const path of ["/es/media/podcast/1", "/es/media/movie/603/extra", "/es/media/movie"]) {
+      expect(rewrite(await middleware(req("GET", path)))).toBeNull();
+    }
+  });
+
+  it.each(["/es/media-anonima/movie/603", "/en/media-anonima", "/es/media-anonima/x"])(
+    "%s por su nombre → 404 dinámica, con o sin bandera",
+    async (path) => {
+      for (const value of ["1", "0"]) {
+        vi.stubEnv("FICHA_ISR", value);
+        const res = await middleware(req("GET", path));
+        expect(rewrite(res)).toBe(`/${path.split("/")[1]}/no-existe`);
+        expect(res.headers.get("cache-control")).toBe("private, no-store");
+      }
+    },
+  );
+
+  it("el router desde la ficha cacheable hacia una página con nonce → 409 (recarga el documento)", async () => {
+    for (const to of ["/es/u/benevi", "/es/login", "/es/discover"]) {
+      const res = await middleware(req("GET", to, ROUTER("/es/media/movie/603")));
+      expect(res.status).toBe(409);
+      expect(res.headers.get("cache-control")).toBe("no-store");
+    }
+  });
+
+  it("de ficha a ficha sin sesión, el router navega (las dos con la CSP fija)", async () => {
+    const res = await middleware(req("GET", "/es/media/tv/1399", ROUTER("/es/media/movie/603")));
+    expect(res.status).toBe(200);
+    expect(rewrite(res)).toBe("/es/media-anonima/tv/1399");
+  });
+
+  it("con sesión o con la bandera apagada, el router navega desde la ficha como siempre", async () => {
+    const withSession = await middleware(req("GET", "/es/settings", ROUTER("/es/media/movie/603", SESSION)));
+    expect(withSession.status).toBe(200);
+    vi.stubEnv("FICHA_ISR", "0");
+    const flagOff = await middleware(req("GET", "/es/u/benevi", ROUTER("/es/media/movie/603")));
+    expect(flagOff.status).toBe(200);
+  });
+});
