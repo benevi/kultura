@@ -22,6 +22,13 @@ import { readAccountState } from '@/lib/account/account-state'
 import { createLogger } from '@/lib/logger'
 import { localizeHeroSynopsis } from '@/lib/media/hero-synopsis'
 import { progressFromRow, type ProgressValue } from '@/lib/library/progress'
+import { salaInicioEnabled } from '@/lib/flags/sala'
+import {
+  SalaHomeCircleLazy,
+  SalaHomeContinueLazy,
+  SalaHomeNewsLazy,
+  SalaHomeTitleLazy,
+} from '@/components/home/sala/SalaHomeLazy'
 import {
   FriendsActivity,
   FriendsActivitySkeleton,
@@ -177,28 +184,63 @@ export default async function HomePage() {
       progress: progressOf(item as unknown as Record<string, unknown>),
     }))
 
+  // ROJO-7: aviso de borrado programado, arriba de todo.
+  const deletionNotice = deletionRequestedAt ? (
+    <div
+      role="status"
+      className="flex flex-wrap items-center justify-between gap-3 rounded-bento border-2 border-accent-danger/50 bg-surface-default px-5 py-4"
+    >
+      <p className="font-body text-sm text-text-primary">
+        {tSettings('deletionPending', {
+          date: new Intl.DateTimeFormat(locale === 'en' ? 'en-GB' : 'es-ES', {
+            day: 'numeric', month: 'long', year: 'numeric',
+          }).format(purgeDate(deletionRequestedAt)),
+        })}
+      </p>
+      <Link
+        href="/settings"
+        className="inline-flex min-h-[44px] items-center font-body text-sm font-bold text-accent-pink underline-offset-4 hover:underline"
+      >
+        {tSettings('cancelDeletion')}
+      </Link>
+    </div>
+  ) : null
+
+  const forYou = showStarter ? (
+    <Suspense fallback={<AiRecommendations pending />}>
+      <StarterForYou locale={locale} />
+    </Suspense>
+  ) : (
+    <AiRecommendations initial={todayRecs} />
+  )
+
+  // Fase 8.5 I1: Inicio en «Sala» (bandera SALA_INICIO: 0, prueba o 1). Con
+  // ella, el `h1` y las filas de obras (`SalaWorkList`/`SalaWorkCard`); el
+  // hero, «Esta noche», «Para ti» y la actividad siguen como hoy (I2). Usa los
+  // mismos datos que la página de hoy.
+  if (await salaInicioEnabled()) {
+    return (
+      <main data-sala-home="" className="page-grid [&>*]:max-w-4xl py-6 md:py-8 space-y-8 md:space-y-10">
+        <SalaHomeTitleLazy />
+        {deletionNotice}
+        <HeroSection item={inProgress} />
+        <SalaHomeContinueLazy title={t('continueWatching')} items={filteredRecent} />
+        <Suspense fallback={<TonightSkeleton />}>
+          <TonightOnMyPlatforms userId={user.id} locale={locale} />
+        </Suspense>
+        {forYou}
+        <Suspense fallback={<FriendsActivitySkeleton />}>
+          <FriendsActivity userId={user.id} locale={locale} />
+        </Suspense>
+        <SalaHomeCircleLazy />
+        <SalaHomeNewsLazy />
+      </main>
+    )
+  }
+
   return (
     <main className="page-grid [&>*]:max-w-4xl py-6 md:py-8 space-y-8 md:space-y-10">
-      {deletionRequestedAt && (
-        <div
-          role="status"
-          className="flex flex-wrap items-center justify-between gap-3 rounded-bento border-2 border-accent-danger/50 bg-surface-default px-5 py-4"
-        >
-          <p className="font-body text-sm text-text-primary">
-            {tSettings('deletionPending', {
-              date: new Intl.DateTimeFormat(locale === 'en' ? 'en-GB' : 'es-ES', {
-                day: 'numeric', month: 'long', year: 'numeric',
-              }).format(purgeDate(deletionRequestedAt)),
-            })}
-          </p>
-          <Link
-            href="/settings"
-            className="inline-flex min-h-[44px] items-center font-body text-sm font-bold text-accent-pink underline-offset-4 hover:underline"
-          >
-            {tSettings('cancelDeletion')}
-          </Link>
-        </div>
-      )}
+      {deletionNotice}
       <HeroSection item={inProgress} />
 
       {/* F-27 (PRO-5): cada tarjeta con su progreso y «1 toque» para avanzar. */}
@@ -214,13 +256,7 @@ export default async function HomePage() {
         <TonightOnMyPlatforms userId={user.id} locale={locale} />
       </Suspense>
 
-      {showStarter ? (
-        <Suspense fallback={<AiRecommendations pending />}>
-          <StarterForYou locale={locale} />
-        </Suspense>
-      ) : (
-        <AiRecommendations initial={todayRecs} />
-      )}
+      {forYou}
       {/* F-25 (PRO-7): lo que hacen los amigos, antes de lo popular entre ellos. */}
       <Suspense fallback={<FriendsActivitySkeleton />}>
         <FriendsActivity userId={user.id} locale={locale} />

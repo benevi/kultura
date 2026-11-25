@@ -15,6 +15,7 @@ import {
   salaBibliotecaEnabled,
   salaDescubrirEnabled,
   salaFichaEnabled,
+  salaInicioEnabled,
   salaFlagMode,
   salaTestCookie,
   salaTestNext,
@@ -148,6 +149,40 @@ describe("salaDescubrirEnabled (lee process.env.SALA_DESCUBRIR, misma cookie)", 
     expect(cookieStore.get).toHaveBeenCalledWith(SALA_TEST_COOKIE);
     cookieStore.get.mockReturnValue(undefined);
     expect(await salaDescubrirEnabled()).toBe(false);
+  });
+});
+
+describe("salaInicioEnabled (lee process.env.SALA_INICIO, misma cookie)", () => {
+  const before = { descubrir: process.env.SALA_DESCUBRIR, inicio: process.env.SALA_INICIO };
+  beforeEach(() => cookieStore.get.mockReset());
+  afterEach(() => {
+    for (const [k, v] of [["SALA_DESCUBRIR", before.descubrir], ["SALA_INICIO", before.inicio]] as const) {
+      if (v === undefined) delete process.env[k];
+      else process.env[k] = v;
+    }
+  });
+
+  it("sin definir o 0: apagada y sin mirar la cookie, aunque Descubrir esté encendida", async () => {
+    process.env.SALA_DESCUBRIR = "1";
+    delete process.env.SALA_INICIO;
+    expect(await salaInicioEnabled()).toBe(false);
+    process.env.SALA_INICIO = "0";
+    cookieStore.get.mockReturnValue({ value: "1" });
+    expect(await salaInicioEnabled()).toBe(false);
+    expect(cookieStore.get).not.toHaveBeenCalled();
+  });
+  it("1: encendida, aunque Descubrir esté apagada", async () => {
+    process.env.SALA_DESCUBRIR = "0";
+    process.env.SALA_INICIO = "1";
+    expect(await salaInicioEnabled()).toBe(true);
+  });
+  it("prueba: según la misma cookie de prueba", async () => {
+    process.env.SALA_INICIO = "prueba";
+    cookieStore.get.mockReturnValue({ value: "1" });
+    expect(await salaInicioEnabled()).toBe(true);
+    expect(cookieStore.get).toHaveBeenCalledWith(SALA_TEST_COOKIE);
+    cookieStore.get.mockReturnValue(undefined);
+    expect(await salaInicioEnabled()).toBe(false);
   });
 });
 

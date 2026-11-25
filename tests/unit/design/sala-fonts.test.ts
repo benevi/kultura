@@ -175,7 +175,7 @@ describe("orden de las fuentes (biblia §5)", () => {
 });
 
 describe("las pantallas de hoy solo descargan «Sala» donde ya la usan", () => {
-  it("solo Storybook, las piezas de «Sala», el estado de error de los error.tsx, la sala de la ficha, la rejilla de la biblioteca y Descubrir importan las hojas de src/styles/sala", () => {
+  it("solo Storybook, las piezas de «Sala», el estado de error de los error.tsx, la sala de la ficha, la rejilla de la biblioteca, Descubrir e Inicio importan las hojas de src/styles/sala", () => {
     const importers = walk(join(ROOT, "src"))
       .filter((f) => /\.(tsx?|css|mdx?)$/.test(f) && dirname(f) !== SHEETS_DIR)
       .filter((f) => /styles\/sala\//.test(readFileSync(f, "utf8")))
@@ -192,8 +192,11 @@ describe("las pantallas de hoy solo descargan «Sala» donde ya la usan", () => 
     //   `next/dynamic` y solo con la bandera `SALA_BIBLIOTECA` encendida.
     // - `SalaDiscoverView` (fase 8.5, D1): Descubrir, por `next/dynamic` y solo
     //   con la bandera `SALA_DESCUBRIR` encendida.
+    // - `SalaHome` (fase 8.5, I1): Inicio, por `next/dynamic` y solo con la
+    //   bandera `SALA_INICIO` encendida.
     expect(importers.sort()).toEqual([
       "src/components/discover/sala/SalaDiscoverView.tsx",
+      "src/components/home/sala/SalaHome.tsx",
       "src/components/layout/ErrorState.tsx",
       "src/components/library/sala/SalaLibraryGrid.tsx",
       "src/components/media/sala/SalaFichaStyles.tsx",

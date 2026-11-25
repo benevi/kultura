@@ -157,3 +157,36 @@ describe('Inicio sin «Sala» (SALA_INICIO apagada): marcado de hoy', () => {
     expect(state.sala).toBeNull()
   })
 })
+
+describe('Inicio con «Sala» (SALA_INICIO=1)', () => {
+  it('el h1 y las filas de «Sala» sustituyen a las de hoy; el resto sigue igual y en el mismo orden', async () => {
+    process.env.SALA_INICIO = '1'
+    state.deletion = '2026-11-01T10:00:00.000Z'
+    const html = await renderHome()
+    // Lo que se queda como hoy (I2) y lo que pasa a «Sala», en orden.
+    const order = [...html.matchAll(/data-(?:sala-)?stub="([^"]+)"|role="status"/g)].map((m) => m[1] ?? 'aviso')
+    expect(order).toEqual([
+      'title',
+      'aviso',
+      'HeroSection',
+      'continue',
+      'TonightOnMyPlatforms',
+      'AiRecommendations',
+      'FriendsActivity',
+      'circle',
+      'news',
+    ])
+    expect(html).toContain('<main data-sala-home=""')
+    expect(html).not.toContain('data-stub="ContinueRow"')
+    expect(html).not.toContain('data-stub="PopularInCircle"')
+    expect(html).not.toContain('data-stub="GenreNews"')
+    // «Continúa» recibe las mismas filas que hoy (sin la del hero).
+    expect(state.sala?.continue).toEqual({
+      title: 'home.continueWatching',
+      items: [
+        { mediaId: 'manga_2', title: 'Manga', poster: 'https://x/p.jpg', type: 'manga', status: 'in_progress', progress: expect.anything() },
+        { mediaId: 'game_3', title: 'Juego', poster: null, type: 'game', status: 'pending', progress: null },
+      ],
+    })
+  })
+})

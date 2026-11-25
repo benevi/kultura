@@ -28,6 +28,9 @@ B1 rejilla con SalaWorkList/SalaWorkCard + edición rápida en SalaDialog · B2 
 ## Descubrir
 D1 buscador, tipos (botones con aria-pressed desde `sm`; en el móvil, un `<select>` nativo como los de B2), «Sorpréndeme», rejilla con SalaWorkList/SalaWorkCard y paginación (arregla de paso: imagen rota —las obras sin portada ya no se esconden—, × repetidas, error no anunciado —con «Reintentar»—, aria-pressed) · D2 filtros en un panel como B2 (botones con aria-pressed para los de varias opciones, `<select>` para los de una y para el orden, URL con `pushState`) y foco en la lista al cambiar de página · tráiler al pasar: aparte, necesita preferencia o cambio en `/privacy` · P-Uso.
 
+## Inicio
+Bandera `SALA_INICIO`. I1 `h1` (no había), «Continúa donde lo dejaste» y las filas de «Popular entre tus amigos» y novedades con SalaWorkList/SalaWorkCard, mismos datos que hoy (arregla de paso: sin `h1`, filas sin nombre, obras sin portada escondidas, barra de la fila oculta —sin rueda horizontal no se llegaba al final— y anillo de foco cortado por la fila) · I2 el hero «Continuando» en «Sala», el «+1» con SalaButton y el aviso de terminar en SalaDialog, «Esta noche» con «Sorpréndeme», «Para ti», la actividad de amigos, el aviso de borrado, el esqueleto de `loading.tsx` y qué hacer si una fila falla · P-Uso. El hero mensual de la landing pública (#269) es otra cosa y no entra aquí.
+
 ## Decisiones (Víctor, 21-11-2026)
 1. `KButton sm` 32→44: **no se toca**; cada pantalla migrada pasa a `SalaButton` (48 px) y `KButton` muere con la migración. 32 px ya cumple WCAG 2.2 AA (2.5.8 pide 24).
 2. Degradados: **no se unifican**; los dos se retiran con la migración (respaldo de Sala).
