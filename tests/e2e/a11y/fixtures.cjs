@@ -159,8 +159,14 @@ function watchProviders(id) {
   return { id, results: PROVIDERS[id] ?? {} };
 }
 
+/**
+ * Solo con ficha (no sale en listas ni búsquedas): un título japonés, sin
+ * espacios, para el nombre accesible del rótulo (`sala-ficha.spec.ts`).
+ */
+const DETAIL_ONLY = { 129: { id: 129, title: "千と千尋の神隠し", year: 2001 } };
+
 function tmdbDetail(id) {
-  const base = tmdbResults.find((m) => m.id === id) ?? tmdbMovie({ id, title: `Título ${id}`, year: 2020 }, 0);
+  const base = tmdbResults.find((m) => m.id === id) ?? tmdbMovie(DETAIL_ONLY[id] ?? { id, title: `Título ${id}`, year: 2020 }, 0);
   return {
     ...base,
     runtime: 139,

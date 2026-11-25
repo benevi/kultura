@@ -102,6 +102,20 @@ for (const scheme of ["light", "dark"] as const) {
   }
 }
 
+test("rótulo con un título japonés: el h1 se llama como la obra, sin el espacio de los saltos", async ({ page }) => {
+  const TITLE = "千と千尋の神隠し";
+  for (const width of [390, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    await open(page, "/es/media/movie/129");
+    const h1 = page.getByRole("heading", { level: 1 });
+    // El rótulo parte el título en líneas (`<br>`); sin el texto oculto, Chromium metía un espacio.
+    await expect(h1.locator("[data-sala-title-text] br").first()).toBeAttached();
+    await expect(h1).toHaveAccessibleName(TITLE);
+    await expect(h1.locator("[data-sala-title-text]")).toHaveAttribute("aria-hidden", "true");
+  }
+  await expectNoBlockingViolations(page, "Ficha con «Sala»: rótulo japonés");
+});
+
 test("«Dónde ver» con enlaces: Tab recorre la fila y el anillo se ve entero", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 700 });
   await open(page, "/es/media/movie/550");

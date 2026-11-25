@@ -102,13 +102,18 @@ export function SalaTitleText({ title, preset = SALA_TITLE_PRESET.sala, plan, cl
   const compuesto = plan ?? planSalaTitle(title, preset);
   const estrecha = new Set(compuesto.narrow.starts);
   const ancha = new Set(compuesto.wide.starts);
-  return (
+  // Un salto sin espacio (japonés, coreano, o una palabra partida): el `<br>` mete un espacio en el
+  // nombre accesible («転生したら スライムだった件»). Entonces el rótulo se ve y no se lee, y el
+  // título va tal cual en texto oculto, que no se selecciona (al copiar sale una vez).
+  const sinEspacio = compuesto.chunks.some((_, i) => i > 0 && (estrecha.has(i) || ancha.has(i)) && compuesto.joins[i] === "");
+  const rotulo = (
     <span
       data-sala-title-text=""
       data-lines={`${compuesto.narrow.starts.length} ${compuesto.wide.starts.length}`}
       className={cn(SALA_TITLE_CSS.text, "sala-type-title", className)}
       style={{ ...salaTitleVars(compuesto), ...(compuesto.lineHeight === SALA_TITLE_LINE_HEIGHT ? null : { lineHeight: compuesto.lineHeight }), ...style }}
       {...props}
+      aria-hidden={sinEspacio ? true : props["aria-hidden"]}
     >
       {compuesto.chunks.map((trozo, i) => {
         if (i === 0) return trozo;
@@ -125,5 +130,14 @@ export function SalaTitleText({ title, preset = SALA_TITLE_PRESET.sala, plan, cl
         );
       })}
     </span>
+  );
+  if (!sinEspacio) return rotulo;
+  return (
+    <>
+      <span data-sala-title-name="" lang={props.lang} className="sr-only select-none">
+        {title}
+      </span>
+      {rotulo}
+    </>
   );
 }
