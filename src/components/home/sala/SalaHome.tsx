@@ -119,7 +119,7 @@ function Arrow({ dir }: { dir: 'prev' | 'next' }) {
 
 /** La flecha: cuadrada, de 48 px, con el borde de tinta del `SalaButton` secundario. */
 const FLECHA =
-  'inline-flex h-sala-target w-sala-target items-center justify-center border-2 bg-transparent touch-manipulation transition-colors duration-sala-fast ease-sala motion-reduce:transition-none sala-focused:sala-focus'
+  'inline-flex h-sala-target w-sala-target scroll-mt-24 items-center justify-center border-2 bg-transparent touch-manipulation transition-colors duration-sala-fast ease-sala motion-reduce:transition-none sala-focused:sala-focus'
 const FLECHA_ACTIVA =
   'cursor-pointer border-sala-ink text-sala-ink sala-hover:bg-sala-ink sala-hover:text-sala-background sala-pressed:bg-sala-ink sala-pressed:text-sala-background'
 /** Como el `SalaButton` deshabilitado: el gris del borde y el trazo discontinuo, que lo dice sin color. */
@@ -208,11 +208,16 @@ function Row({ title, name, loading = false, count, children, after, onRetry }: 
   return (
     <section aria-labelledby={id} data-sala-home-row={name} className="font-sala-text text-sala-ink">
       <div className="mb-3 flex items-end justify-between gap-4">
-        <h2 id={id} ref={headingRef} tabIndex={-1} className="outline-none sala-type-data [overflow-wrap:anywhere]">
+        <h2 id={id} ref={headingRef} tabIndex={-1} className="scroll-mt-24 outline-none sala-type-data [overflow-wrap:anywhere]">
           {title}
         </h2>
         {showList ? (
-          <div className="hidden shrink-0 gap-2 md:flex">
+          // Si todo cabe, no hay nada que mover: las flechas no se ven ni se
+          // alcanzan con Tab, pero guardan su sitio (nada salta al medir).
+          <div
+            data-sala-home-arrows=""
+            className={cn('hidden shrink-0 gap-2 md:flex', edges.start && edges.end && 'invisible')}
+          >
             {arrow('prev')}
             {arrow('next')}
           </div>

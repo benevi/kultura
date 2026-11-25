@@ -178,6 +178,10 @@ describe('flechas de la fila', () => {
     expect(prev).not.toBeDisabled()
     expect(next).not.toBeDisabled()
 
+    // Sin nada que mover (todo cabe), las flechas no se ven pero guardan su sitio.
+    const group = prev.parentElement!
+    expect(group.className).toContain('invisible')
+
     size(list, { scrollWidth: 1600, clientWidth: 800 })
     const scrollBy = vi.fn()
     list.scrollBy = scrollBy as unknown as typeof list.scrollBy
@@ -187,6 +191,7 @@ describe('flechas de la fila', () => {
     })
     expect(prev).toHaveAttribute('aria-disabled', 'true')
     expect(next).not.toHaveAttribute('aria-disabled')
+    expect(group.className).not.toContain('invisible')
 
     // Al principio, «Anteriores» no hace nada.
     fireEvent.click(prev)
