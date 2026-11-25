@@ -1,0 +1,226 @@
+- generic [active] [ref=f3e1]:
+  - link "Saltar al contenido" [ref=f3e2] [cursor=pointer]:
+    - /url: "#main"
+  - generic [ref=f3e4]:
+    - generic [aria-hidden]:
+      - generic: KULTURA
+    - banner [ref=f3e5]:
+      - navigation "Principal" [ref=f3e6]:
+        - link "Entrar" [ref=f3e7] [cursor=pointer]:
+          - /url: /es/login?mode=login
+    - main [ref=f3e8]:
+      - region "KULTURA" [ref=f3e9]:
+        - heading "KULTURA" [level=1]
+        - generic [ref=f3e11]:
+          - generic [ref=f3e12]:
+            - paragraph [ref=f3e13]: Tu watchlist de cine, series, anime, manga, videojuegos, libros y cómics.
+            - generic [ref=f3e14]:
+              - link "Crear cuenta" [ref=f3e15] [cursor=pointer]:
+                - /url: /es/login?mode=register
+              - button "Ver la demo" [ref=f3e17] [cursor=pointer]
+          - generic [ref=f3e18]:
+            - paragraph [ref=f3e19]: Model Citizen · Película · 2026
+            - group "Escenas" [ref=f3e20]:
+              - button "Model Citizen" [ref=f3e21] [cursor=pointer]
+              - button "En el corazón de la bestia" [ref=f3e23] [cursor=pointer]
+              - button "La Odisea" [ref=f3e24] [cursor=pointer]
+              - button "Pausar" [ref=f3e25] [cursor=pointer]
+      - region "Lo que hay dentro" [ref=f3e29]:
+        - generic [ref=f3e30]:
+          - heading "Lo que hay dentro" [level=2] [ref=f3e31]
+          - list [ref=f3e32]:
+            - listitem [ref=f3e33]:
+              - heading "Biblioteca personal" [level=3] [ref=f3e35]
+              - paragraph [ref=f3e36]: Lo que has visto, leído y jugado, con tus notas y tu progreso.
+            - listitem [ref=f3e37]:
+              - heading "Recomendaciones con IA" [level=3] [ref=f3e39]
+              - paragraph [ref=f3e40]: Te sugiere qué ver, leer o jugar a partir de lo que has puntuado.
+            - listitem [ref=f3e41]:
+              - button "Mantén pulsado para ver con qué está Lucía" [ref=f3e42]:
+                - generic: "Lucía está con Frieren: Beyond Journey’s End Season 2"
+                - generic [aria-hidden]: Mantén pulsado
+              - heading "Conecta con amigos" [level=3] [ref=f3e43]
+              - paragraph [ref=f3e44]: Mira qué están disfrutando las personas que te importan.
+            - listitem [ref=f3e45]:
+              - heading "Listas colaborativas" [level=3] [ref=f3e47]
+              - paragraph [ref=f3e48]: Listas que hacéis entre varios, cada uno añade lo suyo.
+      - region "Así funciona" [ref=f3e49]:
+        - generic [ref=f3e50]:
+          - heading "Así funciona" [level=2] [ref=f3e51]
+          - list [ref=f3e52]:
+            - listitem [ref=f3e53]:
+              - heading "Búscalo" [level=3] [ref=f3e55]
+              - paragraph [ref=f3e56]: Un solo buscador para los siete formatos.
+            - listitem [ref=f3e57]:
+              - generic [ref=f3e59]:
+                - generic [ref=f3e60]: Completado
+                - generic [ref=f3e61]: "9"
+              - heading "Apúntalo y puntúalo" [level=3] [ref=f3e62]
+              - paragraph [ref=f3e63]: Pendiente, en curso, completado o abandonado. Y tu nota.
+            - listitem [ref=f3e64]:
+              - heading "Compártelo" [level=3] [ref=f3e66]
+              - paragraph [ref=f3e67]: Crea listas con tus amigos y mirad qué tenéis en común.
+      - region "La alternativa a Letterboxd, Trakt y MyAnimeList" [ref=f3e68]:
+        - heading "La alternativa a Letterboxd, Trakt y MyAnimeList" [level=2] [ref=f3e69]
+        - paragraph [ref=f3e70]: Todos tus formatos en una sola app, con las mismas personas.
+        - table "Letterboxd, Trakt, MyAnimeList, Goodreads y Backloggd son marcas de sus dueños. KULTURA no está afiliada a ellas." [ref=f3e71]:
+          - caption [ref=f3e72]: Letterboxd, Trakt, MyAnimeList, Goodreads y Backloggd son marcas de sus dueños. KULTURA no está afiliada a ellas.
+          - rowgroup [ref=f3e73]:
+            - row [ref=f3e74]:
+              - columnheader "App" [ref=f3e75]
+              - columnheader [ref=f3e76]: Cine
+              - columnheader [ref=f3e77]: Ser.
+              - columnheader [ref=f3e78]: Ani.
+              - columnheader [ref=f3e79]: Man.
+              - columnheader [ref=f3e80]: Jue.
+              - columnheader [ref=f3e81]: Lib.
+              - columnheader [ref=f3e82]: Cóm.
+          - rowgroup [ref=f3e83]:
+            - row [ref=f3e84]:
+              - rowheader "KULTURA" [ref=f3e85]
+              - cell [ref=f3e86]:
+                - img "Sí" [ref=f3e87]
+              - cell [ref=f3e88]:
+                - img "Sí" [ref=f3e89]
+              - cell [ref=f3e90]:
+                - img "Sí" [ref=f3e91]
+              - cell [ref=f3e92]:
+                - img "Sí" [ref=f3e93]
+              - cell [ref=f3e94]:
+                - img "Sí" [ref=f3e95]
+              - cell [ref=f3e96]:
+                - img "Sí" [ref=f3e97]
+              - cell [ref=f3e98]:
+                - img "Sí" [ref=f3e99]
+            - row [ref=f3e100]:
+              - rowheader "Letterboxd" [ref=f3e101]
+              - cell [ref=f3e102]:
+                - img "Sí" [ref=f3e103]
+              - cell [ref=f3e104]:
+                - img "No" [ref=f3e105]
+              - cell [ref=f3e106]:
+                - img "No" [ref=f3e107]
+              - cell [ref=f3e108]:
+                - img "No" [ref=f3e109]
+              - cell [ref=f3e110]:
+                - img "No" [ref=f3e111]
+              - cell [ref=f3e112]:
+                - img "No" [ref=f3e113]
+              - cell [ref=f3e114]:
+                - img "No" [ref=f3e115]
+            - row [ref=f3e116]:
+              - rowheader "Trakt" [ref=f3e117]
+              - cell [ref=f3e118]:
+                - img "Sí" [ref=f3e119]
+              - cell [ref=f3e120]:
+                - img "Sí" [ref=f3e121]
+              - cell [ref=f3e122]:
+                - img "No" [ref=f3e123]
+              - cell [ref=f3e124]:
+                - img "No" [ref=f3e125]
+              - cell [ref=f3e126]:
+                - img "No" [ref=f3e127]
+              - cell [ref=f3e128]:
+                - img "No" [ref=f3e129]
+              - cell [ref=f3e130]:
+                - img "No" [ref=f3e131]
+            - row [ref=f3e132]:
+              - rowheader "MyAnimeList" [ref=f3e133]
+              - cell [ref=f3e134]:
+                - img "No" [ref=f3e135]
+              - cell [ref=f3e136]:
+                - img "No" [ref=f3e137]
+              - cell [ref=f3e138]:
+                - img "Sí" [ref=f3e139]
+              - cell [ref=f3e140]:
+                - img "Sí" [ref=f3e141]
+              - cell [ref=f3e142]:
+                - img "No" [ref=f3e143]
+              - cell [ref=f3e144]:
+                - img "No" [ref=f3e145]
+              - cell [ref=f3e146]:
+                - img "No" [ref=f3e147]
+            - row [ref=f3e148]:
+              - rowheader "Goodreads" [ref=f3e149]
+              - cell [ref=f3e150]:
+                - img "No" [ref=f3e151]
+              - cell [ref=f3e152]:
+                - img "No" [ref=f3e153]
+              - cell [ref=f3e154]:
+                - img "No" [ref=f3e155]
+              - cell [ref=f3e156]:
+                - img "No" [ref=f3e157]
+              - cell [ref=f3e158]:
+                - img "No" [ref=f3e159]
+              - cell [ref=f3e160]:
+                - img "Sí" [ref=f3e161]
+              - cell [ref=f3e162]:
+                - img "No" [ref=f3e163]
+            - row [ref=f3e164]:
+              - rowheader "Backloggd" [ref=f3e165]
+              - cell [ref=f3e166]:
+                - img "No" [ref=f3e167]
+              - cell [ref=f3e168]:
+                - img "No" [ref=f3e169]
+              - cell [ref=f3e170]:
+                - img "No" [ref=f3e171]
+              - cell [ref=f3e172]:
+                - img "No" [ref=f3e173]
+              - cell [ref=f3e174]:
+                - img "Sí" [ref=f3e175]
+              - cell [ref=f3e176]:
+                - img "No" [ref=f3e177]
+              - cell [ref=f3e178]:
+                - img "No" [ref=f3e179]
+      - region "Preguntas" [ref=f3e180]:
+        - heading "Preguntas" [level=2] [ref=f3e181]
+        - generic [ref=f3e182]:
+          - group [ref=f3e183]:
+            - generic "¿Qué puedo apuntar?" [ref=f3e184] [cursor=pointer]
+          - group [ref=f3e186]:
+            - generic "¿Puedo probarla sin registrarme?" [ref=f3e187] [cursor=pointer]
+          - group [ref=f3e189]:
+            - generic "¿Quién ve lo que apunto?" [ref=f3e190] [cursor=pointer]
+          - group [ref=f3e192]:
+            - generic "¿Puedo llevarme mis datos?" [ref=f3e193] [cursor=pointer]
+          - group [ref=f3e195]:
+            - generic "¿Cómo funcionan las recomendaciones?" [ref=f3e196] [cursor=pointer]
+    - contentinfo [ref=f3e198]:
+      - navigation "Información" [ref=f3e199]:
+        - list [ref=f3e200]:
+          - listitem [ref=f3e201]:
+            - link "Privacidad" [ref=f3e202] [cursor=pointer]:
+              - /url: /es/privacy
+          - listitem [ref=f3e203]:
+            - link "Términos" [ref=f3e204] [cursor=pointer]:
+              - /url: /es/terms
+          - listitem [ref=f3e205]:
+            - link "Aviso legal" [ref=f3e206] [cursor=pointer]:
+              - /url: /es/legal
+          - listitem [ref=f3e207]:
+            - link "Accesibilidad" [ref=f3e208] [cursor=pointer]:
+              - /url: /es/accessibility
+          - listitem [ref=f3e209]:
+            - link "English" [ref=f3e210] [cursor=pointer]:
+              - /url: /en
+      - generic [aria-hidden] [ref=f3e211]: KULTURA
+      - generic [ref=f3e212]:
+        - paragraph [ref=f3e213]: © 2026 KULTURA
+        - paragraph [ref=f3e214]:
+          - text: Datos de
+          - link "TMDB" [ref=f3e215] [cursor=pointer]:
+            - /url: https://www.themoviedb.org
+          - text: ","
+          - link "RAWG" [ref=f3e216] [cursor=pointer]:
+            - /url: https://rawg.io
+          - text: ", Steam, AniList, MangaDex, Open Library, Google Books y"
+          - link "Comic Vine" [ref=f3e217] [cursor=pointer]:
+            - /url: https://comicvine.gamespot.com
+          - text: ". Datos de disponibilidad en plataformas:"
+          - link "JustWatch" [ref=f3e218] [cursor=pointer]:
+            - /url: https://www.justwatch.com
+          - text: ". Carátulas y descripciones de videojuegos:"
+          - link "Steam" [ref=f3e219] [cursor=pointer]:
+            - /url: https://store.steampowered.com
+          - text: . Este producto usa la API de TMDB, pero TMDB no lo respalda ni lo certifica. Steam y el logotipo de Steam son marcas de Valve Corporation; KULTURA no está afiliada a Valve.
+  - alert [ref=f3e220]

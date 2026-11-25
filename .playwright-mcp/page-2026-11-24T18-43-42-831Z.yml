@@ -1,0 +1,98 @@
+- generic [active] [ref=f6e1]:
+  - link "Saltar al contenido" [ref=f6e2] [cursor=pointer]:
+    - /url: "#main"
+  - alert [ref=f6e90]: Denunciar contenido · KULTURA
+  - generic [ref=f6e91]:
+    - banner [ref=f6e92]:
+      - generic [ref=f6e93]:
+        - link "kultura" [ref=f6e94] [cursor=pointer]:
+          - /url: /es
+        - navigation [ref=f6e103]:
+          - link "Entra" [ref=f6e104] [cursor=pointer]:
+            - /url: /es/login?mode=login
+          - link "Registrarse" [ref=f6e106] [cursor=pointer]:
+            - /url: /es/login?mode=register
+    - main [ref=f6e107]:
+      - heading "Denunciar contenido" [level=1] [ref=f6e108]
+      - paragraph [ref=f6e109]: Si algo en KULTURA te parece ilegal o incumple las normas (acoso, odio, spam, contenido sexual, suplantación…), avísanos aquí. No necesitas cuenta.
+      - paragraph [ref=f6e110]: Cada denuncia la revisa una persona. Al enviarla recibirás un número de referencia y, si hace falta, te escribiremos al correo que indiques. Si tienes cuenta, también puedes denunciar desde el propio mensaje, publicación, grupo o perfil.
+      - generic [ref=f6e111]:
+        - alert [ref=f6e112]
+        - generic [ref=f6e113]:
+          - paragraph [ref=f6e114]: Qué denuncias
+          - paragraph [ref=f6e115]: Una ficha de título · comic_2127
+        - group "Motivo de la denuncia" [ref=f6e116]:
+          - generic [ref=f6e118] [cursor=pointer]:
+            - radio "Acoso o intimidación" [ref=f6e119]
+            - generic [ref=f6e120]: Acoso o intimidación
+          - generic [ref=f6e121] [cursor=pointer]:
+            - radio "Odio o discriminación" [ref=f6e122]
+            - generic [ref=f6e123]: Odio o discriminación
+          - generic [ref=f6e124] [cursor=pointer]:
+            - radio "Contenido sexual no apropiado" [ref=f6e125]
+            - generic [ref=f6e126]: Contenido sexual no apropiado
+          - generic [ref=f6e127] [cursor=pointer]:
+            - radio "Violencia o amenazas" [ref=f6e128]
+            - generic [ref=f6e129]: Violencia o amenazas
+          - generic [ref=f6e130] [cursor=pointer]:
+            - radio "Spam o estafa" [ref=f6e131]
+            - generic [ref=f6e132]: Spam o estafa
+          - generic [ref=f6e133] [cursor=pointer]:
+            - radio "Contenido ilegal (p. ej. piratería o datos personales de otra persona)" [ref=f6e134]
+            - generic [ref=f6e135]: Contenido ilegal (p. ej. piratería o datos personales de otra persona)
+          - generic [ref=f6e136] [cursor=pointer]:
+            - radio "Suplantación de identidad" [ref=f6e137]
+            - generic [ref=f6e138]: Suplantación de identidad
+          - generic [ref=f6e139] [cursor=pointer]:
+            - radio "Otro motivo" [ref=f6e140]
+            - generic [ref=f6e141]: Otro motivo
+        - generic [ref=f6e142]:
+          - generic [ref=f6e143]: Qué ocurre
+          - textbox "Qué ocurre" [ref=f6e144]
+          - paragraph [ref=f6e145]: 0/2000 caracteres. Explica por qué este contenido es ilegal o incumple las normas.
+        - generic [ref=f6e146]:
+          - generic [ref=f6e147]: Tu correo electrónico
+          - textbox "Tu correo electrónico" [ref=f6e148]
+          - paragraph [ref=f6e149]: Solo lo usamos para responderte sobre esta denuncia.
+        - generic [ref=f6e151] [cursor=pointer]:
+          - checkbox "Declaro de buena fe que la información de esta denuncia es correcta y completa." [ref=f6e152]
+          - generic [ref=f6e153]: Declaro de buena fe que la información de esta denuncia es correcta y completa.
+        - generic [ref=f6e155]:
+          - text: No rellenes este campo
+          - textbox [ref=f6e156]
+        - paragraph [ref=f6e157]: Guardamos la denuncia, tu correo y la fecha solo para tramitarla.
+        - button "Enviar denuncia" [ref=f6e159] [cursor=pointer]
+      - paragraph [ref=f6e160]: Si alguien está en peligro, llama al 112. Este formulario no es un servicio de emergencias.
+    - contentinfo [ref=f6e161]:
+      - navigation "Información" [ref=f6e162]:
+        - list [ref=f6e163]:
+          - listitem [ref=f6e164]:
+            - link "Privacidad" [ref=f6e165] [cursor=pointer]:
+              - /url: /es/privacy
+          - listitem [ref=f6e166]:
+            - link "Términos" [ref=f6e167] [cursor=pointer]:
+              - /url: /es/terms
+          - listitem [ref=f6e168]:
+            - link "Aviso legal" [ref=f6e169] [cursor=pointer]:
+              - /url: /es/legal
+          - listitem [ref=f6e170]:
+            - link "Accesibilidad" [ref=f6e171] [cursor=pointer]:
+              - /url: /es/accessibility
+      - generic [ref=f6e172]: © 2026 KULTURA
+      - paragraph [ref=f6e173]:
+        - text: Datos de
+        - link "TMDB" [ref=f6e174] [cursor=pointer]:
+          - /url: https://www.themoviedb.org
+        - text: ","
+        - link "RAWG" [ref=f6e175] [cursor=pointer]:
+          - /url: https://rawg.io
+        - text: ", Steam, AniList, MangaDex, Open Library, Google Books y"
+        - link "Comic Vine" [ref=f6e176] [cursor=pointer]:
+          - /url: https://comicvine.gamespot.com
+        - text: ". Datos de disponibilidad en plataformas:"
+        - link "JustWatch" [ref=f6e177] [cursor=pointer]:
+          - /url: https://www.justwatch.com
+        - text: ". Carátulas y descripciones de videojuegos:"
+        - link "Steam" [ref=f6e178] [cursor=pointer]:
+          - /url: https://store.steampowered.com
+        - text: . Este producto usa la API de TMDB, pero TMDB no lo respalda ni lo certifica. Steam y el logotipo de Steam son marcas de Valve Corporation; KULTURA no está afiliada a Valve.

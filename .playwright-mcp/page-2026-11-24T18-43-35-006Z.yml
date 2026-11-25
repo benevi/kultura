@@ -1,0 +1,93 @@
+- generic [active] [ref=f6e1]:
+  - link "Saltar al contenido" [ref=f6e2] [cursor=pointer]:
+    - /url: "#main"
+  - generic [ref=f6e3]:
+    - banner [ref=f6e4]:
+      - generic [ref=f6e5]:
+        - link "kultura" [ref=f6e6] [cursor=pointer]:
+          - /url: /es
+        - navigation [ref=f6e15]:
+          - link "Entra" [ref=f6e16] [cursor=pointer]:
+            - /url: /es/login?mode=login
+          - link "Registrarse" [ref=f6e18] [cursor=pointer]:
+            - /url: /es/login?mode=register
+    - main [ref=f6e20]:
+      - generic [ref=f6e21]:
+        - 'region "Incredible Science Fiction #32" [ref=f6e22]':
+          - 'heading "Incredible Science Fiction #32" [level=1] [ref=f6e26]'
+        - region "Datos de la obra" [ref=f6e28]:
+          - generic [ref=f6e29]:
+            - heading "Datos de la obra" [level=2] [ref=f6e30]
+            - generic [ref=f6e31]:
+              - generic [ref=f6e32]:
+                - term [ref=f6e33]: Año
+                - definition [ref=f6e34]: "1955"
+              - generic [ref=f6e35]:
+                - term [ref=f6e36]: Formato
+                - definition [ref=f6e37]: Cómic
+        - generic [ref=f6e38]:
+          - navigation "Estás en" [ref=f6e39]:
+            - list [ref=f6e40]:
+              - listitem [ref=f6e41]:
+                - link "Inicio" [ref=f6e42] [cursor=pointer]:
+                  - /url: /es
+                - generic [aria-hidden] [ref=f6e43]: ›
+              - listitem [ref=f6e44]:
+                - generic [ref=f6e45]: "Incredible Science Fiction #32"
+          - region "Tu biblioteca" [ref=f6e46]:
+            - heading "Tu biblioteca" [level=2] [ref=f6e47]
+            - generic [ref=f6e48]:
+              - link "Añadir a mi biblioteca" [ref=f6e49] [cursor=pointer]:
+                - /url: /es/login?mode=register&next=%2Fes%2Fmedia%2Fcomic%2F2127
+              - paragraph [ref=f6e55]:
+                - text: Gratis y sin anuncios. Al crear tu cuenta vuelves a esta ficha.
+                - link "¿Ya tienes cuenta? Entra" [ref=f6e56] [cursor=pointer]:
+                  - /url: /es/login?mode=login&next=%2Fes%2Fmedia%2Fcomic%2F2127
+          - generic [ref=f6e57]:
+            - region "Más acciones" [ref=f6e58]:
+              - heading "Más acciones" [level=2] [ref=f6e59]
+              - link "Denunciar este título" [ref=f6e61] [cursor=pointer]:
+                - /url: /es/report?target=media&id=comic_2127
+            - paragraph [ref=f6e64]:
+              - generic [ref=f6e65]: "Datos del título:"
+              - link "Comic Vine (se abre en una pestaña nueva)" [ref=f6e66] [cursor=pointer]:
+                - /url: https://comicvine.gamespot.com/issue/4000-2127/
+                - generic [ref=f6e67]:
+                  - text: Comic Vine
+                  - generic [ref=f6e70]: (se abre en una pestaña nueva)
+    - contentinfo [ref=f6e72]:
+      - navigation "Información" [ref=f6e73]:
+        - list [ref=f6e74]:
+          - listitem [ref=f6e75]:
+            - link "Privacidad" [ref=f6e76] [cursor=pointer]:
+              - /url: /es/privacy
+          - listitem [ref=f6e77]:
+            - link "Términos" [ref=f6e78] [cursor=pointer]:
+              - /url: /es/terms
+          - listitem [ref=f6e79]:
+            - link "Aviso legal" [ref=f6e80] [cursor=pointer]:
+              - /url: /es/legal
+          - listitem [ref=f6e81]:
+            - link "Accesibilidad" [ref=f6e82] [cursor=pointer]:
+              - /url: /es/accessibility
+      - generic [ref=f6e83]: © 2026 KULTURA
+      - paragraph [ref=f6e84]:
+        - text: Datos de
+        - link "TMDB" [ref=f6e85] [cursor=pointer]:
+          - /url: https://www.themoviedb.org
+        - text: ","
+        - link "RAWG" [ref=f6e86] [cursor=pointer]:
+          - /url: https://rawg.io
+        - text: ", Steam, AniList, MangaDex, Open Library, Google Books y"
+        - link "Comic Vine" [ref=f6e87] [cursor=pointer]:
+          - /url: https://comicvine.gamespot.com
+        - text: ". Datos de disponibilidad en plataformas:"
+        - link "JustWatch" [ref=f6e88] [cursor=pointer]:
+          - /url: https://www.justwatch.com
+        - text: ". Carátulas y descripciones de videojuegos:"
+        - link "Steam" [ref=f6e89] [cursor=pointer]:
+          - /url: https://store.steampowered.com
+        - text: . Este producto usa la API de TMDB, pero TMDB no lo respalda ni lo certifica. Steam y el logotipo de Steam son marcas de Valve Corporation; KULTURA no está afiliada a Valve.
+  - alert [ref=f6e90]
+  - generic:
+    - status
