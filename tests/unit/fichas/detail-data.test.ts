@@ -48,7 +48,8 @@ vi.mock("@/lib/api/rawg", () => ({ getGame: mocks.getGame }));
 vi.mock("@/lib/api/steam", () => ({ getSteamInfoForGame: mocks.getSteamInfoForGame }));
 vi.mock("@/lib/api/comicvine", () => ({ getComic: mocks.getComic }));
 
-import { loadMediaDetail, MEDIA_DETAIL_REVALIDATE_SECONDS } from "@/lib/media/detail-data";
+import { loadMediaDetail, loadMediaDetailResult, MEDIA_DETAIL_REVALIDATE_SECONDS } from "@/lib/media/detail-data";
+import { ProviderError } from "@/lib/api/http";
 import { extractWatchOffer, titleMatchKey } from "@/lib/media/watch-providers";
 
 const ES_LINK = "https://www.themoviedb.org/movie/550-fight-club/watch?locale=ES";
@@ -239,6 +240,40 @@ describe("loadMediaDetail", () => {
     const data = await loadMediaDetail("anime", "tmdb-1429", "es");
     expect(data?.item.title).toBe("T");
     expect(data?.providers).toEqual([]);
+  });
+});
+
+describe("loadMediaDetailResult (FICHA_ISR: qué 404 se puede guardar)", () => {
+  it("ficha que se carga → ok", async () => {
+    mocks.getMovie.mockResolvedValue(fightClub);
+    const result = await loadMediaDetailResult("movie", "550", "es");
+    expect(result.status).toBe("ok");
+    expect(result.status === "ok" && result.data.item.title).toBe("El club de la lucha");
+  });
+
+  it("id con forma imposible, 404 del proveedor o título vacío → missing", async () => {
+    expect(await loadMediaDetailResult("movie", "abc", "es")).toEqual({ status: "missing" });
+    mocks.getMovie.mockRejectedValue(new ProviderError("tmdb", "http", "TMDB 404", { status: 404 }));
+    expect(await loadMediaDetailResult("movie", "999999", "es")).toEqual({ status: "missing" });
+    mocks.getMovie.mockResolvedValue({ ...fightClub, title: "" });
+    expect(await loadMediaDetailResult("movie", "550", "es")).toEqual({ status: "missing" });
+  });
+
+  it("proveedor caído, cuota o fallo tragado (null) → unavailable", async () => {
+    mocks.getMovie.mockRejectedValue(new ProviderError("tmdb", "http", "TMDB 503", { status: 503 }));
+    expect(await loadMediaDetailResult("movie", "550", "es")).toEqual({ status: "unavailable" });
+    mocks.getMovie.mockRejectedValue(new ProviderError("tmdb", "http", "TMDB 429", { status: 429 }));
+    expect(await loadMediaDetailResult("movie", "550", "es")).toEqual({ status: "unavailable" });
+    mocks.getMovie.mockRejectedValue(new Error("red"));
+    expect(await loadMediaDetailResult("movie", "550", "es")).toEqual({ status: "unavailable" });
+    // AniList caído: su resolución se traga el fallo y devuelve null.
+    mocks.getAnimeAniList.mockRejectedValue(new Error("AniList caído"));
+    expect(await loadMediaDetailResult("anime", "al-16498", "es")).toEqual({ status: "unavailable" });
+  });
+
+  it("loadMediaDetail sigue devolviendo null en cualquier fallo", async () => {
+    mocks.getMovie.mockRejectedValue(new ProviderError("tmdb", "http", "TMDB 404", { status: 404 }));
+    expect(await loadMediaDetail("movie", "999999", "es")).toBeNull();
   });
 });
 
