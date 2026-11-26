@@ -14,7 +14,8 @@
 // ============================================================
 
 // Sin importar las hojas de «Sala»: va siempre en la misma página que el
-// título de Inicio (`SalaHome`), que ya las trae.
+// título de Inicio (`SalaHome`) o, en el perfil de un amigo (fase 8.5 P2), que
+// la cabecera de persona (`SalaProfile`), y los dos ya las traen.
 
 import { useId } from 'react'
 import { useTranslations } from 'next-intl'

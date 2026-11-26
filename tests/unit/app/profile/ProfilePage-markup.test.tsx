@@ -76,8 +76,11 @@ vi.mock('@/components/profile/sala/SalaProfileLazy', () => {
     SalaProfileRowLazy: lazy('row'),
     SalaProfileStateLazy: lazy('state'),
     SalaProfileEditLazy: lazy('edit'),
+    SalaProfileGenresLazy: lazy('genres'),
+    SalaProfileSocialLazy: lazy('social'),
   }
 })
+vi.mock('@/components/home/sala/SalaHomeLazy', () => ({ SalaHomeActivitySkeletonLazy: stub('SalaHomeActivitySkeleton') }))
 
 const STATS = {
   totalItems: 3,
@@ -190,7 +193,13 @@ describe('Perfil con «Sala» (SALA_PERFIL=1)', () => {
     const html = await renderProfile()
     expect(html).toContain('<main data-sala-profile=""')
     const order = [...html.matchAll(/data-(?:sala-)?stub="([^"]+)"/g)].map((m) => m[1])
-    expect(order).toEqual(['header', 'ShareLinkButton', 'edit', 'numbers', 'row', 'row', 'ProfileGenres'])
+    expect(order).toEqual(['header', 'ShareLinkButton', 'edit', 'numbers', 'row', 'row', 'genres'])
+    // «Compartir mi colección» con el botón de «Sala» (P2).
+    const share = html.match(/data-stub="ShareLinkButton" data-props="([^"]+)"/)![1].replace(/&quot;/g, '"')
+    expect(JSON.parse(share)).toMatchObject({ path: '/u/benevi', label: 'collection.shareCollection', skin: 'sala' })
+    // Los géneros con su número a la vista (P2).
+    expect(state.sala?.genres).toEqual({ title: 'profile.topGenres', items: [{ genre: 'Drama', count: 'profile.genreCount(2)' }] })
+    expect(state.sala?.social).toBeUndefined()
     expect(state.sala?.header).toMatchObject({
       username: 'benevi',
       avatarColor: 'orange',
@@ -221,12 +230,22 @@ describe('Perfil con «Sala» (SALA_PERFIL=1)', () => {
     expect(html).not.toContain('data-stub="MediaRow"')
   })
 
-  it('amiga: las acciones y la actividad de hoy dentro de la página de «Sala»; sin «Editar perfil»', async () => {
+  it('amiga: las acciones y la actividad en «Sala» (P2); sin «Editar perfil» ni los botones de hoy', async () => {
     process.env.SALA_PERFIL = '1'
     state.s = SCENARIOS.amiga
     const html = await renderProfile()
     const order = [...html.matchAll(/data-(?:sala-)?stub="([^"]+)"/g)].map((m) => m[1])
-    expect(order).toEqual(['header', 'FriendshipButton', 'ReportButton', 'PushOffer', 'numbers', 'FriendProfileActivity', 'row', 'row', 'ProfileGenres'])
+    expect(order).toEqual(['header', 'social', 'PushOffer', 'numbers', 'FriendProfileActivity', 'row', 'row', 'genres'])
+    expect(state.sala?.social).toEqual({
+      username: 'benevi',
+      targetUserId: 'owner-1',
+      initialStatus: 'accepted',
+      friendshipId: 'friendship-1',
+    })
+    const activity = html.match(/data-stub="FriendProfileActivity" data-props="([^"]+)"/)![1].replace(/&quot;/g, '"')
+    expect(JSON.parse(activity)).toEqual({ viewerId: 'viewer-1', friendId: 'owner-1', locale: 'es', sala: true })
+    expect(html).not.toContain('data-stub="FriendshipButton"')
+    expect(html).not.toContain('data-stub="ReportButton"')
     expect(state.sala?.edit).toBeUndefined()
   })
 
@@ -235,7 +254,8 @@ describe('Perfil con «Sala» (SALA_PERFIL=1)', () => {
     state.s = SCENARIOS.oculta
     const html = await renderProfile()
     const order = [...html.matchAll(/data-(?:sala-)?stub="([^"]+)"/g)].map((m) => m[1])
-    expect(order).toEqual(['header', 'FriendshipButton', 'ReportButton', 'PushOffer', 'row', 'row', 'state'])
+    expect(order).toEqual(['header', 'social', 'PushOffer', 'row', 'row', 'state'])
+    expect(state.sala?.genres).toBeUndefined()
     expect(state.sala?.state).toEqual({
       name: 'hidden',
       title: 'profile.libraryHidden(benevi)',

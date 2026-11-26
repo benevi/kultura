@@ -1,4 +1,13 @@
-export default function ProfileLoading() {
+import { salaPerfilEnabled } from '@/lib/flags/sala'
+import { SalaProfileSkeletonLazy } from '@/components/profile/sala/SalaProfileSkeletonLazy'
+
+export default async function ProfileLoading() {
+  // Fase 8.5 P2: con `SALA_PERFIL`, el esqueleto de «Sala» (por `next/dynamic`:
+  // con la bandera apagada no trae sus hojas). La bandera solo lee la cookie en
+  // `prueba`, y el perfil ya es dinámico (lee la sesión), así que esto no
+  // vuelve dinámica ninguna página que no lo fuera.
+  if (await salaPerfilEnabled()) return <SalaProfileSkeletonLazy />
+
   return (
     <main className="page-grid [&>*]:max-w-4xl py-8 flex flex-col gap-10">
       {/* Cabecera con la forma de ProfileHeader (DIS-13): banda de héroe y

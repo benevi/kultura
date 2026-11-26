@@ -50,6 +50,27 @@ const benevi = {
   library_visibility: "public",
 };
 
+/**
+ * Fase 8.5 P2: los otros dos estados de amistad del perfil. A `nora_pide` le
+ * ha pedido amistad el usuario de prueba; `pau_pide` se la ha pedido a él.
+ */
+const nora = {
+  ...user,
+  id: "00000000-0000-4000-8000-000000000004",
+  email: "nora@example.com",
+  username: "nora_pide",
+  avatar_color: "green",
+  avatar_initials: "NO",
+};
+const pau = {
+  ...user,
+  id: "00000000-0000-4000-8000-000000000005",
+  email: "pau@example.com",
+  username: "pau_pide",
+  avatar_color: "teal",
+  avatar_initials: "PA",
+};
+
 const MOVIES = [
   { id: 550, title: "El club de la lucha", year: 1999 },
   { id: 603, title: "Matrix", year: 1999 },
@@ -273,7 +294,7 @@ const group = {
 
 /** Tablas de PostgREST. Lo que no está aquí responde vacío. */
 const tables = {
-  users: [user, friend, benevi],
+  users: [user, friend, benevi, nora, pau],
   media: mediaRows,
   lists: [list],
   list_items: mediaRows.slice(0, 2).map((m, i) => ({
@@ -339,6 +360,20 @@ const tables = {
       requester_id: USER_ID,
       receiver_id: FRIEND_ID,
       status: "accepted",
+      created_at: NOW,
+    },
+    {
+      id: "00000000-0000-4000-8000-0000000000e2",
+      requester_id: USER_ID,
+      receiver_id: nora.id,
+      status: "pending",
+      created_at: NOW,
+    },
+    {
+      id: "00000000-0000-4000-8000-0000000000e3",
+      requester_id: pau.id,
+      receiver_id: USER_ID,
+      status: "pending",
       created_at: NOW,
     },
   ],

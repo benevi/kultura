@@ -944,7 +944,22 @@
     "leaveGroup": "Leave",
     "groupError": "We couldn't create the group. Try again in a moment.",
     "joinGroupError": "We couldn't add you to the group. Try again in a moment.",
-    "copyProfileLink": "Copy my profile link"
+    "copyProfileLink": "Copy my profile link",
+    "cancelRequest": "Cancel request",
+    "requestReceived": "They sent you a friend request.",
+    "youAreFriends": "You are friends.",
+    "unfriend": "Unfriend",
+    "unfriendConfirmTitle": "Unfriend {username}?",
+    "unfriendConfirmBody": "You will stop seeing what you each share only with friends and won't be able to message each other. They are not notified. To be friends again, one of you will have to send a new request.",
+    "nowFriends": "You are now friends.",
+    "requestDeclined": "You declined the request.",
+    "requestCancelled": "You canceled the request.",
+    "unfriended": "You are no longer friends.",
+    "sendError": "We couldn't send the request. Try again.",
+    "acceptError": "We couldn't accept the request. Try again.",
+    "declineError": "We couldn't decline the request. Try again.",
+    "cancelError": "We couldn't cancel the request. Try again.",
+    "unfriendError": "We couldn't remove the friendship. Try again."
   },
   "invite": {
     "bannerTitle": "{username} invites you to KULTURA",

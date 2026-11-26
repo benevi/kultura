@@ -944,7 +944,22 @@
     "leaveGroup": "Salir",
     "groupError": "No hemos podido crear el grupo. Reintenta en un momento.",
     "joinGroupError": "No hemos podido unirte al grupo. Reintenta en un momento.",
-    "copyProfileLink": "Copiar el enlace de mi perfil"
+    "copyProfileLink": "Copiar el enlace de mi perfil",
+    "cancelRequest": "Cancelar solicitud",
+    "requestReceived": "Te ha enviado una solicitud de amistad.",
+    "youAreFriends": "Sois amigos.",
+    "unfriend": "Dejar de ser amigos",
+    "unfriendConfirmTitle": "¿Dejar de ser amigos de {username}?",
+    "unfriendConfirmBody": "Dejaréis de ver lo que solo enseñáis a los amigos y no podréis escribiros. No se le avisa. Para volver a ser amigos hará falta otra solicitud.",
+    "nowFriends": "Ya sois amigos.",
+    "requestDeclined": "Has rechazado la solicitud.",
+    "requestCancelled": "Has cancelado la solicitud.",
+    "unfriended": "Ya no sois amigos.",
+    "sendError": "No hemos podido enviar la solicitud. Reintenta.",
+    "acceptError": "No hemos podido aceptar la solicitud. Reintenta.",
+    "declineError": "No hemos podido rechazar la solicitud. Reintenta.",
+    "cancelError": "No hemos podido cancelar la solicitud. Reintenta.",
+    "unfriendError": "No hemos podido quitar la amistad. Reintenta."
   },
   "invite": {
     "bannerTitle": "{username} te invita a KULTURA",

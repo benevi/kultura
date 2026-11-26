@@ -15,3 +15,8 @@ export const SalaProfileEditLazy = dynamic(() => import('./SalaProfile').then((m
 export const SalaProfileNumbersLazy = dynamic(() => import('./SalaProfile').then((m) => m.SalaProfileNumbers))
 export const SalaProfileRowLazy = dynamic(() => import('./SalaProfile').then((m) => m.SalaProfileRow))
 export const SalaProfileStateLazy = dynamic(() => import('./SalaProfile').then((m) => m.SalaProfileState))
+// P2: los géneros, en el mismo trozo; las acciones sobre otra persona, en el
+// suyo (el dueño no las descarga). El esqueleto de `loading.tsx` va en
+// `SalaProfileSkeletonLazy`, aparte: así `loading.tsx` no arrastra estas.
+export const SalaProfileGenresLazy = dynamic(() => import('./SalaProfile').then((m) => m.SalaProfileGenres))
+export const SalaProfileSocialLazy = dynamic(() => import('./SalaProfileSocial').then((m) => m.SalaProfileSocial))
