@@ -1,12 +1,13 @@
 'use client'
 
 // ============================================================
-// KULTURA — Una fila de Inicio en «Sala» (fase 8.5 I1, I2a e I2b)
+// KULTURA — Una fila de obras en «Sala» (fase 8.5 I1, I2a e I2b; P1)
 // Su `h2`, las flechas «anteriores / siguientes» desde `md`, la lista de obras
-// nombrada por el `h2` y el hueco del aviso de error con «Reintentar». La
-// usan «Continúa», «Popular entre tus amigos», las novedades y, desde I2b,
-// «Esta noche» (con su explicación debajo del `h2`, «Sorpréndeme» junto a las
-// flechas y la elegida encima de la fila).
+// nombrada por el `h2` y el hueco del aviso de error con «Reintentar». Nació en
+// Inicio («Continúa», «Popular entre tus amigos», las novedades y «Esta
+// noche», con su explicación debajo del `h2`, «Sorpréndeme» junto a las
+// flechas y la elegida encima de la fila). Desde Perfil P1 vive aquí y la
+// usan también las filas del perfil («Viendo ahora», «Últimos completados»).
 // ============================================================
 
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode, type RefObject } from 'react'
@@ -100,11 +101,11 @@ function useRowEdges(listRef: RefObject<HTMLElement | null>, deps: unknown[]) {
 }
 
 /**
- * Una sección de Inicio: su `h2`, las flechas (desde `md`), la fila de obras,
+ * Una sección con una fila de obras: su `h2`, las flechas (desde `md`), la fila de obras,
  * nombrada por el `h2`, y el hueco del aviso de error, montado siempre para
  * que un lector lo anuncie al entrar.
  */
-export function SalaHomeRow({ title, name, loading = false, count, children, description, action, before, after, onRetry }: RowProps) {
+export function SalaRow({ title, name, loading = false, count, children, description, action, before, after, onRetry }: RowProps) {
   const t = useTranslations('home.sala')
   const id = useId()
   const listId = `${id}-lista`
@@ -136,7 +137,7 @@ export function SalaHomeRow({ title, name, loading = false, count, children, des
         aria-controls={listId}
         aria-label={t(dir, { title })}
         aria-disabled={stopped || undefined}
-        data-sala-home-arrow={dir}
+        data-sala-row-arrow={dir}
         onClick={() => {
           if (!stopped) scrollRow(dir === 'prev' ? -1 : 1)
         }}
@@ -148,7 +149,7 @@ export function SalaHomeRow({ title, name, loading = false, count, children, des
   }
 
   return (
-    <section aria-labelledby={id} data-sala-home-row={name} className="font-sala-text text-sala-ink">
+    <section aria-labelledby={id} data-sala-row={name} className="font-sala-text text-sala-ink">
       <div className="mb-3 flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
         <div className="min-w-0">
           <h2 id={id} ref={headingRef} tabIndex={-1} className="scroll-mt-24 outline-none sala-type-data [overflow-wrap:anywhere]">
@@ -163,7 +164,7 @@ export function SalaHomeRow({ title, name, loading = false, count, children, des
               // Si todo cabe, no hay nada que mover: las flechas no se ven ni se
               // alcanzan con Tab, pero guardan su sitio (nada salta al medir).
               <div
-                data-sala-home-arrows=""
+                data-sala-row-arrows=""
                 className={cn('hidden shrink-0 gap-2 md:flex', edges.start && edges.end && 'invisible')}
               >
                 {arrow('prev')}
@@ -189,7 +190,7 @@ export function SalaHomeRow({ title, name, loading = false, count, children, des
         {children}
       </SalaWorkList>
       {/* Montado siempre: un lector anuncia el error al entrar el aviso. */}
-      <div role="alert" data-sala-home-error="">
+      <div role="alert" data-sala-row-error="">
         {onRetry ? (
           <SalaNotice
             tone="error"

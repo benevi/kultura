@@ -16,6 +16,7 @@ import {
   salaDescubrirEnabled,
   salaFichaEnabled,
   salaInicioEnabled,
+  salaPerfilEnabled,
   salaFlagMode,
   salaTestCookie,
   salaTestNext,
@@ -183,6 +184,41 @@ describe("salaInicioEnabled (lee process.env.SALA_INICIO, misma cookie)", () => 
     expect(cookieStore.get).toHaveBeenCalledWith(SALA_TEST_COOKIE);
     cookieStore.get.mockReturnValue(undefined);
     expect(await salaInicioEnabled()).toBe(false);
+  });
+});
+
+describe("salaPerfilEnabled (lee process.env.SALA_PERFIL, misma cookie)", () => {
+  const before = { inicio: process.env.SALA_INICIO, perfil: process.env.SALA_PERFIL };
+  beforeEach(() => cookieStore.get.mockReset());
+  afterEach(() => {
+    for (const [k, v] of [["SALA_INICIO", before.inicio], ["SALA_PERFIL", before.perfil]] as const) {
+      if (v === undefined) delete process.env[k];
+      else process.env[k] = v;
+    }
+  });
+
+  it("sin definir o 0: apagada y sin mirar la cookie, aunque Inicio esté encendida", async () => {
+    process.env.SALA_INICIO = "1";
+    delete process.env.SALA_PERFIL;
+    expect(await salaPerfilEnabled()).toBe(false);
+    process.env.SALA_PERFIL = "0";
+    cookieStore.get.mockReturnValue({ value: "1" });
+    expect(await salaPerfilEnabled()).toBe(false);
+    expect(cookieStore.get).not.toHaveBeenCalled();
+  });
+  it("1: encendida sin leer la cookie", async () => {
+    process.env.SALA_INICIO = "0";
+    process.env.SALA_PERFIL = "1";
+    expect(await salaPerfilEnabled()).toBe(true);
+    expect(cookieStore.get).not.toHaveBeenCalled();
+  });
+  it("prueba: según la misma cookie de prueba", async () => {
+    process.env.SALA_PERFIL = "prueba";
+    cookieStore.get.mockReturnValue({ value: "1" });
+    expect(await salaPerfilEnabled()).toBe(true);
+    expect(cookieStore.get).toHaveBeenCalledWith(SALA_TEST_COOKIE);
+    cookieStore.get.mockReturnValue(undefined);
+    expect(await salaPerfilEnabled()).toBe(false);
   });
 });
 
