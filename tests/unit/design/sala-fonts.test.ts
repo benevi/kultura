@@ -196,6 +196,8 @@ describe("las pantallas de hoy solo descargan «Sala» donde ya la usan", () => 
     //   bandera `SALA_INICIO` encendida. `SalaHomeSkeleton` (I2b): el esqueleto
     //   de su `loading.tsx`, que se pinta antes que la página; igual, por
     //   `next/dynamic` y solo con la bandera.
+    // - `SalaProfile` (fase 8.5, P1): el perfil, por `next/dynamic` y solo con
+    //   la bandera `SALA_PERFIL` encendida.
     expect(importers.sort()).toEqual([
       "src/components/discover/sala/SalaDiscoverView.tsx",
       "src/components/home/sala/SalaHome.tsx",
@@ -203,6 +205,7 @@ describe("las pantallas de hoy solo descargan «Sala» donde ya la usan", () => 
       "src/components/layout/ErrorState.tsx",
       "src/components/library/sala/SalaLibraryGrid.tsx",
       "src/components/media/sala/SalaFichaStyles.tsx",
+      "src/components/profile/sala/SalaProfile.tsx",
       "src/components/sala/SalaScriptFonts.tsx",
     ]);
   });

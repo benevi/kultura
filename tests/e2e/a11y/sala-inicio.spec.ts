@@ -15,7 +15,7 @@ import { expectNoBlockingViolations, expectNoHorizontalScroll, isolateNetwork, o
 import es from "../../../messages/es.json";
 
 const HOME = "[data-sala-home]";
-const ROW = (name: string) => `[data-sala-home-row="${name}"]`;
+const ROW = (name: string) => `[data-sala-row="${name}"]`;
 
 async function salaCookie(context: BrowserContext, baseURL: string) {
   await context.addCookies([
@@ -162,7 +162,7 @@ test.describe("con «Sala»", () => {
       await mockHome(page, { circle: [] });
       await openHome(page);
       await expectNoHorizontalScroll(page, width);
-      const small = await page.$$eval(`${HOME} [data-sala-home-row] button, ${HOME} [data-sala-home-row] a`, (els) =>
+      const small = await page.$$eval(`${HOME} [data-sala-row] button, ${HOME} [data-sala-row] a`, (els) =>
         els
           .filter((el) => !el.closest("[data-sala-card]") && (el as HTMLElement).offsetParent !== null)
           .map((el) => ({ text: el.textContent?.trim(), h: el.getBoundingClientRect().height }))

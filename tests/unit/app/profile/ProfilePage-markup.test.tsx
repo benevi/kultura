@@ -171,3 +171,83 @@ describe('Perfil sin «Sala» (SALA_PERFIL apagada): marcado de hoy', () => {
     expect(state.sala).toBeNull()
   })
 })
+
+describe('Perfil con «Sala» (SALA_PERFIL=1)', () => {
+  it('pide solo las columnas que pinta (sin `*`), con y sin «Sala»', async () => {
+    state.s = SCENARIOS.amiga
+    await renderProfile()
+    expect(state.usersSelect).not.toContain('*')
+    expect(state.usersSelect).not.toContain('preferred_locale')
+    process.env.SALA_PERFIL = '1'
+    state.usersSelect = null
+    await renderProfile()
+    expect(state.usersSelect).not.toContain('*')
+  })
+
+  it('perfil propio: cabecera, «Editar perfil», números y filas de «Sala»; sin «Pendientes», sin estadísticas viejas', async () => {
+    process.env.SALA_PERFIL = '1'
+    state.s = SCENARIOS.propio
+    const html = await renderProfile()
+    expect(html).toContain('<main data-sala-profile=""')
+    const order = [...html.matchAll(/data-(?:sala-)?stub="([^"]+)"/g)].map((m) => m[1])
+    expect(order).toEqual(['header', 'ShareLinkButton', 'edit', 'numbers', 'row', 'row', 'ProfileGenres'])
+    expect(state.sala?.header).toMatchObject({
+      username: 'benevi',
+      avatarColor: 'orange',
+      avatarInitials: 'BE',
+      memberSince: 'profile.memberSince octubre de 2026',
+      bio: 'Mi bio',
+    })
+    expect(state.sala?.edit).toEqual({ label: 'profile.editProfile' })
+    expect(state.sala?.numbers).toEqual({
+      label: 'collection.statsLabel',
+      items: [
+        { value: 3, label: 'profile.totalItems(3)' },
+        { value: 1, label: 'profile.completed(1)' },
+        { value: 1, label: 'profile.inProgress' },
+        { value: 2, label: 'media.movies' },
+        { value: 1, label: 'media.manga' },
+      ],
+    })
+    // La última fila que se pinta es «Últimos completados»: «Pendientes» no sale.
+    expect(state.sala?.row).toEqual({
+      title: 'profile.lastCompleted',
+      name: 'completed',
+      items: [{ mediaId: 'movie_1', title: 'Peli', poster: 'https://x/p.jpg', type: 'movie' }],
+    })
+    expect(html).not.toContain('pendingRow')
+    expect(html).not.toContain('data-stub="ProfileHeader"')
+    expect(html).not.toContain('data-stub="ProfileStats"')
+    expect(html).not.toContain('data-stub="MediaRow"')
+  })
+
+  it('amiga: las acciones y la actividad de hoy dentro de la página de «Sala»; sin «Editar perfil»', async () => {
+    process.env.SALA_PERFIL = '1'
+    state.s = SCENARIOS.amiga
+    const html = await renderProfile()
+    const order = [...html.matchAll(/data-(?:sala-)?stub="([^"]+)"/g)].map((m) => m[1])
+    expect(order).toEqual(['header', 'FriendshipButton', 'ReportButton', 'PushOffer', 'numbers', 'FriendProfileActivity', 'row', 'row', 'ProfileGenres'])
+    expect(state.sala?.edit).toBeUndefined()
+  })
+
+  it('biblioteca oculta: el estado de «Sala», sin números, filas ni géneros', async () => {
+    process.env.SALA_PERFIL = '1'
+    state.s = SCENARIOS.oculta
+    const html = await renderProfile()
+    const order = [...html.matchAll(/data-(?:sala-)?stub="([^"]+)"/g)].map((m) => m[1])
+    expect(order).toEqual(['header', 'FriendshipButton', 'ReportButton', 'PushOffer', 'row', 'row', 'state'])
+    expect(state.sala?.state).toEqual({
+      name: 'hidden',
+      title: 'profile.libraryHidden(benevi)',
+      description: 'profile.libraryHiddenFriends',
+    })
+  })
+
+  it('biblioteca vacía: el estado vacío de «Sala» (sin «Sin actividad aún» repetido)', async () => {
+    process.env.SALA_PERFIL = '1'
+    state.s = SCENARIOS.vacio
+    await renderProfile()
+    expect(state.sala?.numbers).toEqual({ label: 'collection.statsLabel', items: [] })
+    expect(state.sala?.state).toEqual({ name: 'empty', title: 'profile.emptyOwn', description: 'profile.emptyOwnHint' })
+  })
+})

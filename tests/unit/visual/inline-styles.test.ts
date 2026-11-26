@@ -58,6 +58,7 @@ const ALLOWED: Record<string, [number, string]> = {
   "src/app/[locale]/(app)/settings/import/_components/ProgressBar.tsx": [1, "ancho en % del progreso"],
   "src/components/home/ContinueProgress.tsx": [1, "ancho en % del progreso"],
   "src/components/home/sala/SalaHomeProgress.tsx": [1, "ancho en % del progreso (Inicio en «Sala»)"],
+  "src/components/profile/sala/SalaProfile.tsx": [1, "color de la franja: el del avatar guardado por la persona y su tinta (Perfil en «Sala»)"],
   "src/components/library/ProgressInput.tsx": [1, "ancho en % del progreso"],
   "src/components/layout/LanguageSwitcher.tsx": [1, "translateX según el idioma activo"],
   "src/components/layout/Logo.tsx": [2, "medidas proporcionales a la prop size (y el radio de 3 px, fuera del set cerrado)"],

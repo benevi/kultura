@@ -35,6 +35,9 @@ const A11Y_ENV = {
   // Inicio con «Sala» (fase 8.5 I1): igual, `sala-inicio.spec.ts` entra con
   // la cookie y `SALA_INICIO=1` la enseña en todos los specs.
   SALA_INICIO: process.env.SALA_INICIO || "prueba",
+  // Perfil con «Sala» (fase 8.5 P1): igual, `sala-perfil.spec.ts` entra con
+  // la cookie y `SALA_PERFIL=1` la enseña en todos los specs.
+  SALA_PERFIL: process.env.SALA_PERFIL || "prueba",
   NODE_OPTIONS: `--require ${path.join(ROOT, "tests/e2e/a11y/offline-fetch.cjs")}`,
 };
 
