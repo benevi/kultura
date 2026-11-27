@@ -15,14 +15,19 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { trailerEmbedUrl, trailerThumbnailUrl, youtubeTrailerKey } from "@/lib/media/trailer";
+import type { SteamTrailer } from "@/lib/api/steam";
+import { SteamTrailerVideo } from "./SteamTrailerVideo";
 
 interface TrailerEmbedProps {
-  youtubeKey: string;
+  /** Clave de YouTube. Si no vale y hay `steam`, se usa el vídeo de Steam. */
+  youtubeKey?: string;
+  /** Tráiler de la tienda de Steam (juegos sin tráiler de YouTube). */
+  steam?: { trailer: SteamTrailer; storeUrl: string };
   /** Título accesible del reproductor (`iframe title`). */
   title: string;
 }
 
-export function TrailerEmbed({ youtubeKey: rawKey, title }: TrailerEmbedProps) {
+export function TrailerEmbed({ youtubeKey: rawKey, steam, title }: TrailerEmbedProps) {
   const youtubeKey = youtubeTrailerKey(rawKey);
   const t = useTranslations("media_detail");
   const [playing, setPlaying] = useState(false);
@@ -34,11 +39,14 @@ export function TrailerEmbed({ youtubeKey: rawKey, title }: TrailerEmbedProps) {
     if (playing) iframeRef.current?.focus();
   }, [playing]);
 
-  if (!youtubeKey) return null;
+  if (!youtubeKey && !steam) return null;
+  const thumbnail = youtubeKey ? trailerThumbnailUrl(youtubeKey) : steam?.trailer.poster;
 
   return (
     <div className="relative aspect-video w-full rounded-bento overflow-hidden bg-surface-elevated">
-      {playing ? (
+      {playing && !youtubeKey && steam ? (
+        <SteamTrailerVideo trailer={steam.trailer} storeUrl={steam.storeUrl} title={title} />
+      ) : playing && youtubeKey ? (
         <iframe
           ref={iframeRef}
           src={trailerEmbedUrl(youtubeKey)}
@@ -56,15 +64,17 @@ export function TrailerEmbed({ youtubeKey: rawKey, title }: TrailerEmbedProps) {
           className="group absolute inset-0 w-full h-full flex flex-col items-center justify-center gap-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent-pink"
         >
           {/* Miniatura decorativa: el botón ya dice qué hace. */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={trailerThumbnailUrl(youtubeKey)}
-            alt=""
-            loading="lazy"
-            decoding="async"
-            referrerPolicy="no-referrer"
-            className="absolute inset-0 w-full h-full object-cover"
-          />
+          {thumbnail && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={thumbnail}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              referrerPolicy="no-referrer"
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+          )}
           <span aria-hidden="true" className="absolute inset-0 bg-black/60 group-hover:bg-black/50 transition-colors" />
           <span className="relative inline-flex items-center gap-2 rounded-full bg-accent-pink text-on-accent-pink font-extrabold text-sm px-5 h-11">
             <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className="w-4 h-4">
@@ -73,7 +83,7 @@ export function TrailerEmbed({ youtubeKey: rawKey, title }: TrailerEmbedProps) {
             <span id={labelId}>{t("trailerPlay")}</span>
           </span>
           <span id={noticeId} className="relative text-xs text-white px-4 text-center">
-            {t("trailerNotice")}
+            {youtubeKey ? t("trailerNotice") : t("steamTrailerNotice")}
           </span>
         </button>
       )}

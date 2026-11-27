@@ -18,6 +18,7 @@ import {
   getSteamAppDetails,
   toSteamInfo,
   getSteamInfoForGame,
+  pickSteamTrailer,
 } from "@/lib/api/steam";
 
 function game(overrides: Partial<RawgGame> = {}): RawgGame {
@@ -367,5 +368,53 @@ describe("getSteamInfoForGame — degradación silenciosa", () => {
         game({ stores: [{ url: "https://store.steampowered.com/app/1/" }] })
       )
     ).resolves.toBeNull();
+  });
+});
+
+describe("pickSteamTrailer / toSteamInfo().trailer", () => {
+  const HLS =
+    "https://video.akamai.steamstatic.com/store_trailers/1145360/312686/abc/1750627549/hls_264_master.m3u8?t=1600353465";
+  const THUMB = "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/256801252/movie.293x165.jpg";
+  const SHOT = "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1145360/ss_1.1920x1080.jpg";
+
+  it("sin `movies` no hay tráiler", () => {
+    expect(toSteamInfo(1, {}).trailer).toBeUndefined();
+    expect(pickSteamTrailer(undefined)).toBeUndefined();
+    expect(pickSteamTrailer([])).toBeUndefined();
+  });
+
+  it("toma el destacado, con la primera captura de póster", () => {
+    const info = toSteamInfo(1145360, {
+      screenshots: [{ path_thumbnail: THUMB, path_full: SHOT }],
+      movies: [
+        { id: 1, name: "Otro", hls_h264: HLS.replace("312686", "1"), thumbnail: THUMB },
+        { id: 2, name: " Launch Trailer ", hls_h264: HLS, thumbnail: THUMB, highlight: true },
+      ],
+    });
+    expect(info.trailer).toEqual({ src: HLS, poster: SHOT, name: "Launch Trailer" });
+  });
+
+  it("sin capturas, la miniatura del vídeo", () => {
+    expect(pickSteamTrailer([{ hls_h264: HLS, thumbnail: THUMB }])).toEqual({ src: HLS, poster: THUMB });
+  });
+
+  it.each([
+    ["http", HLS.replace("https:", "http:")],
+    ["otro host", "https://evil.example.com/hls_264_master.m3u8"],
+    ["subdominio parecido", "https://video.akamai.steamstatic.com.evil.com/x.m3u8"],
+    ["javascript:", "javascript:alert(1)"],
+    ["no es URL", "hls"],
+    ["no es texto", 42],
+  ])("descarta URLs no válidas (%s)", (_name, src) => {
+    expect(pickSteamTrailer([{ hls_h264: src as string }])).toBeUndefined();
+  });
+
+  it("salta un vídeo no válido y usa el siguiente; póster de otro host fuera", () => {
+    expect(
+      pickSteamTrailer([
+        { hls_h264: "https://evil.example.com/x.m3u8", highlight: true },
+        { hls_h264: HLS, thumbnail: "https://evil.example.com/t.jpg" },
+      ])
+    ).toEqual({ src: HLS });
   });
 });
