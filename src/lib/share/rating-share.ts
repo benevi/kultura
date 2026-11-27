@@ -33,6 +33,7 @@ import { loadMediaDetail } from "@/lib/media/detail-data";
 import { rating10ToScore, storedRating10 } from "@/lib/library/rating";
 import { readRatingScale } from "@/lib/library/scale";
 import { viewerCanReadLibrary, type LibraryVisibility } from "@/lib/social/public-collection";
+import { hasBlockWith } from "@/lib/social/block-check";
 import type { MediaType } from "@/types/media";
 import type { RatingScale } from "@/types/library";
 
@@ -234,17 +235,6 @@ export const loadShareMedia = dedupe(async (type: MediaType, externalId: string,
 });
 
 // ── Decisión ──────────────────────────────────────────────────────────────────
-
-/** ¿Hay un bloqueo entre quien mira y el dueño? Ante un error: sí (no se enseña). */
-async function hasBlockWith(client: SupabaseClient, ownerId: string): Promise<boolean> {
-  try {
-    const { data, error } = await client.rpc("has_block_with", { p_other: ownerId });
-    if (error) return true;
-    return data === true;
-  } catch {
-    return true;
-  }
-}
 
 export interface ShareViewer {
   id: string;

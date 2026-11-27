@@ -22,6 +22,8 @@ type Scenario = {
   visibility: 'public' | 'friends' | 'private'
   lists: boolean
   query?: Record<string, string>
+  /** Bloqueo entre quien mira y el dueño (en cualquier sentido). */
+  blocked?: boolean
 }
 
 const h = vi.hoisted(() => ({
@@ -132,6 +134,10 @@ vi.mock('@/components/profile/sala/SalaProfilePublicLazy', () => ({
   SalaProfileInviteLazy: stub('invite'),
   SalaProfileCtaLazy: stub('cta'),
   SalaProfileLinkButtonLazy: stub('link-button'),
+}))
+vi.mock('@/lib/social/block-check', () => ({
+  viewerBlockedWith: vi.fn(async (_c: unknown, viewerId: string | null, ownerId: string) =>
+    Boolean(viewerId && viewerId !== ownerId && h.s.blocked)),
 }))
 vi.mock('@/lib/supabase/server', () => ({
   createClient: async () => ({
@@ -294,6 +300,18 @@ describe('/u con «Sala» (SALA_PERFIL=1)', () => {
     const html = await renderPage()
     expect(props(html, 'state')[0]).toMatchObject({ name: 'hidden', description: 'profile.libraryHiddenPrivate' })
     expect(props(html, 'state')[1]).toMatchObject({ name: 'lists-empty', title: 'collection.empty(benevi)' })
+  })
+
+  it('con un bloqueo entre los dos: solo la cabecera, sin biblioteca ni listas', async () => {
+    h.s = { ...SCENARIOS['con-sesion'], blocked: true }
+    const html = await renderPage()
+    expect(props(html, 'header')[0]).toMatchObject({ username: 'benevi' })
+    expect(names(html)).not.toContain('numbers')
+    expect(names(html)).not.toContain('favorites')
+    expect(names(html)).not.toContain('row')
+    expect(props(html, 'SalaLink').map((l) => l.href)).not.toContain('/u/benevi/l/l1')
+    expect(props(html, 'state')[0]).toMatchObject({ name: 'hidden' })
+    expect(props(html, 'state')[1]).toMatchObject({ name: 'lists-empty' })
   })
 
   it('el dueño: invitar con «Sala», «Editar perfil», nota de visibilidad y su escala sin pedirla al servidor', async () => {

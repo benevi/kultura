@@ -9,8 +9,14 @@
 // sus notas y la descripción; un «Ranking personal» pinta el número. Esos
 // datos se piden EN PARALELO con la lista (solo por id) y solo se usan si la
 // lista resulta ser pública y de `username`.
+//
+// Bloqueos: con sesión, si hay un bloqueo en cualquier sentido entre quien
+// mira y el dueño, 404 (como una lista que no existe), también en los
+// metadatos (el nombre de la lista no sale en `<title>`). La lista es todo
+// dato del dueño: no hay versión genérica como en `/u/…/r/…`.
 // ============================================================
 
+import * as React from 'react'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getTranslations } from 'next-intl/server'
@@ -24,6 +30,7 @@ import { Link } from '@/i18n/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { siteUrl } from '@/lib/site-url'
 import { getPublicList } from '@/lib/social/public-collection'
+import { viewerBlockedWith } from '@/lib/social/block-check'
 import { getPublicListExtras, sortListItems } from '@/lib/social/lists'
 import { OrderedListGrid } from '@/components/collection/OrderedListGrid'
 import type { MediaItem, MediaType } from '@/types/media'
@@ -45,11 +52,39 @@ function decodeName(raw: string): string {
   }
 }
 
+// `React.cache` solo existe en el servidor de React; en los tests, sin caché.
+const cache: <T extends (...args: never[]) => unknown>(fn: T) => T =
+  (React as unknown as { cache?: <T>(fn: T) => T }).cache ?? ((fn) => fn)
+
+/** Quién mira (sin sesión: `null`; nunca lanza). Una vez por petición. */
+const currentViewer = cache(async (): Promise<{ id: string } | null> => {
+  try {
+    const supabase = await createClient()
+    const { data } = await supabase.auth.getUser()
+    return data.user ? { id: data.user.id } : null
+  } catch {
+    return null
+  }
+})
+
+/**
+ * La lista pública de `username`, o `null` si no lo es o si hay un bloqueo
+ * entre quien mira y el dueño. Una vez por petición (metadatos y página).
+ */
+const loadVisibleList = cache(async (name: string, id: string) => {
+  const [data, viewer] = await Promise.all([getPublicList(name, id), currentViewer()])
+  if (!data) return { data: null, viewer }
+  const blocked = viewer ? await viewerBlockedWith(await createClient(), viewer.id, data.owner.id) : false
+  return { data: blocked ? null : data, viewer }
+})
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale, username, id } = await params
   const name = decodeName(username)
   const t = await getTranslations({ locale, namespace: 'collection' })
-  const data = await getPublicList(name, id).catch(() => null)
+  const data = await loadVisibleList(name, id)
+    .then((r) => r.data)
+    .catch(() => null)
   const title = data ? `${data.list.name} · ${name}` : t('metaTitle', { username: name })
   const ogTitle = `${title} · KULTURA`
   const description = t('listMetaDescription', { username: name })
@@ -68,18 +103,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function PublicListPage({ params }: Props) {
   const { username, id } = await params
   const name = decodeName(username)
-  const [data, extras] = await Promise.all([
-    getPublicList(name, id),
+  const [{ data, viewer }, extras] = await Promise.all([
+    loadVisibleList(name, id),
     getPublicListExtras(id).catch(() => null),
   ])
-  // Un nombre antiguo es un 404 más (Q8): no lleva al nombre actual.
+  // Un nombre antiguo es un 404 más (Q8): no lleva al nombre actual. Con un
+  // bloqueo entre quien mira y el dueño, también.
   if (!data) notFound()
-
-  const supabase = await createClient()
-  const signedIn = await supabase.auth
-    .getUser()
-    .then(({ data: auth }) => Boolean(auth.user))
-    .catch(() => false)
+  const signedIn = Boolean(viewer)
 
   const t = await getTranslations('collection')
   const tm = await getTranslations('media')

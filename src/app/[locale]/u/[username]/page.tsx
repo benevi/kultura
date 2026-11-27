@@ -14,6 +14,11 @@
 // la bandera en `1` se decide sin leer cookies; en `prueba`, con la cookie de
 // prueba (la página ya es dinámica: lee la sesión y `searchParams`). Con `0`,
 // el HTML de siempre.
+//
+// Bloqueos: con sesión, si hay un bloqueo en cualquier sentido entre quien
+// mira y el dueño, la página sale como la genérica de `/u/…/r/…`: solo la
+// cabecera (nombre y avatar), sin biblioteca y sin listas. Igual en las dos
+// ramas (la de siempre y «Sala»).
 // ============================================================
 
 import { notFound } from 'next/navigation'
@@ -57,6 +62,7 @@ import { getViewer } from '@/lib/media/viewer'
 import { getUnreadCount } from '@/lib/social/notifications'
 import { readRatingScale } from '@/lib/library/scale'
 import { ownerShareScale, type ShareScale } from '@/lib/share/rating-share'
+import { viewerBlockedWith } from '@/lib/social/block-check'
 import { SalaPublicCollection } from '@/components/collection/sala/SalaPublicCollection'
 
 type SearchParams = Record<string, string | string[] | undefined>
@@ -145,7 +151,7 @@ export default async function PublicCollectionPage({ params, searchParams }: Pro
   // Un nombre antiguo es un 404 más (Q8): no lleva al nombre actual.
   if (!collection) notFound()
 
-  const { lists } = collection
+  let { lists } = collection
   let owner: PublicOwner = collection.owner
   const supabase = await createClient()
   const sala = await salaPerfilEnabled()
@@ -166,7 +172,8 @@ export default async function PublicCollectionPage({ params, searchParams }: Pro
   let scale: ShareScale = 'stars'
   let unreadCount = 0
   if (viewer) {
-    const [allowed, data, details, salaExtra] = await Promise.all([
+    const [blocked, allowed, data, details, salaExtra] = await Promise.all([
+      viewerBlockedWith(supabase, viewer.id, owner.id),
       isOwner ? Promise.resolve(true) : viewerCanReadLibrary(supabase, owner.id),
       getLibraryShowcase(supabase, owner.id).catch(() => null),
       getOwnerDetails(supabase, owner.id).catch(() => null),
@@ -177,8 +184,10 @@ export default async function PublicCollectionPage({ params, searchParams }: Pro
           ])
         : Promise.resolve(null),
     ])
-    canRead = allowed
-    showcase = allowed ? data : null
+    // Con un bloqueo entre los dos: nada del dueño salvo la cabecera.
+    canRead = allowed && !blocked
+    showcase = canRead ? data : null
+    if (blocked) lists = []
     if (details) owner = { ...owner, ...details }
     if (salaExtra) [scale, unreadCount] = salaExtra
   }
