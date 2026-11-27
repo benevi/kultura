@@ -50,6 +50,21 @@ describe('getListDetail', () => {
     expect(opsOf(client, 'list_items', 'order')[0].args[0]).toBe('position')
   })
 
+  it('no pide ni devuelve quién añadió cada título (va entero al navegador)', async () => {
+    client = fakeSupabase({
+      tables: {
+        lists: [{ data: LIST_ROW, error: null }],
+        list_items: [{ data: [{ ...item('x', 0, '2026-01-03'), added_by: 'otra-persona' }], error: null }],
+        list_members: [{ data: [], error: null }],
+      },
+    })
+    const { getListDetail } = await import('@/lib/social/lists')
+    const detail = await getListDetail('l1')
+    expect(String(opsOf(client, 'list_items', 'select')[0].args[0])).not.toContain('added_by')
+    expect(detail?.items[0]).not.toHaveProperty('addedBy')
+    expect(JSON.stringify(detail?.items)).not.toContain('otra-persona')
+  })
+
 })
 
 describe('getPublicListExtras', () => {
