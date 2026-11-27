@@ -49,6 +49,11 @@ interface RowProps {
   after?: ReactNode
   /** La fila no ha cargado: el aviso con «Reintentar» llama a esto. */
   onRetry?: () => void
+  /**
+   * Nivel del encabezado: `h2` por defecto; `h3` cuando la fila va dentro de
+   * una sección que ya tiene el suyo (las listas públicas de `/u`, P3).
+   */
+  headingLevel?: 2 | 3
 }
 
 /** Flecha de la fila (dibujo; el nombre lo lleva el botón). */
@@ -105,7 +110,8 @@ function useRowEdges(listRef: RefObject<HTMLElement | null>, deps: unknown[]) {
  * nombrada por el `h2`, y el hueco del aviso de error, montado siempre para
  * que un lector lo anuncie al entrar.
  */
-export function SalaRow({ title, name, loading = false, count, children, description, action, before, after, onRetry }: RowProps) {
+export function SalaRow({ title, name, loading = false, count, children, description, action, before, after, onRetry, headingLevel = 2 }: RowProps) {
+  const Heading = headingLevel === 3 ? 'h3' : 'h2'
   const t = useTranslations('home.sala')
   const id = useId()
   const listId = `${id}-lista`
@@ -152,9 +158,9 @@ export function SalaRow({ title, name, loading = false, count, children, descrip
     <section aria-labelledby={id} data-sala-row={name} className="font-sala-text text-sala-ink">
       <div className="mb-3 flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
         <div className="min-w-0">
-          <h2 id={id} ref={headingRef} tabIndex={-1} className="scroll-mt-24 outline-none sala-type-data [overflow-wrap:anywhere]">
+          <Heading id={id} ref={headingRef} tabIndex={-1} className="scroll-mt-24 outline-none sala-type-data [overflow-wrap:anywhere]">
             {title}
-          </h2>
+          </Heading>
           {description ? <p className="mt-1 text-sala-ink-secondary sala-type-small">{description}</p> : null}
         </div>
         {action || showList ? (

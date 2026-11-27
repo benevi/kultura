@@ -170,6 +170,10 @@ export interface SalaProfileItem {
   title: string
   poster: string | null
   type: string
+  /** Año de la obra (`/u`, P3). */
+  year?: number
+  /** Una línea más, ya traducida: la nota de su dueño en los favoritos de `/u` (P3). */
+  detail?: string
 }
 
 /** `movie_603` → `/media/movie/603`. */
@@ -182,12 +186,32 @@ function hrefOf(type: string, mediaId: string): string {
  * obras sin portada no se esconden: `SalaPoster` pone el campo de color con
  * el título.
  */
-export function SalaProfileRow({ title, name, items }: { title: string; name: string; items: SalaProfileItem[] }) {
+export function SalaProfileRow({
+  title,
+  name,
+  items,
+  headingLevel = 2,
+  description,
+  action,
+  priorityCount = 0,
+}: {
+  title: string
+  name: string
+  items: SalaProfileItem[]
+  /** `3` dentro de una sección con su `h2` (las listas públicas de `/u`, P3); las obras bajan uno. */
+  headingLevel?: 2 | 3
+  /** Una línea debajo del encabezado (el formato de una lista pública). */
+  description?: ReactNode
+  /** Junto a las flechas: «Ver lista · 6 títulos» en `/u`. */
+  action?: ReactNode
+  /** Cuántas de las primeras portadas cargan con prioridad (REN-6, `/u`). */
+  priorityCount?: number
+}) {
   const tType = useTranslations('discoverFilters.typeBadge')
   if (items.length === 0) return null
   return (
-    <SalaRow title={title} name={name} count={items.length}>
-      {items.map((item) => (
+    <SalaRow title={title} name={name} count={items.length} headingLevel={headingLevel} description={description} action={action}>
+      {items.map((item, i) => (
         <SalaWorkCard
           key={item.mediaId}
           href={hrefOf(item.type, item.mediaId)}
@@ -195,9 +219,12 @@ export function SalaProfileRow({ title, name, items }: { title: string; name: st
           format={item.type as MediaType}
           formatLabel={tType(item.type)}
           poster={item.poster}
+          year={item.year}
+          detail={item.detail}
           ratio="2/3"
           sizes={ROW_CARD_SIZES}
-          headingLevel={3}
+          priority={i < priorityCount}
+          headingLevel={headingLevel === 3 ? 4 : 3}
         />
       ))}
     </SalaRow>
@@ -244,5 +271,113 @@ export function SalaProfileGenres({ title, items }: { title: string; items: Sala
         ))}
       </ul>
     </section>
+  )
+}
+
+// ── Perfil público `/u/[username]` (P3) ──────────────────────────────────
+
+/**
+ * Sus cuatro favoritos en una rejilla (dos columnas en el móvil, cuatro desde
+ * `md`), con la nota en la escala de su dueño (`detail`, «Su nota: 9 de 10»):
+ * antes decía siempre «de 5». `hint`: lo que le falta al dueño para llenarla.
+ */
+export function SalaProfileFavorites({
+  title,
+  items,
+  hint,
+  priority = false,
+}: {
+  title: string
+  items: SalaProfileItem[]
+  hint?: string | null
+  /** Primera fila de pósters de la página (REN-6). */
+  priority?: boolean
+}) {
+  const tType = useTranslations('discoverFilters.typeBadge')
+  const titleId = useId()
+  if (items.length === 0) return null
+  return (
+    <section aria-labelledby={titleId} data-sala-profile-favorites="" className="font-sala-text text-sala-ink">
+      <h2 id={titleId} className="mb-3 sala-type-data">
+        {title}
+      </h2>
+      <ul role="list" className="grid grid-cols-2 gap-x-4 gap-y-6 md:grid-cols-4">
+        {items.map((item) => (
+          <li key={item.mediaId} className="min-w-0">
+            <SalaWorkCard
+              href={hrefOf(item.type, item.mediaId)}
+              title={item.title}
+              format={item.type as MediaType}
+              formatLabel={tType(item.type)}
+              poster={item.poster}
+              year={item.year}
+              detail={item.detail}
+              ratio="2/3"
+              sizes="(min-width: 768px) 14rem, 45vw"
+              priority={priority}
+              headingLevel={3}
+            />
+          </li>
+        ))}
+      </ul>
+      {hint ? <p className="mt-4 text-sala-ink-secondary sala-type-small">{hint}</p> : null}
+    </section>
+  )
+}
+
+/**
+ * «benevi te invita a KULTURA» para quien llega sin cuenta con su enlace: la
+ * llamada a registrarse de la página (con invitación es la única). No es un
+ * encabezado: va antes del `h1`.
+ */
+export function SalaProfileInvite({ title, text, cta, href }: { title: string; text: string; cta: string; href: string }) {
+  const titleId = useId()
+  return (
+    <aside
+      aria-labelledby={titleId}
+      data-sala-profile-invite=""
+      className="flex flex-col gap-4 bg-sala-panel p-4 font-sala-text text-sala-ink sm:p-6 md:flex-row md:items-center md:justify-between md:gap-8"
+    >
+      <div className="min-w-0 max-w-prose">
+        <p id={titleId} className="sala-type-data [overflow-wrap:anywhere]">
+          {title}
+        </p>
+        <p className="mt-2 text-sala-ink-secondary sala-type-text">{text}</p>
+      </div>
+      <SalaButton asChild className="shrink-0 self-start md:self-auto">
+        <Link href={href}>{cta}</Link>
+      </SalaButton>
+    </aside>
+  )
+}
+
+/** «¿Y la tuya?» al final, para quien llega sin cuenta y sin invitación. */
+export function SalaProfileCta({ title, text, cta, href }: { title: string; text: string; cta: string; href: string }) {
+  const titleId = useId()
+  return (
+    <section
+      aria-labelledby={titleId}
+      data-sala-profile-cta=""
+      className="flex flex-col gap-4 bg-sala-panel p-4 font-sala-text text-sala-ink sm:p-6 md:flex-row md:items-center md:justify-between md:gap-8"
+    >
+      <div className="min-w-0 max-w-prose">
+        <h2 id={titleId} className="sala-type-data">
+          {title}
+        </h2>
+        <p className="mt-2 text-sala-ink-secondary sala-type-text">{text}</p>
+      </div>
+      <SalaButton asChild className="shrink-0 self-start md:self-auto">
+        <Link href={href}>{cta}</Link>
+      </SalaButton>
+    </section>
+  )
+}
+
+/** Un enlace de «Sala» con la caja de 48 px (secundario: «Ya tengo cuenta», «Ver lista»). */
+export function SalaProfileLinkButton({ href, children }: { href: string; children: ReactNode }) {
+  return (
+    <SalaButton asChild variant="secondary">
+      <Link href={href}>{children}</Link>
+    </SalaButton>
   )
 }

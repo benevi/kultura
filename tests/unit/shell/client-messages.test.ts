@@ -38,16 +38,33 @@ const APP_GROUP = path.join(SRC, "app", "[locale]", "(app)") + path.sep;
 const APP_GROUP_SHELL = ["layout.tsx", "template.tsx"].map((f) => APP_GROUP + f);
 // Zonas públicas con proveedor propio en su layout (sustituye al del shell).
 // `shell`: archivos de la zona que pintan por ENCIMA de su proveedor.
-const ZONES = [
+// `chrome`: módulos que la zona pinta dentro de un proveedor con los textos
+// del shell (`ClientMessages` con `SHELL_CLIENT_NAMESPACES`); su árbol se
+// comprueba contra el shell, no contra la lista de la zona.
+type ZoneDef = { dir: string; list: readonly string[]; file: string; shell: string[]; chrome?: string[] };
+const ZONE_DEFS: ZoneDef[] = [
   { dir: "report", list: REPORT_CLIENT_NAMESPACES, file: "src/app/[locale]/report/PublicReportForm.tsx", shell: [] },
   { dir: "welcome", list: WELCOME_CLIENT_NAMESPACES, file: "src/app/[locale]/welcome/WelcomeFlow.tsx", shell: [] },
-  { dir: "u", list: PUBLIC_PROFILE_CLIENT_NAMESPACES, file: "src/components/collection/InviteLinkButton.tsx", shell: [] },
+  // 8.5 P3: con «Sala» y sesión, `/u` pinta la barra de la app (`SalaPublicCollection`).
+  {
+    dir: "u",
+    list: PUBLIC_PROFILE_CLIENT_NAMESPACES,
+    file: "src/components/collection/InviteLinkButton.tsx",
+    shell: [],
+    chrome: ["src/components/layout/AppChromeLazy.tsx"],
+  },
   { dir: "media", list: MEDIA_CLIENT_NAMESPACES, file: "src/components/library/LibraryAction.tsx", shell: ["layout.tsx"] },
   // Ficha cacheable sin sesión (FICHA_ISR): la misma ficha y el mismo proveedor.
   { dir: "media-anonima", list: MEDIA_CLIENT_NAMESPACES, file: "src/components/library/LibraryAction.tsx", shell: ["layout.tsx"] },
-].map((z) => {
+];
+const ZONES = ZONE_DEFS.map((z) => {
   const dir = path.join(SRC, "app", "[locale]", z.dir) + path.sep;
-  return { ...z, path: dir, shellFiles: z.shell.map((f) => dir + f) };
+  return {
+    ...z,
+    path: dir,
+    shellFiles: z.shell.map((f) => dir + f),
+    chromeFiles: new Set((z.chrome ?? []).map((f) => path.join(ROOT, f))),
+  };
 });
 const inZone = (z: (typeof ZONES)[number], f: string) => f.startsWith(z.path) && !z.shellFiles.includes(f);
 
@@ -77,12 +94,12 @@ function resolveImport(from: string, spec: string): string | null {
   return null;
 }
 
-function reachable(entries: string[]): Set<string> {
+function reachable(entries: string[], stop: Set<string> = new Set()): Set<string> {
   const seen = new Set<string>();
   const stack = [...entries];
   while (stack.length) {
     const file = stack.pop()!;
-    if (seen.has(file)) continue;
+    if (seen.has(file) || stop.has(file)) continue;
     seen.add(file);
     for (const match of Array.from(FILES.get(file)!.matchAll(IMPORT_RE))) {
       const target = resolveImport(file, match[1] ?? match[2] ?? match[3]);
@@ -109,7 +126,7 @@ const shellEntries = Array.from(FILES.keys()).filter(
 const zoneUses = ZONES.map((z) => ({
   ...z,
   ...translationUses(
-    Array.from(reachable(Array.from(FILES.keys()).filter((f) => inZone(z, f)))).filter((f) =>
+    Array.from(reachable(Array.from(FILES.keys()).filter((f) => inZone(z, f)), z.chromeFiles)).filter((f) =>
       clientGraph.has(f),
     ),
   ),
@@ -184,6 +201,29 @@ describe("REN-5 — textos del navegador por namespaces", () => {
     expect(zone.dynamic).toEqual([]);
     const missing = zone.uses.filter((u) => !covers(zone.list, u.ns));
     expect(missing).toEqual([]);
+  });
+
+  it("la barra de la app de una zona va dentro de un proveedor con los textos del shell", () => {
+    for (const zone of ZONES) {
+      for (const chrome of Array.from(zone.chromeFiles)) {
+        // El árbol de la barra pide solo textos del shell.
+        const chromeUses = translationUses(Array.from(reachable([chrome])).filter((f) => clientGraph.has(f)));
+        expect(chromeUses.uses.length, chrome).toBeGreaterThan(0);
+        expect(chromeUses.uses.filter((u) => !covers(SHELL_CLIENT_NAMESPACES, u.ns)), chrome).toEqual([]);
+        // Quien la pinta: un módulo que la zona alcanza (la página o lo que importa).
+        const zoneGraph = reachable(Array.from(FILES.keys()).filter((f) => inZone(zone, f)), zone.chromeFiles);
+        const users = Array.from(zoneGraph).filter((f) =>
+          Array.from(FILES.get(f)!.matchAll(IMPORT_RE)).some((m) => resolveImport(f, m[1] ?? m[2] ?? m[3]) === chrome),
+        );
+        expect(users.length, zone.dir).toBeGreaterThan(0);
+        for (const user of users) {
+          const source = FILES.get(user)!;
+          expect(source, user).toMatch(/<ClientMessages namespaces=\{SHELL_CLIENT_NAMESPACES\}>/);
+          // Y la página vuelve a tener debajo los textos de su zona.
+          expect(source, user).toMatch(/<ClientMessages namespaces=\{(?!SHELL_)[A-Z_]+_CLIENT_NAMESPACES\}>/);
+        }
+      }
+    }
   });
 
   it("no sobra ningún namespace en las listas", () => {

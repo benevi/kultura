@@ -9,6 +9,11 @@
 // Invitación: `?ref={username}&inv={firma}` enseña "{username} te invita" y
 // los enlaces de registro llevan la atribución (`utm_*`, `ref`, `inv`) hasta
 // el alta (D-12), sin cookies.
+//
+// Fase 8.5 P3: con `SALA_PERFIL` la página sale en «Sala» (`SalaPublicCollection`). Con
+// la bandera en `1` se decide sin leer cookies; en `prueba`, con la cookie de
+// prueba (la página ya es dinámica: lee la sesión y `searchParams`). Con `0`,
+// el HTML de siempre.
 // ============================================================
 
 import { notFound } from 'next/navigation'
@@ -47,6 +52,12 @@ import { parseAttributionRecord, withAttribution, type AttributionParams } from 
 import { invitePath, isValidInviteSignature } from '@/lib/analytics/invite'
 import { siteUrl } from '@/lib/site-url'
 import type { MediaType } from '@/types/media'
+import { salaPerfilEnabled } from '@/lib/flags/sala'
+import { getViewer } from '@/lib/media/viewer'
+import { getUnreadCount } from '@/lib/social/notifications'
+import { readRatingScale } from '@/lib/library/scale'
+import { ownerShareScale, type ShareScale } from '@/lib/share/rating-share'
+import { SalaPublicCollection } from '@/components/collection/sala/SalaPublicCollection'
 
 type SearchParams = Record<string, string | string[] | undefined>
 
@@ -137,7 +148,11 @@ export default async function PublicCollectionPage({ params, searchParams }: Pro
   const { lists } = collection
   let owner: PublicOwner = collection.owner
   const supabase = await createClient()
-  const viewer = await currentViewer(supabase)
+  const sala = await salaPerfilEnabled()
+  // En «Sala» la sesión llega con su perfil (la barra de la app lo pinta):
+  // `getViewer` la lee una vez por petición.
+  const session = sala ? await getViewer() : null
+  const viewer: Viewer = sala ? (session?.user ? { id: session.user.id } : null) : await currentViewer(supabase)
   const isOwner = viewer?.id === owner.id
 
   // D-04b: sin sesión, nunca (ni se consulta). Con sesión, la base decide; la
@@ -146,15 +161,26 @@ export default async function PublicCollectionPage({ params, searchParams }: Pro
   // (anon no tiene permiso sobre esas columnas, F-02).
   let canRead = false
   let showcase: LibraryShowcase | null = null
+  // «Sala»: la escala de notas del dueño (la de `/u/…/r/…`) y los avisos sin
+  // leer de la barra de la app, en la misma espera.
+  let scale: ShareScale = 'stars'
+  let unreadCount = 0
   if (viewer) {
-    const [allowed, data, details] = await Promise.all([
+    const [allowed, data, details, salaExtra] = await Promise.all([
       isOwner ? Promise.resolve(true) : viewerCanReadLibrary(supabase, owner.id),
       getLibraryShowcase(supabase, owner.id).catch(() => null),
       getOwnerDetails(supabase, owner.id).catch(() => null),
+      sala
+        ? Promise.all([
+            isOwner ? Promise.resolve(readRatingScale(session?.user)) : ownerShareScale(owner.id),
+            session?.profile ? getUnreadCount(viewer.id).catch(() => 0) : Promise.resolve(0),
+          ])
+        : Promise.resolve(null),
     ])
     canRead = allowed
     showcase = allowed ? data : null
     if (details) owner = { ...owner, ...details }
+    if (salaExtra) [scale, unreadCount] = salaExtra
   }
 
   const t = await getTranslations('collection')
@@ -173,6 +199,23 @@ export default async function PublicCollectionPage({ params, searchParams }: Pro
     : { ...attribution, ref: owner.username, channel: attribution.utm_source ? 'utm' : 'ref' }
   const registerHref = withAttribution('/login?mode=register', signupAttribution)
   const loginHref = withAttribution('/login?mode=login', signupAttribution)
+
+  if (sala) {
+    return (
+      <SalaPublicCollection
+        locale={locale}
+        owner={owner}
+        lists={lists}
+        chrome={session?.user ? { user: session.user, profile: session.profile, unreadCount } : null}
+        isOwner={isOwner}
+        showcase={canRead ? showcase : null}
+        scale={scale}
+        invite={!viewer && refIsOwner ? { friendsOnSignup } : null}
+        registerHref={registerHref}
+        loginHref={loginHref}
+      />
+    )
+  }
 
   // REN-6: prioridad solo para la PRIMERA fila de pósters reales de la página.
   const firstPosters: 'favorites' | 'watching' | 'lists' =

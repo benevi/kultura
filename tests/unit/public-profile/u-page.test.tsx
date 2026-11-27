@@ -80,6 +80,8 @@ vi.mock('@/components/ui/KButton', () => ({ KButton: h.M.KButton }))
 vi.mock('@/components/layout/Header', () => ({ Header: h.M.Header }))
 vi.mock('@/components/layout/Footer', () => ({ Footer: h.M.Footer }))
 vi.mock('@/i18n/navigation', () => ({ Link: h.M.Link }))
+// «Sala» (8.5 P3) va en su módulo y tiene su propio test (`tests/unit/app/u`): aquí, sin la bandera, no se pinta.
+vi.mock('@/components/collection/sala/SalaPublicCollection', () => ({ SalaPublicCollection: () => null }))
 
 const MARKERS = new Set<unknown>(Object.values(h.M))
 

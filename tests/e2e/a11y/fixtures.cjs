@@ -11,6 +11,8 @@
 const USER_ID = "00000000-0000-4000-8000-000000000001";
 const FRIEND_ID = "00000000-0000-4000-8000-000000000002";
 const LIST_ID = "00000000-0000-4000-8000-0000000000a1";
+/** Lista pública de benevi (fase 8.5 P3): `/u/benevi/l/…` en `pages.spec.ts`. */
+const PUBLIC_LIST_ID = "00000000-0000-4000-8000-0000000000a2";
 const GROUP_ID = "00000000-0000-4000-8000-0000000000b1";
 const CONVERSATION_ID = "00000000-0000-4000-8000-0000000000c1";
 const NOW = "2026-10-01T10:00:00.000Z";
@@ -296,14 +298,34 @@ const group = {
 const tables = {
   users: [user, friend, benevi, nora, pau],
   media: mediaRows,
-  lists: [list],
-  list_items: mediaRows.slice(0, 2).map((m, i) => ({
-    id: `00000000-0000-4000-8000-0000000000d${i}`,
-    list_id: LIST_ID,
-    media_id: m.id,
-    added_by: USER_ID,
-    added_at: NOW,
-  })),
+  lists: [
+    list,
+    {
+      id: PUBLIC_LIST_ID,
+      owner_id: benevi.id,
+      name: "Imprescindibles",
+      media_type: "movie",
+      is_collaborative: false,
+      is_public: true,
+      created_at: NOW,
+    },
+  ],
+  list_items: [
+    ...mediaRows.slice(0, 2).map((m, i) => ({
+      id: `00000000-0000-4000-8000-0000000000d${i}`,
+      list_id: LIST_ID,
+      media_id: m.id,
+      added_by: USER_ID,
+      added_at: NOW,
+    })),
+    {
+      id: "00000000-0000-4000-8000-0000000000d9",
+      list_id: PUBLIC_LIST_ID,
+      media_id: "movie_550",
+      added_by: benevi.id,
+      added_at: NOW,
+    },
+  ],
   // Matrix ya está en la biblioteca: su ficha enseña "Actualizar" y "Quitar".
   user_media: [
     {
@@ -397,6 +419,7 @@ module.exports = {
   USER_ID,
   FRIEND_ID,
   LIST_ID,
+  PUBLIC_LIST_ID,
   GROUP_ID,
   CONVERSATION_ID,
   NOW,

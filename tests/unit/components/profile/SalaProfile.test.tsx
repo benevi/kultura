@@ -18,8 +18,8 @@ vi.mock('next-intl', () => {
   return { useTranslations: vi.fn(() => t), useLocale: () => 'es' }
 })
 vi.mock('@/components/sala/SalaWorkCard', () => ({
-  SalaWorkCard: ({ title, href, formatLabel }: { title: string; href: string; formatLabel: string }) => (
-    <a data-testid="card" href={href}>{title} · {formatLabel}</a>
+  SalaWorkCard: ({ title, href, formatLabel, detail, headingLevel }: { title: string; href: string; formatLabel: string; detail?: string; headingLevel?: number }) => (
+    <a data-testid="card" data-level={headingLevel} href={href}>{title} · {formatLabel}{detail ? ` · ${detail}` : ''}</a>
   ),
   SalaWorkCardSkeleton: () => <div data-testid="skeleton" />,
 }))
@@ -32,6 +32,9 @@ import {
   SalaProfileRow,
   SalaProfileState,
   SalaProfileGenres,
+  SalaProfileFavorites,
+  SalaProfileInvite,
+  SalaProfileCta,
 } from '@/components/profile/sala/SalaProfile'
 import { AVATAR_COLORS } from '@/lib/constants/avatarColors'
 
@@ -154,5 +157,58 @@ describe('SalaProfileGenres (P2)', () => {
   it('sin géneros no pinta nada', () => {
     const { container } = render(<SalaProfileGenres title="Géneros favoritos" items={[]} />)
     expect(container).toBeEmptyDOMElement()
+  })
+})
+
+describe('SalaProfileRow dentro de otra sección (P3)', () => {
+  it('con `headingLevel={3}` el encabezado es h3 y las obras bajan a h4; la acción y la descripción a la vista', () => {
+    render(
+      <SalaProfileRow
+        title="Pelis de domingo"
+        name="list-l1"
+        headingLevel={3}
+        description="películas"
+        action={<a href="/u/ana/l/l1">Ver lista</a>}
+        items={[{ mediaId: 'movie_603', title: 'Matrix', poster: null, type: 'movie', year: 1999 }]}
+      />
+    )
+    expect(screen.getByRole('heading', { level: 3, name: 'Pelis de domingo' })).toBeInTheDocument()
+    expect(screen.getByText('películas')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Ver lista' })).toHaveAttribute('href', '/u/ana/l/l1')
+    expect(screen.getByTestId('card')).toHaveAttribute('data-level', '4')
+  })
+})
+
+describe('SalaProfileFavorites (P3)', () => {
+  const items = [
+    { mediaId: 'movie_603', title: 'Matrix', poster: null, type: 'movie', year: 1999, detail: 'Nota: 9 de 10' },
+    { mediaId: 'game_1', title: 'Hades', poster: 'https://x/h.jpg', type: 'game', detail: 'Nota: 4,5 de 5' },
+  ]
+  it('una sección nombrada por su h2 con una lista de obras y la nota de su dueño escrita', () => {
+    render(<SalaProfileFavorites title="Favoritos" items={items} hint="Puntúa títulos y los mejores saldrán aquí" />)
+    const section = screen.getByRole('region', { name: 'Favoritos' })
+    const cards = within(section).getAllByTestId('card')
+    expect(cards.map((c) => c.textContent)).toEqual(['Matrix · movie · Nota: 9 de 10', 'Hades · game · Nota: 4,5 de 5'])
+    expect(within(section).getAllByRole('listitem')).toHaveLength(2)
+    expect(within(section).getByText('Puntúa títulos y los mejores saldrán aquí')).toBeInTheDocument()
+  })
+  it('sin favoritos no pinta nada', () => {
+    const { container } = render(<SalaProfileFavorites title="Favoritos" items={[]} />)
+    expect(container).toBeEmptyDOMElement()
+  })
+})
+
+describe('SalaProfileInvite y SalaProfileCta (P3)', () => {
+  it('la invitación no es un encabezado (va antes del h1) y nombra su región; un enlace a registrarse', () => {
+    render(<SalaProfileInvite title="ana te invita a KULTURA" text="Seréis amigos" cta="Crear mi cuenta" href="/login?mode=register&ref=ana" />)
+    const aside = screen.getByRole('complementary', { name: 'ana te invita a KULTURA' })
+    expect(within(aside).queryByRole('heading')).toBeNull()
+    expect(within(aside).getByRole('link', { name: 'Crear mi cuenta' })).toHaveAttribute('href', '/login?mode=register&ref=ana')
+  })
+  it('la llamada del final es una sección con su h2', () => {
+    render(<SalaProfileCta title="¿Y la tuya?" text="Guarda todo" cta="Crea tu colección" href="/login?mode=register" />)
+    const section = screen.getByRole('region', { name: '¿Y la tuya?' })
+    expect(within(section).getByRole('heading', { level: 2 })).toHaveTextContent('¿Y la tuya?')
+    expect(within(section).getByRole('link', { name: 'Crea tu colección' })).toHaveAttribute('href', '/login?mode=register')
   })
 })
