@@ -22,6 +22,7 @@ const h = vi.hoisted(() => {
     collection: null as unknown,
     showcase: null as unknown,
     canRead: vi.fn(),
+    blocked: vi.fn(),
     getShowcase: vi.fn(),
     details: vi.fn(),
     permanentRedirect: vi.fn((url: string) => {
@@ -65,6 +66,9 @@ vi.mock('@/lib/social/public-collection', () => ({
   getLibraryShowcase: (...args: unknown[]) => h.getShowcase(...args),
   getOwnerDetails: (...args: unknown[]) => h.details(...args),
   viewerCanReadLibrary: (...args: unknown[]) => h.canRead(...args),
+}))
+vi.mock('@/lib/social/block-check', () => ({
+  viewerBlockedWith: (...args: unknown[]) => h.blocked(...args),
 }))
 vi.mock('@/lib/analytics/invite', () => ({
   invitePath: (locale: string, u: { username: string }) => `/${locale}/u/${u.username}?ref=${u.username}&inv=firma`,
@@ -137,6 +141,7 @@ beforeEach(() => {
   h.user = null
   h.collection = { owner: { ...OWNER }, lists: [list('l1'), list('l2')] }
   h.canRead.mockResolvedValue(true)
+  h.blocked.mockResolvedValue(false)
   h.getShowcase.mockResolvedValue(SHOWCASE)
   h.details.mockResolvedValue({ createdAt: '2026-01-01T00:00:00Z', libraryVisibility: 'friends' })
 })
@@ -253,6 +258,33 @@ describe('/u con sesión', () => {
     expect(String(note?.className)).toMatch(/\bpy-3\b.*-my-3|-my-3.*\bpy-3\b/)
     expect(String(note?.className)).not.toContain('min-h-11')
     expect(all(tree, h.M.ReportButton)).toHaveLength(0)
+  })
+})
+
+describe('/u con un bloqueo entre quien mira y el dueño', () => {
+  beforeEach(() => {
+    h.user = { id: 'visitor' }
+    h.blocked.mockResolvedValue(true)
+  })
+
+  it('pregunta por el bloqueo con la sesión de quien mira', async () => {
+    await render()
+    expect(h.blocked).toHaveBeenCalledWith(expect.anything(), 'visitor', 'owner-1')
+  })
+
+  it('como la página genérica de /r: la cabecera, sin biblioteca ni listas aunque la RLS dejara leerlas', async () => {
+    const tree = await render()
+    expect(all(tree, h.M.CollectionOwner)[0].owner).toMatchObject({ username: 'ana' })
+    expect(all(tree, h.M.FormatCounters)).toHaveLength(0)
+    expect(all(tree, h.M.FavoritesGrid)).toHaveLength(0)
+    expect(all(tree, h.M.WatchingRow)).toHaveLength(0)
+    expect(all(tree, h.M.PublicListRow)).toHaveLength(0)
+    expect(all(tree, h.M.LockedLibrary)).toHaveLength(1)
+  })
+
+  it('sin bloqueo, lo de siempre (listas a la vista)', async () => {
+    h.blocked.mockResolvedValue(false)
+    expect(all(await render(), h.M.PublicListRow)).toHaveLength(2)
   })
 })
 

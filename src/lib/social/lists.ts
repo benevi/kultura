@@ -18,9 +18,8 @@ type ListRow = DbList & {
   item_count: number
 }
 
-type ListItemRow = DbListItem & {
+type ListItemRow = Omit<DbListItem, 'added_by'> & {
   media: Pick<DbMedia, 'id' | 'title' | 'poster' | 'type' | 'year'> | null
-  added_by_user: Pick<DbUser, 'id' | 'username'> | null
 }
 
 type ListMemberRow = DbListMember & {
@@ -28,8 +27,11 @@ type ListMemberRow = DbListMember & {
 }
 
 const OWNER_EMBED = 'owner:owner_id(id, username, avatar_color, avatar_initials)'
-const ITEM_COLUMNS = 'id, list_id, media_id, added_by, added_at, position, note'
-const ITEM_EMBEDS = 'media:media_id(id, title, poster, type, year), added_by_user:added_by(id, username)'
+// Sin `added_by`: quién añadió cada título no se pinta en ningún sitio, y el
+// detalle viaja entero al navegador (también a quien mira una lista pública
+// ajena). Si algún día se enseña, que se lea solo para quien deba verlo.
+const ITEM_COLUMNS = 'id, list_id, media_id, added_at, position, note'
+const ITEM_EMBEDS = 'media:media_id(id, title, poster, type, year)'
 
 function toTemplate(value: unknown): ListTemplate | null {
   return value === 'franchise' || value === 'ranking' ? value : null
@@ -66,7 +68,6 @@ function mapListItem(row: ListItemRow): ListItem {
     id: row.id,
     listId: row.list_id,
     mediaId: row.media_id,
-    addedBy: row.added_by ?? undefined,
     addedAt: row.added_at,
     position: typeof row.position === 'number' ? row.position : null,
     note: row.note ?? null,

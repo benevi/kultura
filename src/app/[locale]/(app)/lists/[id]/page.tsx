@@ -1,6 +1,8 @@
 // ============================================================
 // KULTURA — /lists/[id] (Server Component)
 // Detalle de lista: título, items, miembros.
+// Los miembros de una colaborativa solo los ven (y solo se mandan a) su
+// dueño y sus miembros: una lista pública ajena llega sin ellos.
 // ============================================================
 
 import { notFound } from 'next/navigation'
@@ -8,6 +10,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getListDetail, canEditList } from '@/lib/social/lists'
 import { getFriends } from '@/lib/social/friends'
 import { ListDetail } from './ListDetail'
+import { canSeeListMembers } from './list-detail-utils'
 import { getTranslations } from 'next-intl/server'
 import type { Metadata } from 'next'
 
@@ -31,7 +34,8 @@ export default async function ListDetailPage({ params }: Props) {
   const detail = await getListDetail(id)
   if (!detail) notFound()
 
-  const { list, items, members } = detail
+  const { list, items } = detail
+  const members = canSeeListMembers(list, detail.members, user?.id) ? detail.members : []
 
   const canEdit = user ? await canEditList(id, user.id) : false
 

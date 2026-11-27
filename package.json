@@ -44,6 +44,7 @@
     "@vercel/speed-insights": "^2.1.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "hls.js": "1.7.4",
     "next": "15.5.28",
     "next-intl": "^4.14.9",
     "react": "19.2.9",

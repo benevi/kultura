@@ -42,7 +42,7 @@ function cspDirectives(scriptSrc, connectSrc, isDev, reportOnly = false) {
     "img-src 'self' data: blob: https:",
     connectSrc,
     "font-src 'self' data:",
-    "media-src 'self'",
+    "media-src 'self' blob: https://video.akamai.steamstatic.com",
     "object-src 'none'",
     "base-uri 'self'",
     "frame-ancestors 'self'",
@@ -77,7 +77,7 @@ export function reportOnlyCsp(/** @type {string | undefined} */ supabaseUrl) {
   } catch {
     // URL inválida: solo 'self'.
   }
-  sources.push("https://*.ingest.sentry.io", "https://*.ingest.de.sentry.io");
+  sources.push("https://*.ingest.sentry.io", "https://*.ingest.de.sentry.io", "https://video.akamai.steamstatic.com");
   return cspDirectives("script-src 'self' 'unsafe-inline'", `connect-src ${sources.join(" ")}`, false, true);
 }
 

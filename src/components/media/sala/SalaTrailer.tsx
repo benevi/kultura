@@ -7,6 +7,8 @@ import { SalaButton } from "@/components/sala/SalaButton";
 import { backdropLoader, posterLoader } from "@/lib/images/poster-url";
 import { trailerEmbedUrl } from "@/lib/media/trailer";
 import { paletteReadable } from "./SalaFichaImage";
+import type { SteamTrailer } from "@/lib/api/steam";
+import { SteamTrailerVideo } from "../SteamTrailerVideo";
 
 /**
  * El tráiler al final de la ficha con «Sala» (fase 8.5, F3; biblia §1 y §9).
@@ -28,7 +30,9 @@ import { paletteReadable } from "./SalaFichaImage";
  */
 export interface SalaTrailerProps {
   /** Clave de YouTube ya validada (`youtubeTrailerKey`). */
-  youtubeKey: string;
+  youtubeKey?: string | null;
+  /** Tráiler de la tienda de Steam, si no hay clave de YouTube. */
+  steam?: { trailer: SteamTrailer; storeUrl: string } | null;
   /** Título de la obra: entra en el nombre del botón y del reproductor. */
   title: string;
   /** Imagen de fondo del marco: la apaisada de la obra o, si no hay, la portada. */
@@ -41,7 +45,7 @@ const PLAY_ICON = (
   </svg>
 );
 
-export function SalaTrailer({ youtubeKey, title, image }: SalaTrailerProps) {
+export function SalaTrailer({ youtubeKey, steam, title, image }: SalaTrailerProps) {
   const t = useTranslations("media_detail");
   const [playing, setPlaying] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
@@ -57,7 +61,14 @@ export function SalaTrailer({ youtubeKey, title, image }: SalaTrailerProps) {
   return (
     <div data-sala-trailer={playing ? "playing" : "idle"} className="w-full lg:w-2/3">
       <div className="relative aspect-video w-full overflow-hidden bg-sala-panel">
-        {playing ? (
+        {playing && !youtubeKey && steam ? (
+          <SteamTrailerVideo
+            trailer={steam.trailer}
+            storeUrl={steam.storeUrl}
+            title={t("trailerTitle", { title })}
+            className="absolute inset-0 h-full w-full bg-sala-panel sala-focused:sala-focus sala-focused:[outline-offset:calc(-1*var(--sala-focus-width))]"
+          />
+        ) : playing && youtubeKey ? (
           <iframe
             ref={iframeRef}
             src={trailerEmbedUrl(youtubeKey)}
@@ -102,7 +113,7 @@ export function SalaTrailer({ youtubeKey, title, image }: SalaTrailerProps) {
         )}
       </div>
       <p id={noticeId} className="sala-type-small mt-3 text-sala-ink-secondary">
-        {t("trailerNotice")}
+        {youtubeKey ? t("trailerNotice") : t("steamTrailerNotice")}
       </p>
     </div>
   );

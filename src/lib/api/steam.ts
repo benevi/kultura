@@ -47,6 +47,54 @@ export interface SteamScreenshot {
   full: string;
 }
 
+/**
+ * Tráiler de la tienda de Steam. `src` es la lista HLS (`hls_h264`) que la
+ * propia tienda reproduce; el navegador la pide directo a Steam (coste ≈ 0
+ * para nosotros). Solo se aceptan URLs `https` de `STEAM_VIDEO_HOST`, el único
+ * host que la CSP deja en `media-src`.
+ */
+export interface SteamTrailer {
+  src: string;
+  /** La primera captura del juego o, si no hay, la miniatura del vídeo. */
+  poster?: string;
+  /** Nombre que da Steam al vídeo («Launch Trailer»…). */
+  name?: string;
+}
+
+/** Host de los vídeos de la tienda. Debe coincidir con `media-src` de la CSP. */
+export const STEAM_VIDEO_HOST = "video.akamai.steamstatic.com";
+
+function httpsUrlOn(raw: unknown, host: (h: string) => boolean): string | null {
+  if (typeof raw !== "string") return null;
+  try {
+    const url = new URL(raw);
+    return url.protocol === "https:" && host(url.hostname) ? url.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
+/** El tráiler destacado (o el primero válido) de `movies[]`, o `undefined`. */
+export function pickSteamTrailer(
+  movies: SteamAppDetailsData["movies"],
+  fallbackPoster?: string
+): SteamTrailer | undefined {
+  if (!Array.isArray(movies)) return undefined;
+  const ordered = [...movies.filter((m) => m?.highlight), ...movies.filter((m) => !m?.highlight)];
+  for (const m of ordered) {
+    const src = httpsUrlOn(m?.hls_h264, (h) => h === STEAM_VIDEO_HOST);
+    if (!src) continue;
+    // La primera captura (1920×1080) antes que la miniatura del vídeo (293×165).
+    const poster =
+      httpsUrlOn(fallbackPoster, (h) => h.endsWith(".steamstatic.com")) ??
+      httpsUrlOn(m?.thumbnail, (h) => h.endsWith(".steamstatic.com")) ??
+      undefined;
+    const name = typeof m?.name === "string" && m.name.trim() ? m.name.trim() : undefined;
+    return { src, ...(poster ? { poster } : {}), ...(name ? { name } : {}) };
+  }
+  return undefined;
+}
+
 export interface SteamInfo {
   appId: number;
   storeUrl: string;
@@ -60,6 +108,8 @@ export interface SteamInfo {
   supportedLanguages?: string[];
   screenshots?: SteamScreenshot[];
   metacritic?: number;
+  /** Tráiler de la tienda (HLS servido por Steam), si hay uno válido. */
+  trailer?: SteamTrailer;
 }
 
 // ── Shape crudo de la API (todo opcional: shape no versionado) ────────────────
@@ -77,6 +127,13 @@ interface SteamAppDetailsData {
   };
   screenshots?: { id?: number; path_thumbnail?: string; path_full?: string }[];
   metacritic?: { score?: number };
+  movies?: {
+    id?: number;
+    name?: string;
+    thumbnail?: string;
+    hls_h264?: string;
+    highlight?: boolean;
+  }[];
 }
 
 interface SteamAppDetailsResponse {
@@ -274,6 +331,7 @@ export function toSteamInfo(
       typeof data.metacritic?.score === "number"
         ? data.metacritic.score
         : undefined,
+    trailer: pickSteamTrailer(data.movies, data.screenshots?.[0]?.path_full),
   };
 }
 

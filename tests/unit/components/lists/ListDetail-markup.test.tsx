@@ -225,6 +225,19 @@ describe('ListDetail — HTML', () => {
 })
 
 describe('ListDetail — privacidad y compartir', () => {
+  it('colaborativa pública vista por quien no es dueño ni miembro: ni sección «Miembros» ni avatares', () => {
+    setup({ currentUserId: 'u9', canEdit: false, currentUserFriends: [] })
+    expect(screen.queryByRole('heading', { name: 'lists.membersTitle' })).toBeNull()
+    expect(screen.queryByText('bea')).toBeNull()
+    expect(screen.queryByText('BE')).toBeNull()
+  })
+
+  it('un miembro sí ve la sección «Miembros»', () => {
+    setup({ currentUserId: 'u2', canEdit: true })
+    expect(screen.getByRole('heading', { name: 'lists.membersTitle' })).toBeInTheDocument()
+    expect(screen.getByText('bea')).toBeInTheDocument()
+  })
+
   it('pasar a privada llama a updateList y quita el botón de compartir', async () => {
     setup()
     expect(screen.getByRole('button', { name: 'collection.share' })).toHaveAttribute('data-share-path', '/u/ana/l/l1')
