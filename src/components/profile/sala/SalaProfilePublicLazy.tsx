@@ -3,7 +3,8 @@
 import dynamic from 'next/dynamic'
 
 /**
- * Las piezas de «Sala» del perfil público `/u/[username]` (fase 8.5 P3), por
+ * Las piezas de «Sala» del perfil público `/u/[username]` (fase 8.5 P3) y de
+ * su nota pública `/u/[username]/r/…` (P4), por
  * `next/dynamic` mientras dure la bandera `SALA_PERFIL`, como
  * `SalaProfileLazy`. Van aparte de aquel para no arrastrar las acciones de
  * amistad (`SalaProfileSocial`), que `/u` no usa, ni sus textos: `/u` tiene
@@ -19,3 +20,4 @@ export const SalaProfileFavoritesLazy = dynamic(() => import('./SalaProfile').th
 export const SalaProfileInviteLazy = dynamic(() => import('./SalaProfile').then((m) => m.SalaProfileInvite))
 export const SalaProfileCtaLazy = dynamic(() => import('./SalaProfile').then((m) => m.SalaProfileCta))
 export const SalaProfileLinkButtonLazy = dynamic(() => import('./SalaProfile').then((m) => m.SalaProfileLinkButton))
+export const SalaProfileReviewLazy = dynamic(() => import('./SalaProfile').then((m) => m.SalaProfileReview))

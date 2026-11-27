@@ -110,7 +110,6 @@ vi.mock('@/components/profile/sala/SalaProfilePublicLazy', () => ({
   SalaProfileReviewLazy: stub('review'),
   SalaProfileCtaLazy: stub('cta'),
   SalaProfileLinkButtonLazy: stub('link-button'),
-  SalaProfilePrimaryButtonLazy: stub('primary-button'),
 }))
 vi.mock('@/lib/supabase/server', () => ({
   createClient: async () => ({
@@ -177,5 +176,92 @@ describe('/r sin «Sala» (SALA_PERFIL apagada): marcado de hoy', () => {
     h.s = SCENARIOS['con-sesion']
     expect(await renderPage()).not.toContain('data-sala')
     expect(h.calls).not.toContain('getViewer')
+  })
+})
+
+/** Las piezas en orden, con sus props. */
+function pieces(html: string): Array<{ name: string; props: Record<string, unknown> }> {
+  return [...html.matchAll(/data-stub="([^"]+)" data-props="([^"]*)"/g)].map((m) => ({
+    name: m[1],
+    props: JSON.parse(m[2].replace(/&quot;/g, '"').replace(/&amp;/g, '&')),
+  }))
+}
+const names = (html: string) => pieces(html).map((p) => p.name)
+const props = (html: string, name: string) => pieces(html).filter((p) => p.name === name).map((p) => p.props)
+
+describe('/r con «Sala» (SALA_PERFIL=1)', () => {
+  beforeEach(() => {
+    process.env.SALA_PERFIL = '1'
+  })
+
+  it('anónimo sin firma: la genérica, sin nota; «Ver la ficha», el perfil y una sola llamada a registrarse al final', async () => {
+    h.s = SCENARIOS['anonimo-generico']
+    const html = await renderPage()
+    expect(html).toContain('data-sala-profile="rating"')
+    expect(names(html)).toEqual(['Header', 'review', 'link-button', 'link-button', 'cta', 'Footer'])
+    const [review] = props(html, 'review')
+    expect(review).toMatchObject({
+      username: 'benevi',
+      profileHref: '/u/benevi',
+      lead: null,
+      title: 'Dune',
+      format: 'movie',
+      formatLabel: 'media.movie',
+      year: 2021,
+      score: null,
+      text: 'share.page.genericLead(benevi,Dune)',
+      hint: null,
+    })
+    expect(props(html, 'link-button')).toEqual([
+      { variant: 'primary', href: '/media/movie/438631' },
+      { href: '/u/benevi' },
+    ])
+    expect(html).toContain('share.page.viewTitle')
+    expect(props(html, 'cta')[0]).toMatchObject({ href: expect.stringContaining('mode=register') })
+    expect(html.match(/mode=register/g)).toHaveLength(1)
+    // Sin sesión no se pide nada más que la vista de hoy (ni avisos ni barra).
+    expect(h.calls.filter((c) => c !== 'getViewer' && c !== 'resolveRatingShare')).toEqual([])
+  })
+
+  it('anónimo con el enlace firmado: la nota en la escala de su dueño y el alta atribuida a quien compartió', async () => {
+    h.s = SCENARIOS['anonimo-firmado']
+    const html = await renderPage()
+    const [review] = props(html, 'review')
+    expect(review).toMatchObject({
+      lead: 'share.page.salaLead(benevi)',
+      score: { label: 'share.page.salaScoreLabel', value: '9', of: 'share.page.salaScoreOf(ten)' },
+      text: null,
+      hint: null,
+    })
+    expect(props(html, 'cta')[0].href).toBe('/login?mode=register&next=%2Fes%2Fmedia%2Fmovie%2F438631&utm_source=reddit&ref=benevi')
+  })
+
+  it('con sesión: la barra de la app (con los textos del shell), «Puntúalo tú», sin llamada a registrarse; nota «4,5 de 5»', async () => {
+    h.s = SCENARIOS['con-sesion']
+    const html = await renderPage()
+    const order = names(html)
+    expect(order.slice(0, 3)).toEqual(['ClientMessages', 'AppChrome', 'ClientMessages'])
+    expect(order).not.toContain('Header')
+    expect(order).not.toContain('cta')
+    expect(props(html, 'AppChrome')[0]).toMatchObject({ userId: 'viewer-1', unreadCount: 3, demo: false })
+    expect(props(html, 'review')[0]).toMatchObject({ score: { value: '4,5', of: 'share.page.salaScoreOf(stars)' } })
+    expect(html).toContain('share.page.ctaRate')
+    expect(html).not.toContain('mode=register')
+  })
+
+  it('con sesión y sin nota visible: la genérica, sin pedir nada más', async () => {
+    h.s = SCENARIOS['con-sesion-generico']
+    const html = await renderPage()
+    expect(props(html, 'review')[0]).toMatchObject({ score: null, lead: null })
+    expect(html).not.toContain('mode=register')
+  })
+
+  it('propio con escala antigua: «4 de 5» y la pista de quién la ve', async () => {
+    h.s = SCENARIOS.propio
+    const html = await renderPage()
+    expect(props(html, 'review')[0]).toMatchObject({
+      score: { value: '4', of: 'share.page.salaScoreOf(stars)' },
+      hint: 'share.page.ownerHint',
+    })
   })
 })

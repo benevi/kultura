@@ -36,6 +36,7 @@ import { Avatar } from '@/components/ui/Avatar'
 import { SalaButton } from '@/components/sala/SalaButton'
 import { SalaBlockState } from '@/components/sala/SalaBlockState'
 import { SalaWorkCard } from '@/components/sala/SalaWorkCard'
+import { SalaPoster, SALA_POSTER_RATIO } from '@/components/sala/SalaPoster'
 import { SalaRow, ROW_CARD_SIZES } from '@/components/sala/SalaRow'
 import { SalaTitleText } from '@/components/sala/SalaTitle'
 import { getAvatarColor } from '@/lib/constants/avatarColors'
@@ -373,11 +374,129 @@ export function SalaProfileCta({ title, text, cta, href }: { title: string; text
   )
 }
 
-/** Un enlace de «Sala» con la caja de 48 px (secundario: «Ya tengo cuenta», «Ver lista»). */
-export function SalaProfileLinkButton({ href, children }: { href: string; children: ReactNode }) {
+/**
+ * Un enlace de «Sala» con la caja de 48 px: secundario («Ya tengo cuenta»,
+ * «Ver lista») o, en la nota pública (P4), el principal («Ver la ficha»).
+ */
+export function SalaProfileLinkButton({
+  href,
+  children,
+  variant = 'secondary',
+}: {
+  href: string
+  children: ReactNode
+  variant?: 'primary' | 'secondary'
+}) {
   return (
-    <SalaButton asChild variant="secondary">
+    <SalaButton asChild variant={variant}>
       <Link href={href}>{children}</Link>
     </SalaButton>
+  )
+}
+
+export interface SalaProfileReviewProps {
+  /** Quién puntúa: la franja con su color, su avatar y «@nombre» con enlace a su perfil. */
+  username: string
+  avatarColor: string
+  avatarInitials: string
+  profileHref: string
+  /** «Nota de @benevi para», antes del título en el `h1`. Sin nota (la página genérica), nada. */
+  lead: string | null
+  title: string
+  poster: string | null
+  format: MediaType
+  /** El formato con palabras, ya traducido. */
+  formatLabel: string
+  year?: number
+  /** La nota en la escala de su dueño, ya compuesta: «Nota» · «9» · «de 10». */
+  score: { label: string; value: string; of: string } | null
+  /** Texto bajo el título en la página genérica. */
+  text?: string | null
+  /** Pista para el dueño: quién ve su nota. */
+  hint?: string | null
+  /** «Ver la ficha» y «Ver el perfil de @…». */
+  children?: ReactNode
+}
+
+/**
+ * La nota pública de una persona sobre una obra (`/u/…/r/…`, fase 8.5 P4): la
+ * franja de su dueño como en su perfil, el póster de la obra, el título como
+ * rótulo de «Sala» (con el mismo tope de 30 a 72 px que el nombre) y la nota
+ * en grande en la escala de quien puntúa. Sin nota (la página genérica), el
+ * título y una línea.
+ */
+export function SalaProfileReview({
+  username,
+  avatarColor,
+  avatarInitials,
+  profileHref,
+  lead,
+  title,
+  poster,
+  format,
+  formatLabel,
+  year,
+  score,
+  text,
+  hint,
+  children,
+}: SalaProfileReviewProps) {
+  const band = profileBand(avatarColor)
+  const wide = (SALA_POSTER_RATIO[format] ?? '2/3') === '16/9'
+  return (
+    <article data-sala-review={score ? 'rated' : 'generic'} className="font-sala-text text-sala-ink">
+      <div
+        data-sala-profile-band=""
+        style={band ?? undefined}
+        className={cn('flex items-center px-3 py-2 sm:px-4', !band && 'bg-sala-panel text-sala-ink')}
+      >
+        <Link
+          href={profileHref}
+          className="inline-flex min-h-sala-target items-center gap-3 text-current no-underline underline-offset-4 sala-type-label hover:underline focus-visible:outline-none focus-visible:sala-focus [overflow-wrap:anywhere]"
+        >
+          {/* Decorativo: el nombre va escrito al lado. */}
+          <span aria-hidden="true" className="shrink-0 border-2 border-current">
+            <Avatar initials={avatarInitials} color={avatarColor} size="sm" className="rounded-none font-extrabold" />
+          </span>
+          @{username}
+        </Link>
+      </div>
+      <div className={cn('mt-6 grid gap-6 md:gap-10', wide ? 'md:grid-cols-[22rem_minmax(0,1fr)]' : 'md:grid-cols-[16rem_minmax(0,1fr)]')}>
+        <SalaPoster
+          src={poster}
+          alt=""
+          title={title}
+          format={format}
+          sizes={wide ? '(min-width: 768px) 22rem, 92vw' : '(min-width: 768px) 16rem, (min-width: 640px) 13rem, 10rem'}
+          priority
+          className={wide ? 'w-full max-w-md md:max-w-none' : 'w-40 sm:w-52 md:w-full'}
+        />
+        <div className="flex min-w-0 flex-col gap-5">
+          {/* El h1 es el contenedor del rótulo (`container-type`): de su ancho sale el tamaño. */}
+          <h1 className="[container-type:inline-size] [overflow-wrap:anywhere]">
+            {lead ? <span className="mb-2 block text-sala-ink-secondary sala-type-text">{lead} </span> : null}
+            <SalaTitleText title={title} className={cn('block hyphens-none', NOMBRE_ROTULO)} />
+          </h1>
+          <p className="text-sala-ink-secondary sala-type-small">
+            {formatLabel}
+            {year ? ` · ${year}` : ''}
+          </p>
+          {score ? (
+            <p data-sala-review-score="" className="flex flex-wrap items-baseline gap-x-2">
+              <span className="text-sala-ink-secondary sala-type-small">{score.label}</span>{' '}
+              <span className="tabular-nums sala-type-heading">{score.value}</span>{' '}
+              <span className="sala-type-data">{score.of}</span>
+            </p>
+          ) : null}
+          {text ? <p className="max-w-prose text-sala-ink-secondary sala-type-text">{text}</p> : null}
+          {children ? (
+            <div data-sala-review-actions="" className="flex flex-wrap items-center gap-3">
+              {children}
+            </div>
+          ) : null}
+          {hint ? <p className="max-w-prose text-sala-ink-secondary sala-type-small">{hint}</p> : null}
+        </div>
+      </div>
+    </article>
   )
 }

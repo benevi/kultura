@@ -35,6 +35,8 @@ import {
   SalaProfileFavorites,
   SalaProfileInvite,
   SalaProfileCta,
+  SalaProfileLinkButton,
+  SalaProfileReview,
 } from '@/components/profile/sala/SalaProfile'
 import { AVATAR_COLORS } from '@/lib/constants/avatarColors'
 
@@ -210,5 +212,47 @@ describe('SalaProfileInvite y SalaProfileCta (P3)', () => {
     const section = screen.getByRole('region', { name: '¿Y la tuya?' })
     expect(within(section).getByRole('heading', { level: 2 })).toHaveTextContent('¿Y la tuya?')
     expect(within(section).getByRole('link', { name: 'Crea tu colección' })).toHaveAttribute('href', '/login?mode=register')
+  })
+})
+
+describe('SalaProfileReview (P4)', () => {
+  const base = {
+    username: 'benevi',
+    avatarColor: 'orange',
+    avatarInitials: 'BE',
+    profileHref: '/u/benevi',
+    title: 'Dune',
+    poster: null,
+    format: 'movie' as const,
+    formatLabel: 'Película',
+    year: 2021,
+  }
+
+  it('con nota: el h1 dice de quién es y de qué obra; la nota escrita entera; el dueño enlaza a su perfil', () => {
+    const { container } = render(
+      <SalaProfileReview
+        {...base}
+        lead="Nota de @benevi para"
+        score={{ label: 'Nota', value: '9', of: 'de 10' }}
+        hint="Tu nota la ven tus amigos."
+      >
+        <SalaProfileLinkButton variant="primary" href="/media/movie/438631">Ver la ficha</SalaProfileLinkButton>
+      </SalaProfileReview>
+    )
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/^Nota de @benevi para\s*Dune$/)
+    expect(container.querySelector('[data-sala-review="rated"]')).not.toBeNull()
+    expect(container.querySelector('[data-sala-review-score]')).toHaveTextContent('Nota 9 de 10')
+    expect(screen.getByRole('link', { name: '@benevi' })).toHaveAttribute('href', '/u/benevi')
+    expect(screen.getByRole('link', { name: 'Ver la ficha' })).toHaveAttribute('href', '/media/movie/438631')
+    expect(screen.getByText('Película · 2021')).toBeInTheDocument()
+    expect(screen.getByText('Tu nota la ven tus amigos.')).toBeInTheDocument()
+  })
+
+  it('sin nota (la genérica): el h1 es solo la obra, con su línea, y no hay bloque de nota', () => {
+    const { container } = render(<SalaProfileReview {...base} lead={null} score={null} text="Mira la ficha de Dune." />)
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/^Dune$/)
+    expect(container.querySelector('[data-sala-review="generic"]')).not.toBeNull()
+    expect(container.querySelector('[data-sala-review-score]')).toBeNull()
+    expect(screen.getByText('Mira la ficha de Dune.')).toBeInTheDocument()
   })
 })

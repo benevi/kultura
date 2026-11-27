@@ -1,5 +1,5 @@
 /**
- * Perfil con «Sala» (fase 8.5 P1, P2 y P3): la cabecera de persona (franja, avatar
+ * Perfil con «Sala» (fase 8.5 P1, P2, P3 y P4): la cabecera de persona (franja, avatar
  * y `h1` con el @nombre como rótulo), los números en una fila, «Viendo ahora»
  * y «Últimos completados» con `SalaRow`/`SalaWorkCard`, y los estados de
  * biblioteca vacía. Sin «Pendientes» y sin editar la bio en sitio: el dueño
@@ -14,6 +14,8 @@
  * Elden Ring pendiente y Matrix completada; `lucia_lee` es su amiga y tiene
  * Matrix completada; `benevi` no tiene nada en su biblioteca ni relación con
  * él; a `nora_pide` le ha pedido amistad y `pau_pide` se la ha pedido a él.
+ * `benevi` tiene una lista pública, «Imprescindibles» (P3). P4: la nota
+ * pública `/u/…/r/…` (Matrix, 8 sobre 10, de `a11y_tester` y de `lucia_lee`).
  * Las escrituras del Supabase simulado no guardan nada: al recargar, todo
  * vuelve a como estaba.
  */
@@ -64,6 +66,19 @@ test.describe("sin la cookie de prueba", () => {
         links.map((l) => (l as HTMLLinkElement).href).filter((href) => /sala/i.test(href))
       );
       expect(salaSheets, `hojas de «Sala» en /u de hoy (${signedIn ? "con" : "sin"} sesión)`).toEqual([]);
+    }
+  });
+
+  test("/r de hoy, con y sin sesión, sin «Sala» ni sus hojas (P4)", async ({ page, context }) => {
+    for (const signedIn of [true, false]) {
+      if (!signedIn) await context.clearCookies();
+      await open(page, "/es/u/lucia_lee/r/movie/603");
+      await expect(page.locator("[data-sala-profile]")).toHaveCount(0);
+      await expect(page.getByRole("heading", { level: 1 })).toContainText("Matrix");
+      const salaSheets = await page.$$eval('link[rel="stylesheet"]', (links) =>
+        links.map((l) => (l as HTMLLinkElement).href).filter((href) => /sala/i.test(href))
+      );
+      expect(salaSheets, `hojas de «Sala» en /r de hoy (${signedIn ? "con" : "sin"} sesión)`).toEqual([]);
     }
   });
 });
@@ -317,11 +332,7 @@ test.describe("/u con «Sala» (P3)", () => {
     test("anónimo: una lista pública con su fila y «Ver lista»", async ({ page }) => {
       await openPublic(page, "/es/u/benevi");
       const lists = page.locator("[data-sala-profile-lists]");
-      // Si el Supabase simulado no resuelve la consulta anidada, la página dice que no hay listas: las dos salidas valen.
-      if ((await lists.count()) === 0) {
-        await expect(page.locator('[data-sala-profile-state="lists-empty"]')).toBeVisible();
-        return;
-      }
+      await expect(page.locator('[data-sala-profile-state="lists-empty"]')).toHaveCount(0);
       await expect(lists.getByRole("heading", { level: 2, name: es.collection.publicLists })).toBeVisible();
       await expect(lists.getByRole("heading", { level: 3, name: "Imprescindibles" })).toBeVisible();
       await expect(lists.getByRole("link", { name: /Ver lista Imprescindibles/ })).toHaveAttribute("href", /\/es\/u\/benevi\/l\//);
@@ -332,7 +343,9 @@ test.describe("/u con «Sala» (P3)", () => {
       await openPublic(page, "/es/u/benevi?ref=benevi&inv=x");
       await expectNoHorizontalScroll(page, 320);
       const stops = await walkTab(page, 40);
-      const bad = stops.filter((s) => !s.visible || !s.indicator);
+      // Las tarjetas de la lista pública llevan el anillo en `::after`, como en Inicio.
+      const titles = new Set(await page.locator(`${PUBLIC} [data-sala-card] a`).allTextContents());
+      const bad = stops.filter((s) => !s.visible || (!s.indicator && !(s.tag === "a" && titles.has(s.name))));
       expect(bad, "paradas tapadas o sin foco visible").toEqual([]);
       await expectNoBlockingViolations(page, "/u anónimo a 320 px");
     });
@@ -371,6 +384,80 @@ test.describe("/u con «Sala» (P3)", () => {
       await expect(page.getByRole("region", { name: es.collection.favorites }).getByRole("listitem")).not.toHaveCount(0);
       await expectNoHorizontalScroll(page, 375);
       await expectNoBlockingViolations(page, "/u propio con «Sala» a 375 px");
+    });
+  });
+});
+
+/**
+ * Fase 8.5 P4: la nota pública `/u/…/r/…` con «Sala». Sin cuenta y sin el
+ * enlace firmado, la página genérica (sin nota), como hoy; con sesión y
+ * permiso, la nota en la escala de su dueño y la barra de la app.
+ */
+test.describe("/r con «Sala» (P4)", () => {
+  const RATING = '[data-sala-profile="rating"]';
+
+  async function openRating(page: Page, path: string) {
+    await open(page, path);
+    await expect(page.locator(RATING)).toBeVisible();
+  }
+
+  test.describe("sin sesión", () => {
+    test.beforeEach(async ({ context, baseURL }) => {
+      await context.clearCookies();
+      await salaCookie(context, baseURL!);
+    });
+
+    test("anónimo sin firma: la genérica, sin nota; la obra como h1, «Ver la ficha», el perfil y una sola llamada a registrarse; axe limpio", async ({ page }) => {
+      await openRating(page, "/es/u/lucia_lee/r/movie/603");
+      const h1 = page.getByRole("heading", { level: 1 });
+      await expect(h1).toHaveCount(1);
+      await expect(h1).toHaveText("Matrix");
+      // Privacidad: sin cuenta ni firma no se ve la nota (hoy tampoco).
+      await expect(page.locator("[data-sala-review-score]")).toHaveCount(0);
+      await expect(page.locator('[data-sala-review="generic"]')).toBeVisible();
+      await expect(page.getByRole("link", { name: es.share.page.viewTitle })).toHaveAttribute("href", "/es/media/movie/603");
+      await expect(page.getByRole("link", { name: "@lucia_lee", exact: true })).toHaveAttribute("href", "/es/u/lucia_lee");
+      await expect(page.getByRole("region", { name: es.collection.ctaTitle })).toBeVisible();
+      await expect(page.locator('main a[href*="mode=register"]')).toHaveCount(1);
+      await expectNoBlockingViolations(page, "/r anónimo con «Sala»");
+    });
+
+    test("teclado y 320 px: cada parada a la vista y con foco visible, sin scroll horizontal", async ({ page }) => {
+      await page.setViewportSize({ width: 320, height: 800 });
+      await openRating(page, "/es/u/benevi/r/movie/550");
+      await expectNoHorizontalScroll(page, 320);
+      const stops = await walkTab(page, 30);
+      const bad = stops.filter((s) => !s.visible || !s.indicator);
+      expect(bad, "paradas tapadas o sin foco visible").toEqual([]);
+      await expectNoBlockingViolations(page, "/r anónimo a 320 px");
+    });
+  });
+
+  test.describe("con sesión", () => {
+    test.beforeEach(async ({ context, baseURL }) => {
+      await salaCookie(context, baseURL!);
+    });
+
+    test("de otra persona: la barra de la app, el h1 dice de quién es la nota y la nota en su escala; «Puntúalo tú», sin registrarse; axe limpio", async ({ page }) => {
+      await openRating(page, "/es/u/lucia_lee/r/movie/603");
+      await expect(page.getByRole("navigation", { name: es.nav.primaryNav }).first().getByRole("link", { name: es.nav.libraryTab })).toBeAttached();
+      await expect(page.getByRole("heading", { level: 1 })).toHaveText(/^Nota de @lucia_lee para\s*Matrix$/);
+      await expect(page.locator("[data-sala-review-score]")).toHaveText(/Nota\s*(4\s*de 5|8\s*de 10)/);
+      await expect(page.getByRole("link", { name: es.share.page.ctaRate })).toHaveAttribute("href", "/es/media/movie/603");
+      await expect(page.locator('main a[href*="mode=register"]')).toHaveCount(0);
+      await expectNoBlockingViolations(page, "/r con sesión y «Sala»");
+    });
+
+    test("propia a 375: la pista de quién la ve, botones de 44 px o más, sin scroll horizontal; axe limpio", async ({ page }) => {
+      await page.setViewportSize({ width: 375, height: 800 });
+      await openRating(page, "/es/u/a11y_tester/r/movie/603");
+      await expect(page.getByText(es.share.page.ownerHint)).toBeVisible();
+      for (const control of [page.getByRole("link", { name: es.share.page.ctaRate }), page.getByRole("link", { name: es.share.page.viewProfile.replace("{username}", "a11y_tester") })]) {
+        await expect(control).toBeVisible();
+        expect((await control.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+      }
+      await expectNoHorizontalScroll(page, 375);
+      await expectNoBlockingViolations(page, "/r propia con «Sala» a 375 px");
     });
   });
 });
