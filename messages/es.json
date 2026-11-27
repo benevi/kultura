@@ -388,7 +388,10 @@
       "ctaHint": "Gratis y sin anuncios.",
       "ctaRate": "Puntúalo tú",
       "ownerHint": "Tu nota la ven quienes ya pueden ver tu biblioteca (según Ajustes: tus amigos o cualquiera con cuenta) y quien tenga el enlace que compartes desde la ficha. Si pones tu biblioteca en «Solo yo», solo la ves tú.",
-      "posterAlt": "Portada de {title}"
+      "posterAlt": "Portada de {title}",
+      "salaLead": "Nota de @{username} para",
+      "salaScoreLabel": "Nota",
+      "salaScoreOf": "{scale, select, ten {de 10} other {de 5}}"
     },
     "og": {
       "ratedAlt": "@{username} le da {rating} a {title} en KULTURA",

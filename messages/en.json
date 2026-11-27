@@ -388,7 +388,10 @@
       "ctaHint": "Free and ad-free.",
       "ctaRate": "Rate it yourself",
       "ownerHint": "Your rating is visible to people who can already see your library (per Settings: your friends or anyone with an account) and to anyone with the link you share from the title page. If you set your library to “Only me”, only you can see it.",
-      "posterAlt": "Cover of {title}"
+      "posterAlt": "Cover of {title}",
+      "salaLead": "@{username}'s rating of",
+      "salaScoreLabel": "Rating",
+      "salaScoreOf": "{scale, select, ten {out of 10} other {out of 5}}"
     },
     "og": {
       "ratedAlt": "@{username} gives {title} {rating} on KULTURA",

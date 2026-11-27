@@ -63,13 +63,26 @@ function embed(row, parentTable, spec) {
     const target = related.find((r) => r.id === row[fkCol]);
     return target ? project(target, spec.table, spec.sub) : null;
   }
-  // Uno a muchos: filas del embebido que apuntan al padre.
-  const backCol = `${singular(parentTable)}_id`;
+  // Uno a muchos: filas del embebido que apuntan al padre. Con la pista de la
+  // clave (`lists!lists_owner_id_fkey`), la columna sale de ella (`owner_id`);
+  // sin pista, `<padre en singular>_id`.
+  const prefix = `${spec.table}_`;
+  const fromHint = spec.hint && spec.hint.startsWith(prefix) && spec.hint.endsWith("_fkey") ? spec.hint.slice(prefix.length, -5) : null;
+  const backCol = fromHint || `${singular(parentTable)}_id`;
   if (row.id !== undefined && related.some((r) => backCol in r)) {
-    return related.filter((r) => r[backCol] === row.id).map((r) => project(r, spec.table, spec.sub));
+    const filters = embedFilters.get(spec.alias) ?? [];
+    return related
+      .filter((r) => r[backCol] === row.id && filters.every(([col, raw]) => matches(r, col, raw)))
+      .map((r) => project(r, spec.table, spec.sub));
   }
   return null;
 }
+
+/**
+ * Filtros sobre un embebido de primer nivel (`lists.is_public=eq.true`): se
+ * aplican a sus filas, como PostgREST. Los pone `rest()` en cada petición.
+ */
+let embedFilters = new Map();
 
 function project(row, table, select) {
   if (!select || select === "*") return { ...row };
@@ -156,8 +169,14 @@ function rest(req, res, url) {
   }
 
   let rows = (tables[name] ?? []).slice();
+  embedFilters = new Map();
   for (const [key, raw] of url.searchParams) {
     if (RESERVED.has(key)) continue;
+    const dot = key.indexOf(".");
+    if (dot > 0 && !key.slice(dot + 1).includes(".")) {
+      const alias = key.slice(0, dot);
+      embedFilters.set(alias, [...(embedFilters.get(alias) ?? []), [key.slice(dot + 1), raw]]);
+    }
     rows = rows.filter((r) => matches(r, key, raw));
   }
   for (const key of ["or", "and"]) {
