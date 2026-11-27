@@ -12,6 +12,8 @@ const h = vi.hoisted(() => {
   return {
     user: null as { id: string } | null,
     list: null as unknown,
+    blocked: false,
+    blockedCalls: [] as unknown[][],
     permanentRedirect: vi.fn((url: string) => {
       throw new Error(`308 ${url}`)
     }),
@@ -39,6 +41,12 @@ vi.mock('@/lib/supabase/server', () => ({
 }))
 vi.mock('@/lib/social/public-collection', () => ({
   getPublicList: async () => h.list,
+}))
+vi.mock('@/lib/social/block-check', () => ({
+  viewerBlockedWith: async (...args: unknown[]) => {
+    h.blockedCalls.push(args)
+    return h.blocked
+  },
 }))
 vi.mock('@/components/social/ReportButton', () => ({ ReportButton: h.M.ReportButton }))
 vi.mock('@/components/collection/PublicCollection', () => ({
@@ -76,6 +84,8 @@ beforeEach(() => {
   vi.clearAllMocks()
   h.user = null
   h.list = LIST
+  h.blocked = false
+  h.blockedCalls = []
 })
 
 describe('/u/[username]/l/[id]', () => {
@@ -106,5 +116,26 @@ describe('/u/[username]/l/[id]', () => {
     // Con sesión, sin la cabecera pública de «Registrarse».
     expect(all(tree, h.M.Header)).toHaveLength(0)
     expect(all(tree, h.M.SignedInBar)).toHaveLength(1)
+  })
+
+  it('sin sesión no pregunta por bloqueos', async () => {
+    await page()
+    expect(h.blockedCalls).toHaveLength(0)
+  })
+
+  it('con un bloqueo entre quien mira y el dueño (en cualquier sentido) → 404', async () => {
+    h.user = { id: 'v' }
+    h.blocked = true
+    await expect(page()).rejects.toThrow('NOT_FOUND')
+    expect(h.blockedCalls[0]?.slice(1)).toEqual(['v', 'o1'])
+  })
+
+  it('con un bloqueo, el nombre de la lista no sale en los metadatos', async () => {
+    h.user = { id: 'v' }
+    h.blocked = true
+    const { generateMetadata } = await import('@/app/[locale]/u/[username]/l/[id]/page')
+    const meta = await generateMetadata({ params: Promise.resolve({ locale: 'es', username: 'ana', id: LIST.list.id }) })
+    expect(String(meta.title)).not.toContain('Top')
+    expect(meta.robots).toEqual({ index: false, follow: true })
   })
 })
