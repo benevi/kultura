@@ -7,7 +7,7 @@ import { ListItemsSection } from './ListItemsSection'
 import { ListMembersSection } from './ListMembersSection'
 import { useListDetail } from './useListDetail'
 import { useListDescription } from './useListDescription'
-import { invitableFriends, type ListFriend } from './list-detail-utils'
+import { canSeeListMembers, invitableFriends, type ListFriend } from './list-detail-utils'
 
 interface ListDetailProps {
   list: List
@@ -31,12 +31,15 @@ export function ListDetail({
   const ranked = list.template === 'ranking'
   const canOrder = canEdit
   const isOwner = list.ownerId === currentUserId
+  // Miembros: solo para el dueño y los miembros (el servidor ya no los manda
+  // a los demás; aquí tampoco se pinta la sección vacía).
+  const showMembers = canSeeListMembers(list, detail.members, currentUserId)
 
   return (
     <div className="flex flex-col gap-10">
       <ListHeader
         list={list}
-        members={detail.members}
+        members={showMembers ? detail.members : []}
         itemCount={detail.items.length}
         isOwner={isOwner}
         canEdit={canEdit}
@@ -70,8 +73,8 @@ export function ListDetail({
         onRemoveItem={detail.handleRemoveItem}
       />
 
-      {/* Miembros (solo listas colaborativas) */}
-      {list.isCollaborative && (
+      {/* Miembros (solo listas colaborativas, y solo para su dueño y sus miembros) */}
+      {list.isCollaborative && showMembers && (
         <ListMembersSection
           list={list}
           members={detail.members}
