@@ -31,7 +31,7 @@ import { IconDice } from '@/components/icons'
 import { pickIndex } from '@/lib/home/tonight-pick'
 import type { TonightPick } from '@/lib/home/tonight'
 import type { MediaType } from '@/types/media'
-import { SalaHomeRow, ROW_CARD_SIZES } from './SalaHomeRow'
+import { SalaRow as SalaHomeRow, ROW_CARD_SIZES } from '@/components/sala/SalaRow'
 
 function hrefOf(item: TonightPick): string {
   return `/media/${item.type}/${item.mediaId.split('_').slice(1).join('_')}`

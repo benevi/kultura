@@ -27,6 +27,29 @@ import { isNotMigrated } from '@/lib/account/account-state'
 import type { DbFriendship } from '@/types/supabase'
 import { getTranslations } from 'next-intl/server'
 import { PushOffer } from '@/components/push/PushOffer'
+import { salaPerfilEnabled } from '@/lib/flags/sala'
+import {
+  SalaProfileEditLazy,
+  SalaProfileGenresLazy,
+  SalaProfileHeaderLazy,
+  SalaProfileNumbersLazy,
+  SalaProfileRowLazy,
+  SalaProfileSocialLazy,
+  SalaProfileStateLazy,
+} from '@/components/profile/sala/SalaProfileLazy'
+import { SalaHomeActivitySkeletonLazy } from '@/components/home/sala/SalaHomeLazy'
+
+/**
+ * Columnas de `users` que pinta el perfil. Antes `select('*')`: traía de otra
+ * persona lo que la página no usa (`preferred_locale`); minimización (P1).
+ */
+const PROFILE_COLUMNS = 'id, username, avatar_color, avatar_initials, avatar_icon, bio, created_at, library_visibility'
+
+/** Clave plural de `media` para cada formato ("movies", "tvs"…), para los números de «Sala». */
+const PLURAL_KEY: Record<string, string> = {
+  movie: 'movies', tv: 'tvs', anime: 'animes', manga: 'mangas',
+  book: 'books', comic: 'comics', game: 'games',
+}
 
 interface Props {
   params: Promise<{ locale: string; username: string }>
@@ -72,7 +95,7 @@ export default async function ProfilePage({ params }: Props) {
   // Perfil del usuario visitado
   const { data: profileUser } = await supabase
     .from('users')
-    .select('*')
+    .select(PROFILE_COLUMNS)
     .eq('username', username)
     .maybeSingle()
 
@@ -103,6 +126,8 @@ export default async function ProfilePage({ params }: Props) {
   }
 
   const libraryVisible = isOwnProfile || (await canReadLibrary(supabase, profileUser.id))
+  // Fase 8.5 P1: el perfil en «Sala» (bandera SALA_PERFIL: 0, prueba o 1).
+  const sala = await salaPerfilEnabled()
   const visibility = (profileUser as { library_visibility?: string }).library_visibility
 
   const EMPTY_STATS = { totalItems: 0, totalCompleted: 0, totalInProgress: 0, byType: [], topGenres: [] }
@@ -111,7 +136,8 @@ export default async function ProfilePage({ params }: Props) {
     libraryVisible ? getUserStats(profileUser.id) : Promise.resolve(EMPTY_STATS),
     libraryVisible ? getRecentLibraryByStatus(profileUser.id, 'completed', 8) : Promise.resolve([]),
     libraryVisible ? getRecentLibraryByStatus(profileUser.id, 'in_progress', 8) : Promise.resolve([]),
-    libraryVisible ? getRecentLibraryByStatus(profileUser.id, 'pending', 8) : Promise.resolve([]),
+    // «Sala» no enseña «Pendientes» (decisión de Víctor del 26-11-2026): ni se consulta.
+    libraryVisible && !sala ? getRecentLibraryByStatus(profileUser.id, 'pending', 8) : Promise.resolve([]),
     // Solo el dueño ve el botón; para el resto ni se consulta.
     isOwnProfile ? hasPublicLists(profileUser.id) : Promise.resolve(false),
   ])
@@ -138,6 +164,100 @@ export default async function ProfilePage({ params }: Props) {
   }))
 
   const hasAnyContent = completedItems.length > 0 || inProgressItems.length > 0 || pendingItems.length > 0
+
+  if (sala) {
+    const tm = await getTranslations('media')
+    const joinedAt = profileUser.created_at ? new Date(profileUser.created_at) : null
+    const memberSince =
+      joinedAt && Number.isFinite(joinedAt.getTime())
+        ? `${t('memberSince')} ${new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' }).format(joinedAt)}`
+        : null
+    const numbers = stats.totalItems > 0
+      ? [
+          { value: stats.totalItems, label: t('totalItems', { count: stats.totalItems }) },
+          { value: stats.totalCompleted, label: t('completed', { count: stats.totalCompleted }) },
+          { value: stats.totalInProgress, label: t('inProgress') },
+          ...stats.byType
+            .filter((s) => s.total > 0 && s.type in PLURAL_KEY)
+            .map((s) => ({ value: s.total, label: tm(s.total === 1 ? s.type : PLURAL_KEY[s.type]).toLocaleLowerCase(locale) })),
+        ]
+      : []
+    const empty = libraryVisible && completedItems.length === 0 && inProgressItems.length === 0
+    return (
+      <main data-sala-profile="" className="page-grid [&>*]:max-w-6xl py-6 md:py-8 flex flex-col gap-8 md:gap-10">
+        <SalaProfileHeaderLazy
+          username={profileUser.username}
+          avatarColor={profileUser.avatar_color}
+          avatarInitials={profileUser.avatar_initials}
+          avatarIcon={profileUser.avatar_icon ?? null}
+          memberSince={memberSince}
+          bio={profileUser.bio}
+        >
+          {/* P2: amistad, bloquear y denunciar en «Sala». El aviso de push, como hoy. */}
+          {currentUser && !isOwnProfile ? (
+            <>
+              <SalaProfileSocialLazy
+                username={profileUser.username}
+                targetUserId={profileUser.id}
+                initialStatus={friendshipStatus}
+                friendshipId={friendshipId}
+              />
+              <PushOffer />
+            </>
+          ) : null}
+          {isOwnProfile ? (
+            <>
+              {canShareCollection ? (
+                <ShareLinkButton
+                  path={`/u/${profileUser.username}`}
+                  title={tc('heading', { username: profileUser.username })}
+                  label={tc('shareCollection')}
+                  skin="sala"
+                />
+              ) : null}
+              <SalaProfileEditLazy label={t('editProfile')} />
+            </>
+          ) : null}
+        </SalaProfileHeaderLazy>
+
+        {libraryVisible ? <SalaProfileNumbersLazy label={tc('statsLabel')} items={numbers} /> : null}
+
+        {/* Lo último que ha hecho tu amigo, con la vista de Inicio en «Sala» (P2). */}
+        {currentUser && friendshipStatus === 'accepted' && libraryVisible && (
+          <Suspense fallback={<SalaHomeActivitySkeletonLazy />}>
+            <FriendProfileActivity viewerId={currentUser.id} friendId={profileUser.id} locale={locale} sala />
+          </Suspense>
+        )}
+
+        <SalaProfileRowLazy title={t('watchingNow')} name="watching" items={inProgressItems} />
+        <SalaProfileRowLazy title={t('lastCompleted')} name="completed" items={completedItems} />
+
+        {!libraryVisible ? (
+          <SalaProfileStateLazy
+            name="hidden"
+            title={t('libraryHidden', { username: profileUser.username })}
+            description={visibility === 'friends' ? t('libraryHiddenFriends') : t('libraryHiddenPrivate')}
+          />
+        ) : null}
+
+        {empty ? (
+          <SalaProfileStateLazy
+            name="empty"
+            title={isOwnProfile ? t('emptyOwn') : t('emptyOther', { username: profileUser.username })}
+            description={isOwnProfile ? t('emptyOwnHint') : t('emptyOtherHint')}
+          />
+        ) : null}
+
+        {/* Géneros favoritos con su número a la vista (P2). */}
+        {libraryVisible ? (
+          <SalaProfileGenresLazy
+            title={t('topGenres')}
+            items={stats.topGenres.slice(0, 8).map(({ genre, count }) => ({ genre, count: t('genreCount', { count }) }))}
+          />
+        ) : null}
+      </main>
+    )
+  }
 
   return (
     <main className="page-grid [&>*]:max-w-4xl py-8 flex flex-col gap-10">

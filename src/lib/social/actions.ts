@@ -9,9 +9,13 @@
 
 import { apiFetch } from '@/lib/api/client'
 
-/** Envía una solicitud de amistad al usuario con el id dado */
-export async function sendFriendRequest(receiverId: string): Promise<void> {
-  await apiFetch('/api/friends', { method: 'POST', json: { receiverId } })
+/**
+ * Envía una solicitud de amistad al usuario con el id dado. Devuelve el id de
+ * la amistad creada (para poder cancelarla sin recargar), si la API lo trae.
+ */
+export async function sendFriendRequest(receiverId: string): Promise<string | undefined> {
+  const row = await apiFetch<{ id?: unknown } | null>('/api/friends', { method: 'POST', json: { receiverId } })
+  return typeof row?.id === 'string' ? row.id : undefined
 }
 
 /** Acepta o rechaza una solicitud de amistad */

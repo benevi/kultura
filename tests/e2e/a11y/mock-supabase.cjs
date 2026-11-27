@@ -63,13 +63,26 @@ function embed(row, parentTable, spec) {
     const target = related.find((r) => r.id === row[fkCol]);
     return target ? project(target, spec.table, spec.sub) : null;
   }
-  // Uno a muchos: filas del embebido que apuntan al padre.
-  const backCol = `${singular(parentTable)}_id`;
+  // Uno a muchos: filas del embebido que apuntan al padre. Con la pista de la
+  // clave (`lists!lists_owner_id_fkey`), la columna sale de ella (`owner_id`);
+  // sin pista, `<padre en singular>_id`.
+  const prefix = `${spec.table}_`;
+  const fromHint = spec.hint && spec.hint.startsWith(prefix) && spec.hint.endsWith("_fkey") ? spec.hint.slice(prefix.length, -5) : null;
+  const backCol = fromHint || `${singular(parentTable)}_id`;
   if (row.id !== undefined && related.some((r) => backCol in r)) {
-    return related.filter((r) => r[backCol] === row.id).map((r) => project(r, spec.table, spec.sub));
+    const filters = embedFilters.get(spec.alias) ?? [];
+    return related
+      .filter((r) => r[backCol] === row.id && filters.every(([col, raw]) => matches(r, col, raw)))
+      .map((r) => project(r, spec.table, spec.sub));
   }
   return null;
 }
+
+/**
+ * Filtros sobre un embebido de primer nivel (`lists.is_public=eq.true`): se
+ * aplican a sus filas, como PostgREST. Los pone `rest()` en cada petición.
+ */
+let embedFilters = new Map();
 
 function project(row, table, select) {
   if (!select || select === "*") return { ...row };
@@ -119,6 +132,22 @@ function matches(row, key, raw) {
 
 const RESERVED = new Set(["select", "order", "limit", "offset", "or", "and", "on_conflict", "columns"]);
 
+/**
+ * `or=(…)` y `and(…)` de PostgREST, con condiciones `col.op.valor` dentro
+ * (`.or('and(requester_id.eq.A,receiver_id.eq.B),and(…)')` de las amistades).
+ * Sin esto el filtro se ignoraba y cualquiera salía como amigo del usuario de
+ * prueba (fase 8.5 P2). Una condición sobre un embebido sigue sin filtrar.
+ */
+function logic(row, expr) {
+  const m = expr.match(/^(and|or)\((.*)\)$/s);
+  if (!m) {
+    const dot = expr.indexOf(".");
+    return dot < 0 ? true : matches(row, expr.slice(0, dot), expr.slice(dot + 1));
+  }
+  const parts = splitTop(m[2]);
+  return m[1] === "and" ? parts.every((p) => logic(row, p)) : parts.some((p) => logic(row, p));
+}
+
 function rest(req, res, url) {
   const [, , , name, fn] = url.pathname.split("/"); // /rest/v1/<tabla> | /rest/v1/rpc/<fn>
   const prefer = req.headers.prefer || "";
@@ -140,9 +169,19 @@ function rest(req, res, url) {
   }
 
   let rows = (tables[name] ?? []).slice();
+  embedFilters = new Map();
   for (const [key, raw] of url.searchParams) {
     if (RESERVED.has(key)) continue;
+    const dot = key.indexOf(".");
+    if (dot > 0 && !key.slice(dot + 1).includes(".")) {
+      const alias = key.slice(0, dot);
+      embedFilters.set(alias, [...(embedFilters.get(alias) ?? []), [key.slice(dot + 1), raw]]);
+    }
     rows = rows.filter((r) => matches(r, key, raw));
+  }
+  for (const key of ["or", "and"]) {
+    const raw = url.searchParams.get(key);
+    if (raw) rows = rows.filter((r) => logic(r, `${key}${raw}`));
   }
   const total = rows.length;
   const limit = Number(url.searchParams.get("limit") || 0);

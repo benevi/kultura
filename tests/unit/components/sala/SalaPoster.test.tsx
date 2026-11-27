@@ -132,8 +132,10 @@ describe("SalaPoster", () => {
     });
 
     it("el rótulo lleva el idioma del título", () => {
-      render(<SalaPoster alt="" title="千と千尋の神隠し" titleLang="ja" sizes="160px" />);
-      expect(screen.getByText("千と千尋の神隠し")).toHaveAttribute("lang", "ja");
+      const { container } = render(<SalaPoster alt="" title="千と千尋の神隠し" titleLang="ja" sizes="160px" />);
+      expect(container.querySelector("[data-sala-title-text]")).toHaveAttribute("lang", "ja");
+      // Partido sin espacios: también el texto oculto con el título tal cual (nombre accesible).
+      for (const el of screen.getAllByText("千と千尋の神隠し")) expect(el).toHaveAttribute("lang", "ja");
     });
 
     it("el rótulo es el de la ficha, compuesto para una caja pequeña: anchura por longitud y tamaño según la caja", () => {

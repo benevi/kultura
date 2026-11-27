@@ -110,3 +110,14 @@ export function salaDescubrirEnabled(): Promise<boolean> {
 export function salaInicioEnabled(): Promise<boolean> {
   return salaFlagEnabled(process.env.SALA_INICIO);
 }
+
+/**
+ * Perfil en «Sala» (`SALA_PERFIL`, fase 8.5 P1): `/profile/[username]` y, desde
+ * P3, las páginas públicas `/u/[username]` y `/u/[username]/r/…`. La misma
+ * cookie y la misma lógica que las otras: con `0` el perfil sale como hoy, y
+ * con `0` o `1` no se lee ninguna cookie (las públicas pueden decidirlo con
+ * `salaFlagMode(process.env.SALA_PERFIL) === "on"`, como `media-anonima`).
+ */
+export function salaPerfilEnabled(): Promise<boolean> {
+  return salaFlagEnabled(process.env.SALA_PERFIL);
+}

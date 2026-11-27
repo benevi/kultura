@@ -391,7 +391,10 @@
       "ctaHint": "Free and ad-free.",
       "ctaRate": "Rate it yourself",
       "ownerHint": "Your rating is visible to people who can already see your library (per Settings: your friends or anyone with an account) and to anyone with the link you share from the title page. If you set your library to “Only me”, only you can see it.",
-      "posterAlt": "Cover of {title}"
+      "posterAlt": "Cover of {title}",
+      "salaLead": "@{username}'s rating of",
+      "salaScoreLabel": "Rating",
+      "salaScoreOf": "{scale, select, ten {out of 10} other {out of 5}}"
     },
     "og": {
       "ratedAlt": "@{username} gives {title} {rating} on KULTURA",
@@ -947,7 +950,22 @@
     "leaveGroup": "Leave",
     "groupError": "We couldn't create the group. Try again in a moment.",
     "joinGroupError": "We couldn't add you to the group. Try again in a moment.",
-    "copyProfileLink": "Copy my profile link"
+    "copyProfileLink": "Copy my profile link",
+    "cancelRequest": "Cancel request",
+    "requestReceived": "They sent you a friend request.",
+    "youAreFriends": "You are friends.",
+    "unfriend": "Unfriend",
+    "unfriendConfirmTitle": "Unfriend {username}?",
+    "unfriendConfirmBody": "You will stop seeing what you each share only with friends and won't be able to message each other. They are not notified. To be friends again, one of you will have to send a new request.",
+    "nowFriends": "You are now friends.",
+    "requestDeclined": "You declined the request.",
+    "requestCancelled": "You canceled the request.",
+    "unfriended": "You are no longer friends.",
+    "sendError": "We couldn't send the request. Try again.",
+    "acceptError": "We couldn't accept the request. Try again.",
+    "declineError": "We couldn't decline the request. Try again.",
+    "cancelError": "We couldn't cancel the request. Try again.",
+    "unfriendError": "We couldn't remove the friendship. Try again."
   },
   "invite": {
     "bannerTitle": "{username} invites you to KULTURA",
@@ -2198,6 +2216,7 @@
     "favoritesEmpty": "Rate the titles in your library and your top four will show up here, one per format.",
     "favoritesEmptyAction": "Rate titles",
     "favoriteScore": "{score, number} out of 5",
+    "favoriteRating": "{scale, select, ten {Rating: {value} out of 10} other {Rating: {value} out of 5}}",
     "watching": "In progress",
     "publicLists": "Public lists",
     "lockedTitle": "Sign in to see {username}'s library",

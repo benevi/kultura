@@ -11,6 +11,8 @@
 const USER_ID = "00000000-0000-4000-8000-000000000001";
 const FRIEND_ID = "00000000-0000-4000-8000-000000000002";
 const LIST_ID = "00000000-0000-4000-8000-0000000000a1";
+/** Lista pública de benevi (fase 8.5 P3): `/u/benevi/l/…` en `pages.spec.ts`. */
+const PUBLIC_LIST_ID = "00000000-0000-4000-8000-0000000000a2";
 const GROUP_ID = "00000000-0000-4000-8000-0000000000b1";
 const CONVERSATION_ID = "00000000-0000-4000-8000-0000000000c1";
 const NOW = "2026-10-01T10:00:00.000Z";
@@ -48,6 +50,27 @@ const benevi = {
   avatar_color: "orange",
   avatar_initials: "BE",
   library_visibility: "public",
+};
+
+/**
+ * Fase 8.5 P2: los otros dos estados de amistad del perfil. A `nora_pide` le
+ * ha pedido amistad el usuario de prueba; `pau_pide` se la ha pedido a él.
+ */
+const nora = {
+  ...user,
+  id: "00000000-0000-4000-8000-000000000004",
+  email: "nora@example.com",
+  username: "nora_pide",
+  avatar_color: "green",
+  avatar_initials: "NO",
+};
+const pau = {
+  ...user,
+  id: "00000000-0000-4000-8000-000000000005",
+  email: "pau@example.com",
+  username: "pau_pide",
+  avatar_color: "teal",
+  avatar_initials: "PA",
 };
 
 const MOVIES = [
@@ -159,8 +182,14 @@ function watchProviders(id) {
   return { id, results: PROVIDERS[id] ?? {} };
 }
 
+/**
+ * Solo con ficha (no sale en listas ni búsquedas): un título japonés, sin
+ * espacios, para el nombre accesible del rótulo (`sala-ficha.spec.ts`).
+ */
+const DETAIL_ONLY = { 129: { id: 129, title: "千と千尋の神隠し", year: 2001 } };
+
 function tmdbDetail(id) {
-  const base = tmdbResults.find((m) => m.id === id) ?? tmdbMovie({ id, title: `Título ${id}`, year: 2020 }, 0);
+  const base = tmdbResults.find((m) => m.id === id) ?? tmdbMovie(DETAIL_ONLY[id] ?? { id, title: `Título ${id}`, year: 2020 }, 0);
   return {
     ...base,
     runtime: 139,
@@ -267,16 +296,36 @@ const group = {
 
 /** Tablas de PostgREST. Lo que no está aquí responde vacío. */
 const tables = {
-  users: [user, friend, benevi],
+  users: [user, friend, benevi, nora, pau],
   media: mediaRows,
-  lists: [list],
-  list_items: mediaRows.slice(0, 2).map((m, i) => ({
-    id: `00000000-0000-4000-8000-0000000000d${i}`,
-    list_id: LIST_ID,
-    media_id: m.id,
-    added_by: USER_ID,
-    added_at: NOW,
-  })),
+  lists: [
+    list,
+    {
+      id: PUBLIC_LIST_ID,
+      owner_id: benevi.id,
+      name: "Imprescindibles",
+      media_type: "movie",
+      is_collaborative: false,
+      is_public: true,
+      created_at: NOW,
+    },
+  ],
+  list_items: [
+    ...mediaRows.slice(0, 2).map((m, i) => ({
+      id: `00000000-0000-4000-8000-0000000000d${i}`,
+      list_id: LIST_ID,
+      media_id: m.id,
+      added_by: USER_ID,
+      added_at: NOW,
+    })),
+    {
+      id: "00000000-0000-4000-8000-0000000000d9",
+      list_id: PUBLIC_LIST_ID,
+      media_id: "movie_550",
+      added_by: benevi.id,
+      added_at: NOW,
+    },
+  ],
   // Matrix ya está en la biblioteca: su ficha enseña "Actualizar" y "Quitar".
   user_media: [
     {
@@ -335,6 +384,20 @@ const tables = {
       status: "accepted",
       created_at: NOW,
     },
+    {
+      id: "00000000-0000-4000-8000-0000000000e2",
+      requester_id: USER_ID,
+      receiver_id: nora.id,
+      status: "pending",
+      created_at: NOW,
+    },
+    {
+      id: "00000000-0000-4000-8000-0000000000e3",
+      requester_id: pau.id,
+      receiver_id: USER_ID,
+      status: "pending",
+      created_at: NOW,
+    },
   ],
   conversations: [{ id: CONVERSATION_ID, created_at: NOW, last_message_at: NOW }],
   conversation_members: [
@@ -356,6 +419,7 @@ module.exports = {
   USER_ID,
   FRIEND_ID,
   LIST_ID,
+  PUBLIC_LIST_ID,
   GROUP_ID,
   CONVERSATION_ID,
   NOW,

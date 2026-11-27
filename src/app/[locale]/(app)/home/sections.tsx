@@ -108,6 +108,28 @@ const STATUS_KEY: Record<FeedEntry['status'], string> = {
   abandoned: 'activity.abandoned',
 }
 
+/** Los apuntes (con obra) como los pinta `SalaHomeActivity`: la fecha relativa ya escrita. */
+function toSalaEntries(entries: FeedEntry[], locale: string): SalaActivityEntry[] {
+  const now = Date.now()
+  return entries.map((entry) => {
+    const media = entry.media!
+    return {
+      id: entry.id,
+      status: entry.status,
+      username: entry.user.username,
+      avatarInitials: entry.user.avatar_initials,
+      avatarColor: entry.user.avatar_color,
+      mediaId: media.id,
+      mediaTitle: media.title,
+      mediaPoster: media.poster,
+      href: `/media/${media.type}/${media.id.split('_').slice(1).join('_')}`,
+      score: entry.score,
+      updatedAt: entry.updatedAt,
+      when: relativeTime(entry.updatedAt, locale, now),
+    }
+  })
+}
+
 /** `sala` (fase 8.5 I2b-2): los mismos apuntes, pintados con «Sala» (`SalaHomeActivity`). */
 export async function FriendsActivity({ userId, locale, sala = false }: { userId: string; locale: string; sala?: boolean }) {
   const t = await getTranslations('home')
@@ -122,26 +144,8 @@ export async function FriendsActivity({ userId, locale, sala = false }: { userId
 
   const visible = entries.filter((e) => e.media)
   if (sala) {
-    const now = Date.now()
-    const salaEntries: SalaActivityEntry[] = visible.map((entry) => {
-      const media = entry.media!
-      return {
-        id: entry.id,
-        status: entry.status,
-        username: entry.user.username,
-        avatarInitials: entry.user.avatar_initials,
-        avatarColor: entry.user.avatar_color,
-        mediaId: media.id,
-        mediaTitle: media.title,
-        mediaPoster: media.poster,
-        href: `/media/${media.type}/${media.id.split('_').slice(1).join('_')}`,
-        score: entry.score,
-        updatedAt: entry.updatedAt,
-        when: relativeTime(entry.updatedAt, locale, now),
-      }
-    })
     const state = visible.length > 0 ? 'list' : friendIds.length === 0 ? 'no-friends' : 'no-activity'
-    return <SalaHomeActivityLazy entries={salaEntries} state={state} />
+    return <SalaHomeActivityLazy entries={toSalaEntries(visible, locale)} state={state} />
   }
   return (
     <section aria-labelledby="friends-activity-title" className="flex flex-col gap-3">
@@ -242,10 +246,13 @@ export async function FriendProfileActivity({
   viewerId,
   friendId,
   locale,
+  sala = false,
 }: {
   viewerId: string
   friendId: string
   locale: string
+  /** Fase 8.5 P2 (`SALA_PERFIL`): los mismos apuntes con la vista de Inicio en «Sala». */
+  sala?: boolean
 }) {
   let entries: FeedEntry[]
   try {
@@ -254,6 +261,7 @@ export async function FriendProfileActivity({
     return null
   }
   if (entries.length === 0) return null
+  if (sala) return <SalaHomeActivityLazy entries={toSalaEntries(entries, locale)} state="list" />
   const t = await getTranslations('home')
   return (
     <section aria-labelledby="profile-activity-title" className="flex flex-col gap-3">

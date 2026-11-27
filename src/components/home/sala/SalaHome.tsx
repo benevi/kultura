@@ -58,7 +58,7 @@ import { SalaHomeProgress } from './SalaHomeProgress'
 import type { ContinueRowItem } from '@/components/home/ContinueRow'
 import type { CircleMediaItem } from '@/lib/social/circle'
 import type { MediaItem, MediaType } from '@/types/media'
-import { SalaHomeRow as Row, ROW_CARD_SIZES as SIZES } from './SalaHomeRow'
+import { SalaRow as Row, ROW_CARD_SIZES as SIZES } from '@/components/sala/SalaRow'
 
 /** Tarjetas de novedades por fila (como hoy). */
 const NEWS_PER_ROW = 8

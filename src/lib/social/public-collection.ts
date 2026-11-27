@@ -332,6 +332,11 @@ export async function viewerCanReadLibrary(supabase: SupabaseClient, ownerId: st
 
 export interface FavoriteItem extends PublicCollectionItem {
   score: number
+  /**
+   * La nota guardada (1–10). Con ella `/u` en «Sala» (P3) la escribe en la
+   * escala de su dueño («9 de 10» o «4,5 de 5»), no siempre «de 5».
+   */
+  rating10?: number
 }
 
 export interface FormatCount {
@@ -431,7 +436,7 @@ export async function getLibraryShowcase(supabase: SupabaseClient, ownerId: stri
   const candidates = (favRes.error ? [] : ((favRes.data ?? []) as unknown as ScoredRow[]))
     .map((r) => ({ r, score: rating10ToScore(storedRating10(r.rating10)) }))
     .filter(({ r, score }) => score !== null && r.media)
-    .map(({ r, score }) => ({ ...mapItem(r), score: score as number }))
+    .map(({ r, score }) => ({ ...mapItem(r), score: score as number, rating10: storedRating10(r.rating10) ?? undefined }))
   const watching = (watchRes.error ? [] : ((watchRes.data ?? []) as unknown as ItemRow[]))
     .filter((r) => r.media)
     .map(mapItem)

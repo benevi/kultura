@@ -6,6 +6,12 @@
 // del dueño; a los demás, la misma página GENÉRICA (título + perfil, sin
 // nota). Nunca indexable (página personal).
 //
+// Fase 8.5 P4: con `SALA_PERFIL` la página sale en «Sala» (`SalaRatedTitle`):
+// la misma vista (`resolveRatingShare`), con la barra de la app si hay sesión.
+// Con la bandera en `1` se decide sin leer cookies; en `prueba`, con la de
+// prueba (la página ya es dinámica: lee la sesión y `searchParams`). Con `0`,
+// el HTML de siempre.
+//
 // Tarjeta de compartir: la genérica (`opengraph-image`) o la firmada
 // (`card/[firma]`, route handler). Los metadatos fijan `images` SIEMPRE a mano,
 // también vacío en el 404 y si algo falla (los de página mandan sobre los del
@@ -28,6 +34,10 @@ import { mediaPath } from "@/lib/media/seo";
 import { siteUrl } from "@/lib/site-url";
 import { parseAttributionRecord, withAttribution, type AttributionParams } from "@/lib/analytics/attribution";
 import { OG_LOCALE, SITE_NAME } from "@/i18n/metadata";
+import { salaPerfilEnabled } from "@/lib/flags/sala";
+import { getViewer } from "@/lib/media/viewer";
+import { getUnreadCount } from "@/lib/social/notifications";
+import { SalaRatedTitle } from "@/components/collection/sala/SalaRatedTitle";
 import {
   SHARE_SIG_PARAM,
   ratingPagePath,
@@ -59,9 +69,16 @@ function first(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
 
-/** Quién mira (sin sesión: `null`; nunca lanza). */
+/**
+ * Quién mira (sin sesión: `null`; nunca lanza). Con «Sala», la sesión sale de
+ * `getViewer` (una vez por petición, con el perfil que pinta la barra).
+ */
 const currentViewer = dedupe(async (): Promise<ShareViewer | null> => {
   try {
+    if (await salaPerfilEnabled()) {
+      const { user } = await getViewer();
+      return user ? { id: user.id, supabase: await createClient() } : null;
+    }
     const supabase = await createClient();
     const { data } = await supabase.auth.getUser();
     return data.user ? { id: data.user.id, supabase } : null;
@@ -176,6 +193,19 @@ export default async function RatedTitlePage(props: Props) {
     : { ...attribution, ref: owner.username, channel: attribution.utm_source ? "utm" : "ref" };
   const next = encodeURIComponent(mediaPath(locale, parsed.type, parsed.externalId));
   const registerHref = withAttribution(`/login?mode=register&next=${next}`, signup);
+
+  if (await salaPerfilEnabled()) {
+    const session = viewer ? await getViewer() : null;
+    const unreadCount = session?.user && session.profile ? await getUnreadCount(session.user.id).catch(() => 0) : 0;
+    return (
+      <SalaRatedTitle
+        locale={locale}
+        view={view}
+        chrome={session?.user ? { user: session.user, profile: session.profile, unreadCount } : null}
+        registerHref={registerHref}
+      />
+    );
+  }
 
   const heading =
     view.kind === "rated"
