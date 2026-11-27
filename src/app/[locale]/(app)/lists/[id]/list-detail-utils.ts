@@ -19,6 +19,20 @@ export function publicListPath(list: Pick<List, 'id' | 'owner'>): string | null 
   return list.owner ? `/u/${list.owner.username}/l/${list.id}` : null
 }
 
+/**
+ * Quién puede ver los miembros de una colaborativa: su dueño y sus miembros.
+ * A los demás (también con una lista pública) no se les enseñan ni se les
+ * mandan (riesgo R1 de la auditoría de Listas).
+ */
+export function canSeeListMembers(
+  list: Pick<List, 'ownerId'>,
+  members: Pick<ListMember, 'userId'>[],
+  viewerId: string | null | undefined,
+): boolean {
+  if (!viewerId) return false
+  return viewerId === list.ownerId || members.some((m) => m.userId === viewerId)
+}
+
 /** Amigos que aún no están en la lista (ni son el dueño). */
 export function invitableFriends(members: ListMember[], ownerId: string, friends: ListFriend[]): ListFriend[] {
   const memberIds = new Set(members.map((m) => m.userId))
