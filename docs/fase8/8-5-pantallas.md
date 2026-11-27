@@ -8,7 +8,7 @@
 - El respaldo sin portada de «Sala» es el campo de color con el título (franja con la paleta de la obra o neutros): sustituye a **los dos** degradados (`posterGradient` de tarjetas y `posterGradientFeature` de la ficha).
 
 ## Orden
-1. Ficha (`/media/[type]/[id]`, pública) → 2. Biblioteca → 3. Descubrir (con búsqueda) → 4. Inicio → 5. Perfil y páginas públicas → 6. Listas → resto (ajustes, amigos, grupos, chat, calendario, avisos) → landing, login y bienvenida al final.
+1. Ficha (`/media/[type]/[id]`, pública) → 2. Biblioteca → 3. Descubrir (con búsqueda) → 4. Inicio → 5. Perfil y páginas públicas → 5b. Marca y armazón → 6. Listas → resto (ajustes, amigos, grupos, chat, calendario, avisos) → landing, login y bienvenida al final.
 
 ## Banderas
 Una por pantalla, leída en el servidor como `QUICK_ADD`: `SALA_FICHA`, `SALA_BIBLIOTECA`, `SALA_DESCUBRIR`… y `SALA_FICHA_3D` aparte. Valores `0` / `prueba` / `1`: con `prueba` solo la ve quien tiene la cookie de prueba (enlace que se da a los 3 usuarios de P-Uso). Caducan a 60 días: al pasar P-Uso se enciende y se quita el camino viejo.
@@ -41,6 +41,18 @@ P2: las acciones sobre otra persona van en `SalaProfileSocial`. El estado de la 
 P3: `/u/[username]` en «Sala» (`SalaPublicCollection`), decidido con `salaPerfilEnabled()`: en `1` no lee cookies y en `prueba` lee la de prueba (la página ya era dinámica: sesión y `searchParams`); con `0`, el HTML de siempre (instantánea en `tests/unit/app/u`). La misma `SalaProfileHeader` (sin fecha de alta para quien no tiene cuenta), «Invitar amigos» con `SalaButton`, favoritos en `SalaWorkCard` con la nota en la escala de su dueño («Nota: 9 de 10» o «4,5 de 5», como `/r`; antes siempre «de 5»), «En curso» y cada lista pública con `SalaRow` (`h3` bajo «Listas públicas», con el formato debajo y «Ver lista» a la `/l` de hoy), bloqueos y vacíos con `SalaBlockState`. Con sesión, la barra de la app (`AppChrome`, dentro de un proveedor con los textos del shell, como la ficha pública); sin sesión, la cabecera pública. Sin cuenta, una sola llamada a registrarse: la invitación si llega con `?ref=` de su dueño, si no «¿Y la tuya?» al final; el bloqueo de la biblioteca solo ofrece «Ya tengo cuenta». Lo que ve quien no tiene cuenta no cambia (§7 de la propuesta): ni fecha, ni visibilidad, ni biblioteca, ni se piden. Las piezas van por `SalaProfilePublicLazy` (sin las acciones de amistad de `/profile`). `/r` y `/l` entran en `pages.spec.ts` (benevi tiene una lista pública en los datos de prueba).
 
 P4: `/u/[username]/r/[type]/[id]` en «Sala» (`SalaRatedTitle` + `SalaProfileReview`), con la misma bandera y la misma regla (en `1` sin cookies; con `0`, el HTML de siempre, instantánea en `tests/unit/app/u`). Qué se ve lo sigue decidiendo `resolveRatingShare`: sin cuenta ni enlace firmado, la página genérica sin nota, como hoy. La franja con el color de su dueño y «@nombre» con enlace a su perfil, el póster (`SalaPoster`), el `h1` «Nota de @nombre para» + el título como rótulo (tope de 30 a 72 px) y la nota en bloque en la escala de su dueño («9 de 10», «4,5 de 5»). «Ver la ficha» o «Puntúalo tú» y «Ver el perfil de @…» con `SalaButton`; la pista de quién ve la nota, solo al dueño. Con sesión, la barra de la app (`AppChromeLazy`, como `/u`); sin ella, la cabecera pública y una sola llamada a registrarse al final. El póster aún no tiñe la página con su paleta. El Supabase simulado de la red a11y resuelve ya `lists!lists_owner_id_fkey(…)` y los filtros sobre el embebido (`lists.is_public`): el e2e de `/u` ve la fila de la lista pública.
+
+## Marca y armazón
+Añadido el 28-11-2026 a petición de Víctor. El logo y el armazón común (cabecera, barra inferior del móvil y pie) no estaban en ninguna pantalla: cada una se pasaba a «Sala» por dentro y el armazón seguía siendo el viejo. Va antes de Listas para que P-Uso (desde el ~24-12) vea la app con un solo estilo.
+
+Bandera `SALA_MARCA` (`0` / `prueba` / `1`, como las demás). Encendida, cambia el armazón de todas las páginas con sesión y de la cabecera pública. Apagada, el HTML de siempre (instantánea en el primer PR).
+
+- M1: logo. Dirección de arte prepara 2–3 propuestas en «Sala» partiendo del logo B que eligió Víctor en las style tiles (D-F2d, D-F2f; abierto por D-F2q). Elige Víctor. Incluye el favicon, los iconos de la PWA (`manifest`) y la imagen de las tarjetas para compartir (OG). Solo el SVG y los recursos; nada se pinta todavía.
+- M2: cabecera de escritorio (`AuthHeader`) y cabecera pública en «Sala», con el logo nuevo, `SalaLink` en la navegación, la página actual marcada con `aria-current` y el contador de no leídos.
+- M3: barra inferior del móvil (`BottomNav`) y pie (`AppFooter`) en «Sala». La atribución a TMDB, RAWG y Steam se mantiene igual.
+- M4: P-Uso junto con las demás pantallas y, al 100 %, retirar el armazón viejo. Se retira antes que las pantallas, porque las que ya están en «Sala» lo esperan.
+
+Riesgos: el armazón sale en todas las páginas, así que un fallo las rompe todas a la vez. Por eso va primero en modo `prueba` y lleva axe y teclado en las rutas de `pages.spec.ts`. El peso del armazón entra en todas las páginas: Lighthouse con presupuesto en cada PR.
 
 ## Decisiones (Víctor, 21-11-2026)
 1. `KButton sm` 32→44: **no se toca**; cada pantalla migrada pasa a `SalaButton` (48 px) y `KButton` muere con la migración. 32 px ya cumple WCAG 2.2 AA (2.5.8 pide 24).
