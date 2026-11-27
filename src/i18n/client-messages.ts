@@ -60,8 +60,20 @@ export const WELCOME_CLIENT_NAMESPACES = [
  * públicas (era la única página del shell que los
  * usaba). Mismo patrón que `/report`,
  * con `u/layout.tsx`, para no cargar `report` ni `invite` en todas las públicas.
+ * Con «Sala» y sesión, `/u` pinta la barra de la app (`AppChrome`) dentro de un
+ * proveedor con `SHELL_CLIENT_NAMESPACES` (`SalaPublicCollection`), como la
+ * ficha pública: esos textos no van aquí.
  */
-export const PUBLIC_PROFILE_CLIENT_NAMESPACES = ["discoverFilters.typeBadge", "invite", "media", "report"] as const;
+export const PUBLIC_PROFILE_CLIENT_NAMESPACES = [
+  // 8.5 P3: «Abre en otra pestaña» de `SalaLink` en `/u` con «Sala».
+  "common",
+  "discoverFilters.typeBadge",
+  // 8.5 P3: las flechas, la carga y el error de `SalaRow` en `/u` con «Sala».
+  "home.sala",
+  "invite",
+  "media",
+  "report",
+] as const;
 
 /**
  * `/[locale]/media/…` (ficha pública, D-01, fuera de `(app)`): biblioteca,

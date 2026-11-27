@@ -13,13 +13,16 @@ import {
   walkTab,
 } from "./helpers";
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const { LIST_ID, GROUP_ID, CONVERSATION_ID } = require("./fixtures.cjs");
+const { LIST_ID, PUBLIC_LIST_ID, GROUP_ID, CONVERSATION_ID } = require("./fixtures.cjs");
 
 const PUBLIC_PAGES: Array<{ path: string; status?: number }> = [
   { path: "/es" },
   { path: "/en" },
   { path: "/es/best/movie/2026" },
   { path: "/es/u/benevi" },
+  // Fase 8.5 P3: la nota compartida (genérica sin firma) y una lista pública.
+  { path: "/es/u/benevi/r/movie/550" },
+  { path: `/es/u/benevi/l/${PUBLIC_LIST_ID}` },
   { path: "/es/login" },
   { path: "/es/privacy" },
   // F1 (D2): mini-landings de la prueba de humo.

@@ -2210,6 +2210,7 @@
     "favoritesEmpty": "Puntúa los títulos de tu biblioteca y tus cuatro mejores saldrán aquí, uno por formato.",
     "favoritesEmptyAction": "Puntuar títulos",
     "favoriteScore": "{score, number} de 5",
+    "favoriteRating": "{scale, select, ten {Nota: {value} de 10} other {Nota: {value} de 5}}",
     "watching": "En curso",
     "publicLists": "Listas públicas",
     "lockedTitle": "Entra para ver la biblioteca de {username}",

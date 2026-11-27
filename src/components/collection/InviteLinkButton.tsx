@@ -11,15 +11,22 @@
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { KButton } from '@/components/ui/KButton'
+import { SalaButtonLazy as SalaButton } from '@/components/sala/SalaButtonLazy'
 
 interface Props {
   /** Ruta de la invitación (`/es/u/ana?ref=ana&inv=…`); el origen lo pone el navegador. */
   path: string
+  /**
+   * `sala` (`/u` con `SALA_PERFIL`, fase 8.5 P3): un `SalaButton` de 48 px y
+   * el aviso con los textos de «Sala». Por `next/dynamic`: sin la bandera no
+   * se descarga.
+   */
+  skin?: 'sala'
 }
 
 type Status = 'idle' | 'copied' | 'error'
 
-export function InviteLinkButton({ path }: Props) {
+export function InviteLinkButton({ path, skin }: Props) {
   const t = useTranslations('invite')
   const [status, setStatus] = useState<Status>('idle')
   const [url, setUrl] = useState('')
@@ -42,6 +49,23 @@ export function InviteLinkButton({ path }: Props) {
     } catch {
       setStatus('error')
     }
+  }
+
+  if (skin === 'sala') {
+    return (
+      <div className="flex flex-col items-start gap-2">
+        <SalaButton onClick={handleClick}>{t('share')}</SalaButton>
+        <p role="status" className="max-w-xs font-sala-text text-sala-ink-secondary sala-type-small">
+          {status === 'copied' ? t('copied') : null}
+          {status === 'error' ? (
+            <>
+              {t('copyError')}{' '}
+              <span className="select-all font-semibold text-sala-ink [overflow-wrap:anywhere]">{url}</span>
+            </>
+          ) : null}
+        </p>
+      </div>
+    )
   }
 
   return (

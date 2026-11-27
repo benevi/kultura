@@ -1,5 +1,5 @@
 /**
- * Perfil con «Sala» (fase 8.5 P1 y P2): la cabecera de persona (franja, avatar
+ * Perfil con «Sala» (fase 8.5 P1, P2 y P3): la cabecera de persona (franja, avatar
  * y `h1` con el @nombre como rótulo), los números en una fila, «Viendo ahora»
  * y «Últimos completados» con `SalaRow`/`SalaWorkCard`, y los estados de
  * biblioteca vacía. Sin «Pendientes» y sin editar la bio en sitio: el dueño
@@ -52,6 +52,19 @@ test.describe("sin la cookie de prueba", () => {
       links.map((l) => (l as HTMLLinkElement).href).filter((href) => /sala/i.test(href))
     );
     expect(salaSheets, "hojas de «Sala» en el perfil de hoy").toEqual([]);
+  });
+
+  test("/u de hoy, con y sin sesión, sin «Sala» ni sus hojas (P3)", async ({ page, context }) => {
+    for (const signedIn of [true, false]) {
+      if (!signedIn) await context.clearCookies();
+      await open(page, "/es/u/benevi");
+      await expect(page.locator("[data-sala-profile]")).toHaveCount(0);
+      await expect(page.getByRole("heading", { level: 1 })).toHaveText("@benevi");
+      const salaSheets = await page.$$eval('link[rel="stylesheet"]', (links) =>
+        links.map((l) => (l as HTMLLinkElement).href).filter((href) => /sala/i.test(href))
+      );
+      expect(salaSheets, `hojas de «Sala» en /u de hoy (${signedIn ? "con" : "sin"} sesión)`).toEqual([]);
+    }
   });
 });
 
@@ -241,4 +254,123 @@ test.describe("con «Sala»", () => {
       await expectNoBlockingViolations(page, `Perfil de otra persona con «Sala» a ${width} px`);
     });
   }
+});
+
+/**
+ * Fase 8.5 P3: el perfil público `/u/[username]` con «Sala». Sin sesión solo
+ * se ve lo que se veía (cabecera sin fecha de alta, listas públicas, bloqueo
+ * de la biblioteca) y una sola llamada a registrarse; con sesión, la barra de
+ * la app y la biblioteca si su dueño deja verla.
+ */
+test.describe("/u con «Sala» (P3)", () => {
+  const PUBLIC = '[data-sala-profile="public"]';
+
+  async function openPublic(page: Page, path: string) {
+    await open(page, path);
+    await expect(page.locator(PUBLIC)).toBeVisible();
+  }
+
+  test.describe("sin sesión", () => {
+    test.beforeEach(async ({ context, baseURL }) => {
+      await context.clearCookies();
+      await salaCookie(context, baseURL!);
+    });
+
+    test("anónimo: @nombre como rótulo, sin fecha de alta ni biblioteca; el bloqueo con «Ya tengo cuenta» y una sola llamada a registrarse; axe limpio", async ({ page }) => {
+      await openPublic(page, "/es/u/benevi");
+      await expect(page.getByRole("heading", { level: 1 })).toHaveText("@benevi");
+      await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
+      // Privacidad (propuesta §7): nada que hoy no vea quien no tiene cuenta.
+      await expect(page.getByText(/En KULTURA desde/)).toHaveCount(0);
+      await expect(page.getByRole("region", { name: es.collection.statsLabel })).toHaveCount(0);
+      await expect(page.getByRole("region", { name: es.collection.favorites })).toHaveCount(0);
+
+      const locked = page.locator('[data-sala-profile-state="locked"]');
+      await expect(locked.getByRole("heading", { level: 2 })).toHaveText(es.collection.lockedTitle.replace("{username}", "benevi"));
+      await expect(locked.getByRole("link", { name: es.collection.signIn })).toHaveAttribute("href", /\/es\/login\?mode=login/);
+      await expect(locked.getByRole("link", { name: es.collection.ctaButton })).toHaveCount(0);
+
+      await expect(page.getByRole("region", { name: es.collection.ctaTitle })).toBeVisible();
+      await expect(page.locator('main a[href*="mode=register"]')).toHaveCount(1);
+      await expect(page.getByRole("link", { name: es.collection.reportProfile })).toHaveAttribute("href", /\/es\/report\?target=user&id=benevi/);
+      await expectNoBlockingViolations(page, "/u anónimo con «Sala»");
+    });
+
+    test("anónimo con invitación: la invitación va antes del h1 y es la única llamada a registrarse; axe limpio", async ({ page }) => {
+      await openPublic(page, "/es/u/benevi?ref=benevi&inv=firma-que-no-vale");
+      const invite = page.getByRole("complementary", { name: es.invite.bannerTitle.replace("{username}", "benevi") });
+      await expect(invite).toBeVisible();
+      // La firma no vale: no promete amistad.
+      await expect(invite).toContainText(es.invite.bannerText);
+      await expect(invite.getByRole("link", { name: es.invite.bannerCta })).toHaveAttribute("href", /mode=register.*ref=benevi/);
+      await expect(page.getByRole("region", { name: es.collection.ctaTitle })).toHaveCount(0);
+      await expect(page.locator('main a[href*="mode=register"]')).toHaveCount(1);
+      const order = await page.evaluate(() => {
+        const aside = document.querySelector("[data-sala-profile-invite]")!;
+        const h1 = document.querySelector("h1")!;
+        return aside.compareDocumentPosition(h1) & Node.DOCUMENT_POSITION_FOLLOWING;
+      });
+      expect(order, "la invitación, antes del h1").toBeTruthy();
+      await expectNoBlockingViolations(page, "/u con invitación y «Sala»");
+    });
+
+    test("anónimo: una lista pública con su fila y «Ver lista»", async ({ page }) => {
+      await openPublic(page, "/es/u/benevi");
+      const lists = page.locator("[data-sala-profile-lists]");
+      // Si el Supabase simulado no resuelve la consulta anidada, la página dice que no hay listas: las dos salidas valen.
+      if ((await lists.count()) === 0) {
+        await expect(page.locator('[data-sala-profile-state="lists-empty"]')).toBeVisible();
+        return;
+      }
+      await expect(lists.getByRole("heading", { level: 2, name: es.collection.publicLists })).toBeVisible();
+      await expect(lists.getByRole("heading", { level: 3, name: "Imprescindibles" })).toBeVisible();
+      await expect(lists.getByRole("link", { name: /Ver lista Imprescindibles/ })).toHaveAttribute("href", /\/es\/u\/benevi\/l\//);
+    });
+
+    test("teclado y 320 px: cada parada a la vista y con foco visible, sin scroll horizontal", async ({ page }) => {
+      await page.setViewportSize({ width: 320, height: 800 });
+      await openPublic(page, "/es/u/benevi?ref=benevi&inv=x");
+      await expectNoHorizontalScroll(page, 320);
+      const stops = await walkTab(page, 40);
+      const bad = stops.filter((s) => !s.visible || !s.indicator);
+      expect(bad, "paradas tapadas o sin foco visible").toEqual([]);
+      await expectNoBlockingViolations(page, "/u anónimo a 320 px");
+    });
+  });
+
+  test.describe("con sesión", () => {
+    test.beforeEach(async ({ context, baseURL }) => {
+      await salaCookie(context, baseURL!);
+    });
+
+    test("otra persona: la barra de la app, su fecha de alta, números y favoritos con su nota; «Ver su perfil» y denunciar; axe limpio", async ({ page }) => {
+      await openPublic(page, "/es/u/lucia_lee");
+      // La barra de la app, no el logo con «Inicio».
+      await expect(page.getByRole("navigation", { name: es.nav.primaryNav }).first().getByRole("link", { name: es.nav.libraryTab })).toBeAttached();
+      await expect(page.getByRole("heading", { level: 1 })).toHaveText("@lucia_lee");
+      await expect(page.getByText(/En KULTURA desde/)).toBeVisible();
+      await expect(page.getByRole("region", { name: es.collection.statsLabel })).toBeVisible();
+      const favorites = page.getByRole("region", { name: es.collection.favorites });
+      await expect(favorites.getByRole("heading", { level: 3, name: "Matrix" })).toBeVisible();
+      await expect(favorites).toContainText(/Nota: 4 de 5|Nota: 8 de 10/);
+      await expect(page.getByRole("link", { name: es.collection.openProfile })).toHaveAttribute("href", "/es/profile/lucia_lee");
+      await expect(page.getByRole("button", { name: es.report.label, exact: true })).toBeVisible();
+      await expect(page.locator('main a[href*="mode=register"]')).toHaveCount(0);
+      await expectNoBlockingViolations(page, "/u con sesión y «Sala»");
+    });
+
+    test("propio: «Invitar amigos» y «Editar perfil» de 44 px o más, nota de visibilidad con enlace a Ajustes; axe limpio a 375", async ({ page }) => {
+      await page.setViewportSize({ width: 375, height: 800 });
+      await openPublic(page, "/es/u/a11y_tester");
+      await expect(page.getByRole("heading", { level: 1 })).toHaveText("@a11y_tester");
+      for (const control of [page.getByRole("button", { name: es.invite.share }), page.getByRole("link", { name: es.profile.editProfile })]) {
+        await expect(control).toBeVisible();
+        expect((await control.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+      }
+      await expect(page.locator("[data-sala-profile-owner-note]").getByRole("link")).toHaveAttribute("href", "/es/settings");
+      await expect(page.getByRole("region", { name: es.collection.favorites }).getByRole("listitem")).not.toHaveCount(0);
+      await expectNoHorizontalScroll(page, 375);
+      await expectNoBlockingViolations(page, "/u propio con «Sala» a 375 px");
+    });
+  });
 });

@@ -2210,6 +2210,7 @@
     "favoritesEmpty": "Rate the titles in your library and your top four will show up here, one per format.",
     "favoritesEmptyAction": "Rate titles",
     "favoriteScore": "{score, number} out of 5",
+    "favoriteRating": "{scale, select, ten {Rating: {value} out of 10} other {Rating: {value} out of 5}}",
     "watching": "In progress",
     "publicLists": "Public lists",
     "lockedTitle": "Sign in to see {username}'s library",
