@@ -113,6 +113,34 @@ describe('FriendProfileActivity', () => {
     expect(filter?.args).toEqual(['user_id', ['f1']])
   })
 
+  it('con «Sala» (fase 8.5 P2): los mismos apuntes con la vista de Inicio, en lista', async () => {
+    client = fakeSupabase({
+      tables: {
+        user_media: [{
+          data: [{
+            id: 'um1', user_id: 'f1', media_id: 'tv_1396', status: 'in_progress', score: null,
+            created_at: '2026-10-01T00:00:00Z', updated_at: new Date().toISOString(),
+            user: { id: 'f1', username: 'lucia', avatar_color: 'blue', avatar_initials: 'LU' },
+            media: { id: 'tv_1396', title: 'Breaking Bad', poster: null, type: 'tv' },
+          }],
+          error: null,
+        }],
+      },
+    })
+    const out = (await FriendProfileActivity({ viewerId: ME, friendId: 'f1', locale: 'es', sala: true })) as ReactElement<{
+      entries: { username: string; mediaTitle: string; href: string; status: string }[]
+      state: string
+    }>
+    expect(out.props.state).toBe('list')
+    expect(out.props.entries).toHaveLength(1)
+    expect(out.props.entries[0]).toMatchObject({
+      username: 'lucia',
+      mediaTitle: 'Breaking Bad',
+      href: '/media/tv/1396',
+      status: 'in_progress',
+    })
+  })
+
   it('sin actividad o si falla la lectura, no sale nada', async () => {
     client = fakeSupabase({ tables: { user_media: [{ data: [], error: null }] } })
     expect(await FriendProfileActivity({ viewerId: ME, friendId: 'f1', locale: 'es' })).toBeNull()

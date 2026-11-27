@@ -119,6 +119,22 @@ function matches(row, key, raw) {
 
 const RESERVED = new Set(["select", "order", "limit", "offset", "or", "and", "on_conflict", "columns"]);
 
+/**
+ * `or=(…)` y `and(…)` de PostgREST, con condiciones `col.op.valor` dentro
+ * (`.or('and(requester_id.eq.A,receiver_id.eq.B),and(…)')` de las amistades).
+ * Sin esto el filtro se ignoraba y cualquiera salía como amigo del usuario de
+ * prueba (fase 8.5 P2). Una condición sobre un embebido sigue sin filtrar.
+ */
+function logic(row, expr) {
+  const m = expr.match(/^(and|or)\((.*)\)$/s);
+  if (!m) {
+    const dot = expr.indexOf(".");
+    return dot < 0 ? true : matches(row, expr.slice(0, dot), expr.slice(dot + 1));
+  }
+  const parts = splitTop(m[2]);
+  return m[1] === "and" ? parts.every((p) => logic(row, p)) : parts.some((p) => logic(row, p));
+}
+
 function rest(req, res, url) {
   const [, , , name, fn] = url.pathname.split("/"); // /rest/v1/<tabla> | /rest/v1/rpc/<fn>
   const prefer = req.headers.prefer || "";
@@ -143,6 +159,10 @@ function rest(req, res, url) {
   for (const [key, raw] of url.searchParams) {
     if (RESERVED.has(key)) continue;
     rows = rows.filter((r) => matches(r, key, raw));
+  }
+  for (const key of ["or", "and"]) {
+    const raw = url.searchParams.get(key);
+    if (raw) rows = rows.filter((r) => logic(r, `${key}${raw}`));
   }
   const total = rows.length;
   const limit = Number(url.searchParams.get("limit") || 0);

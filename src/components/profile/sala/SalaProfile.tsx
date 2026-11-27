@@ -4,8 +4,9 @@
 // KULTURA — Perfil en «Sala» (fase 8.5 P1, bandera SALA_PERFIL)
 // La cabecera de persona, los números en una fila, las filas «Viendo ahora» y
 // «Últimos completados» con `SalaRow`/`SalaWorkCard` y los estados de
-// biblioteca oculta o vacía con `SalaBlockState`. Las acciones (amistad,
-// denunciar), la actividad del amigo y los géneros siguen como hoy (P2).
+// biblioteca oculta o vacía con `SalaBlockState`. P2: los géneros favoritos
+// con su número a la vista; las acciones sobre otra persona van en
+// `SalaProfileSocial` y la actividad del amigo es la vista de Inicio.
 //
 // Solo se carga con `next/dynamic` (`SalaProfileLazy`): con la bandera apagada
 // el perfil no descarga este código ni sus hojas.
@@ -28,7 +29,7 @@ import '@/styles/sala/tokens.css'
 import '@/styles/sala/fonts.css'
 import '@/styles/sala/title.css'
 
-import type { CSSProperties, ReactNode } from 'react'
+import { useId, type CSSProperties, type ReactNode } from 'react'
 import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 import { Avatar } from '@/components/ui/Avatar'
@@ -213,5 +214,35 @@ export function SalaProfileState({ name, title, description, action }: { name: s
       action={action}
       className="font-sala-text"
     />
+  )
+}
+
+export interface SalaProfileGenre {
+  genre: string
+  /** «12 títulos», ya traducido. */
+  count: string
+}
+
+/**
+ * Sus géneros favoritos (hasta 8), cada uno con cuántos títulos tiene. Hoy el
+ * número solo estaba en `title`, que no llega al teclado ni al móvil.
+ */
+export function SalaProfileGenres({ title, items }: { title: string; items: SalaProfileGenre[] }) {
+  const titleId = useId()
+  if (items.length === 0) return null
+  return (
+    <section aria-labelledby={titleId} data-sala-profile-genres="" className="font-sala-text text-sala-ink">
+      <h2 id={titleId} className="mb-3 sala-type-data">
+        {title}
+      </h2>
+      <ul role="list" className="flex flex-wrap gap-2">
+        {items.map((item) => (
+          <li key={item.genre} className="bg-sala-panel px-3 py-2 sala-type-small [overflow-wrap:anywhere]">
+            <span className="font-semibold">{item.genre}</span>
+            <span className="text-sala-ink-secondary"> · {item.count}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
   )
 }

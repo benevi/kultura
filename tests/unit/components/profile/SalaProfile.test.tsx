@@ -31,6 +31,7 @@ import {
   SalaProfileNumbers,
   SalaProfileRow,
   SalaProfileState,
+  SalaProfileGenres,
 } from '@/components/profile/sala/SalaProfile'
 import { AVATAR_COLORS } from '@/lib/constants/avatarColors'
 
@@ -129,5 +130,29 @@ describe('SalaProfileState', () => {
     render(<SalaProfileState name="hidden" title="La biblioteca de ana no es pública" description="Solo la ven sus amigos." />)
     expect(screen.getByRole('heading', { level: 2, name: 'La biblioteca de ana no es pública' })).toBeInTheDocument()
     expect(screen.getByText('Solo la ven sus amigos.')).toBeInTheDocument()
+  })
+})
+
+describe('SalaProfileGenres (P2)', () => {
+  it('una lista nombrada por su h2, con el número de cada género escrito (no solo en `title`)', () => {
+    render(
+      <SalaProfileGenres
+        title="Géneros favoritos"
+        items={[
+          { genre: 'Drama', count: '12 títulos' },
+          { genre: 'Ciencia ficción', count: '1 título' },
+        ]}
+      />
+    )
+    const section = screen.getByRole('region', { name: 'Géneros favoritos' })
+    expect(within(section).getByRole('heading', { level: 2 })).toHaveTextContent('Géneros favoritos')
+    const items = within(section).getAllByRole('listitem')
+    expect(items.map((li) => li.textContent)).toEqual(['Drama · 12 títulos', 'Ciencia ficción · 1 título'])
+    expect(section.querySelector('[title]')).toBeNull()
+  })
+
+  it('sin géneros no pinta nada', () => {
+    const { container } = render(<SalaProfileGenres title="Géneros favoritos" items={[]} />)
+    expect(container).toBeEmptyDOMElement()
   })
 })

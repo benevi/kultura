@@ -1,21 +1,29 @@
 /**
- * Perfil con «Sala» (fase 8.5 P1): la cabecera de persona (franja, avatar y
- * `h1` con el @nombre como rótulo), los números en una fila, «Viendo ahora» y
- * «Últimos completados» con `SalaRow`/`SalaWorkCard`, y los estados de
+ * Perfil con «Sala» (fase 8.5 P1 y P2): la cabecera de persona (franja, avatar
+ * y `h1` con el @nombre como rótulo), los números en una fila, «Viendo ahora»
+ * y «Últimos completados» con `SalaRow`/`SalaWorkCard`, y los estados de
  * biblioteca vacía. Sin «Pendientes» y sin editar la bio en sitio: el dueño
- * tiene «Editar perfil», que lleva a Ajustes. La red arranca con
- * `SALA_PERFIL=prueba` (`env.cjs`) y este spec entra con la cookie de prueba;
- * con `SALA_PERFIL=1` también pasa (salvo el caso «sin cookie»).
+ * tiene «Editar perfil», que lleva a Ajustes. P2: las acciones sobre otra
+ * persona en cada estado de amistad, «Dejar de ser amigos» y «Bloquear» con
+ * `SalaConfirmDialog` (Cancelar primero), los errores con `SalaNotice`, la
+ * denuncia de «Sala» y la actividad de la amiga con la vista de Inicio. La red
+ * arranca con `SALA_PERFIL=prueba` (`env.cjs`) y este spec entra con la cookie
+ * de prueba; con `SALA_PERFIL=1` también pasa (salvo el caso «sin cookie»).
  *
  * Datos (`fixtures.cjs`): `a11y_tester` (quien mira) tiene un manga en curso,
  * Elden Ring pendiente y Matrix completada; `lucia_lee` es su amiga y tiene
- * Matrix completada; `benevi` no tiene nada en su biblioteca.
+ * Matrix completada; `benevi` no tiene nada en su biblioteca ni relación con
+ * él; a `nora_pide` le ha pedido amistad y `pau_pide` se la ha pedido a él.
+ * Las escrituras del Supabase simulado no guardan nada: al recargar, todo
+ * vuelve a como estaba.
  */
 import { test, expect, type BrowserContext, type Page } from "@playwright/test";
 import { expectNoBlockingViolations, expectNoHorizontalScroll, isolateNetwork, open, signIn, walkTab } from "./helpers";
 import es from "../../../messages/es.json";
 
 const PROFILE = "[data-sala-profile]";
+/** La línea que dice el estado de la amistad (la región `status` repite el texto, pero no se ve). */
+const STATE = '[data-sala-profile-social] > p[tabindex="-1"]';
 
 async function salaCookie(context: BrowserContext, baseURL: string) {
   await context.addCookies([
@@ -83,7 +91,97 @@ test.describe("con «Sala»", () => {
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("@lucia_lee");
     await expect(page.getByRole("link", { name: es.profile.editProfile })).toHaveCount(0);
     await expect(page.getByRole("list", { name: es.profile.lastCompleted, exact: true }).getByRole("listitem")).toHaveCount(1);
+
+    // P2: el estado en texto; nada de «Amigos ✓» que borra de un toque.
+    await expect(page.locator(STATE)).toHaveText(es.friends.youAreFriends);
+    await expect(page.getByRole("button", { name: es.friends.unfriend })).toBeVisible();
+    await expect(page.getByRole("button", { name: /✓/ })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: es.moderation.block, exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: es.report.label, exact: true })).toBeVisible();
+
+    // Su actividad, con la vista de Inicio en «Sala».
+    const activity = page.locator("[data-sala-home-activity]");
+    await expect(activity.getByRole("heading", { level: 2, name: es.home.recentActivity })).toBeVisible();
+    await expect(activity.getByRole("listitem")).toHaveCount(1);
+    await expect(activity.getByRole("link", { name: "Matrix" })).toBeVisible();
+
     await expectNoBlockingViolations(page, "Perfil de una amiga con «Sala»");
+  });
+
+  test("«Dejar de ser amigos» pregunta antes: Cancelar primero y con el foco; Escape vuelve al botón; confirmar la quita", async ({ page }) => {
+    await openProfile(page, "lucia_lee");
+    const trigger = page.getByRole("button", { name: es.friends.unfriend });
+    await trigger.click();
+    const dialog = page.getByRole("alertdialog", { name: es.friends.unfriendConfirmTitle.replace("{username}", "lucia_lee") });
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByRole("button").first()).toHaveText(es.common.cancel);
+    await expect(dialog.getByRole("button", { name: es.common.cancel })).toBeFocused();
+    await expectNoBlockingViolations(page, "Confirmar «Dejar de ser amigos»");
+
+    await page.keyboard.press("Escape");
+    await expect(dialog).toHaveCount(0);
+    await expect(trigger).toBeFocused();
+
+    await trigger.click();
+    await dialog.getByRole("button", { name: es.friends.unfriend }).click();
+    const add = page.getByRole("button", { name: es.friends.addFriend });
+    await expect(add).toBeVisible();
+    await expect(add).toBeFocused();
+    await expect(page.getByRole("status").filter({ hasText: es.friends.unfriended })).toHaveCount(1);
+  });
+
+  test("«Bloquear» pregunta antes y deja «Desbloquear»; axe limpio con el diálogo abierto", async ({ page }) => {
+    await openProfile(page, "lucia_lee");
+    await page.getByRole("button", { name: es.moderation.block, exact: true }).click();
+    const dialog = page.getByRole("alertdialog", { name: es.moderation.blockConfirmTitle });
+    await expect(dialog.getByRole("button", { name: es.moderation.cancel })).toBeFocused();
+    await expectNoBlockingViolations(page, "Confirmar «Bloquear»");
+    await dialog.getByRole("button", { name: es.moderation.block, exact: true }).click();
+    const unblock = page.getByRole("button", { name: es.moderation.unblock });
+    await expect(unblock).toBeFocused();
+    await expect(page.locator(STATE)).toHaveText(es.moderation.blockedNotice);
+    await expect(page.getByRole("button", { name: es.friends.unfriend })).toHaveCount(0);
+  });
+
+  test("sin relación: «Añadir amigo»; si falla, el aviso con «Reintentar»; al reintentar, «Solicitud enviada» en texto", async ({ page }) => {
+    let fail = true;
+    await page.route("**/api/friends", async (route) => {
+      if (route.request().method() === "POST" && fail) {
+        fail = false;
+        return route.fulfill({ status: 500, contentType: "application/json", body: JSON.stringify({ error: { code: "internal" } }) });
+      }
+      return route.fallback();
+    });
+    await openProfile(page, "benevi");
+    await page.getByRole("button", { name: es.friends.addFriend }).click();
+    const notice = page.locator('[data-sala-notice="error"]');
+    await expect(notice).toContainText(es.friends.sendError);
+    await expect(page.getByRole("alert").filter({ hasText: es.friends.sendError })).toHaveCount(1);
+    await expectNoBlockingViolations(page, "Error al pedir amistad");
+
+    await notice.getByRole("button", { name: es.errors.tryAgain }).click();
+    const sent = page.locator(STATE);
+    await expect(sent).toHaveText(es.friends.requestSent);
+    await expect(sent).toBeFocused();
+    await expect(notice).toHaveCount(0);
+    // «Solicitud enviada» ya no es un botón deshabilitado.
+    await expect(page.getByRole("button", { name: es.friends.requestSent })).toHaveCount(0);
+  });
+
+  test("solicitud enviada: el estado y «Cancelar solicitud»; recibida: «Aceptar» y «Rechazar»", async ({ page }) => {
+    await openProfile(page, "nora_pide");
+    await expect(page.locator(STATE)).toHaveText(es.friends.requestSent);
+    await expect(page.getByRole("button", { name: es.friends.cancelRequest })).toBeVisible();
+    await expectNoBlockingViolations(page, "Solicitud enviada con «Sala»");
+
+    await openProfile(page, "pau_pide");
+    await expect(page.locator(STATE)).toHaveText(es.friends.requestReceived);
+    await expect(page.getByRole("button", { name: es.friends.decline })).toBeVisible();
+    await page.getByRole("button", { name: es.friends.accept }).click();
+    await expect(page.locator(STATE)).toHaveText(es.friends.youAreFriends);
+    await expect(page.getByRole("status").filter({ hasText: es.friends.nowFriends })).toHaveCount(1);
+    await expect(page.getByRole("button", { name: es.friends.unfriend })).toBeFocused();
+    await expectNoBlockingViolations(page, "Solicitud aceptada con «Sala»");
   });
 
   test("otra persona con la biblioteca vacía: el estado de «Sala», sin «Sin actividad aún» repetido", async ({ page }) => {
@@ -110,6 +208,17 @@ test.describe("con «Sala»", () => {
     await expect(matrix).not.toHaveAttribute("tabindex", "-1");
   });
 
+  test("teclado en el perfil de otra persona: las acciones, a la vista y con foco visible", async ({ page }) => {
+    await openProfile(page, "pau_pide");
+    await expect(page.getByRole("button", { name: es.moderation.block, exact: true })).toBeVisible();
+    const stops = await walkTab(page, 40);
+    const bad = stops.filter((s) => !s.visible || !s.indicator);
+    expect(bad, "paradas tapadas o sin foco visible").toEqual([]);
+    for (const name of [es.friends.accept, es.friends.decline, es.moderation.block, es.report.label]) {
+      expect(stops.some((s) => s.name === name), `${name}: ${JSON.stringify(stops)}`).toBe(true);
+    }
+  });
+
   for (const width of [320, 375]) {
     test(`${width} px: sin scroll horizontal, axe limpio y «Editar perfil» de 44 px o más`, async ({ page }) => {
       await page.setViewportSize({ width, height: 800 });
@@ -118,6 +227,18 @@ test.describe("con «Sala»", () => {
       const edit = await page.getByRole("link", { name: es.profile.editProfile }).boundingBox();
       expect(edit!.height).toBeGreaterThanOrEqual(44);
       await expectNoBlockingViolations(page, `Perfil con «Sala» a ${width} px`);
+    });
+
+    test(`${width} px, otra persona: sin scroll horizontal y cada acción de 44 px o más`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 800 });
+      await openProfile(page, "pau_pide");
+      await expect(page.getByRole("button", { name: es.moderation.block, exact: true })).toBeVisible();
+      await expectNoHorizontalScroll(page, width);
+      for (const name of [es.friends.accept, es.friends.decline, es.moderation.block, es.report.label]) {
+        const box = await page.getByRole("button", { name, exact: true }).boundingBox();
+        expect(box!.height, name).toBeGreaterThanOrEqual(44);
+      }
+      await expectNoBlockingViolations(page, `Perfil de otra persona con «Sala» a ${width} px`);
     });
   }
 });

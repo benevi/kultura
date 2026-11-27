@@ -30,11 +30,14 @@ import { PushOffer } from '@/components/push/PushOffer'
 import { salaPerfilEnabled } from '@/lib/flags/sala'
 import {
   SalaProfileEditLazy,
+  SalaProfileGenresLazy,
   SalaProfileHeaderLazy,
   SalaProfileNumbersLazy,
   SalaProfileRowLazy,
+  SalaProfileSocialLazy,
   SalaProfileStateLazy,
 } from '@/components/profile/sala/SalaProfileLazy'
+import { SalaHomeActivitySkeletonLazy } from '@/components/home/sala/SalaHomeLazy'
 
 /**
  * Columnas de `users` que pinta el perfil. Antes `select('*')`: traía de otra
@@ -190,15 +193,15 @@ export default async function ProfilePage({ params }: Props) {
           memberSince={memberSince}
           bio={profileUser.bio}
         >
-          {/* Las acciones de otra persona siguen como hoy hasta P2. */}
+          {/* P2: amistad, bloquear y denunciar en «Sala». El aviso de push, como hoy. */}
           {currentUser && !isOwnProfile ? (
             <>
-              <FriendshipButton
-                initialStatus={friendshipStatus}
+              <SalaProfileSocialLazy
+                username={profileUser.username}
                 targetUserId={profileUser.id}
+                initialStatus={friendshipStatus}
                 friendshipId={friendshipId}
               />
-              <ReportButton targetType="user" targetId={profileUser.id} />
               <PushOffer />
             </>
           ) : null}
@@ -209,6 +212,7 @@ export default async function ProfilePage({ params }: Props) {
                   path={`/u/${profileUser.username}`}
                   title={tc('heading', { username: profileUser.username })}
                   label={tc('shareCollection')}
+                  skin="sala"
                 />
               ) : null}
               <SalaProfileEditLazy label={t('editProfile')} />
@@ -218,10 +222,10 @@ export default async function ProfilePage({ params }: Props) {
 
         {libraryVisible ? <SalaProfileNumbersLazy label={tc('statsLabel')} items={numbers} /> : null}
 
-        {/* La actividad del amigo sigue como hoy hasta P2. */}
+        {/* Lo último que ha hecho tu amigo, con la vista de Inicio en «Sala» (P2). */}
         {currentUser && friendshipStatus === 'accepted' && libraryVisible && (
-          <Suspense fallback={<FriendsActivitySkeleton />}>
-            <FriendProfileActivity viewerId={currentUser.id} friendId={profileUser.id} locale={locale} />
+          <Suspense fallback={<SalaHomeActivitySkeletonLazy />}>
+            <FriendProfileActivity viewerId={currentUser.id} friendId={profileUser.id} locale={locale} sala />
           </Suspense>
         )}
 
@@ -244,8 +248,13 @@ export default async function ProfilePage({ params }: Props) {
           />
         ) : null}
 
-        {/* Los géneros siguen como hoy hasta P2. */}
-        {libraryVisible ? <ProfileGenres topGenres={stats.topGenres} /> : null}
+        {/* Géneros favoritos con su número a la vista (P2). */}
+        {libraryVisible ? (
+          <SalaProfileGenresLazy
+            title={t('topGenres')}
+            items={stats.topGenres.slice(0, 8).map(({ genre, count }) => ({ genre, count: t('genreCount', { count }) }))}
+          />
+        ) : null}
       </main>
     )
   }
