@@ -41,7 +41,6 @@ export interface ListItem {
   id: string;
   listId: string;
   mediaId: string;
-  addedBy?: string;
   addedAt: string;
   /** F-25: orden manual (0 = primero). Ausente sin la migración. */
   position?: number | null;
@@ -49,8 +48,7 @@ export interface ListItem {
   note?: string | null;
   /** MediaItem embebido — disponible cuando se hace join */
   media?: MediaItem;
-  /** Perfil de quien añadió el item */
-  addedByUser?: UserProfile;
+  // Sin `addedBy`: quién añadió cada título no se manda al cliente (no se pinta).
 }
 
 /** Miembro de una lista colaborativa */
