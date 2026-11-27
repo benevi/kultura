@@ -14,8 +14,9 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import type { ReactElement } from 'react'
 import type { List } from '@/types/list'
 
-const { state } = vi.hoisted(() => ({
-  state: { lists: [] as List[], userId: 'u1' as string | null },
+const { state, getUserLists } = vi.hoisted(() => ({
+  state: { lists: [] as List[], userId: 'u1' as string | null, sala: null as Record<string, unknown> | null },
+  getUserLists: { calls: [] as unknown[][] },
 }))
 
 vi.mock('next-intl', () => {
@@ -47,7 +48,22 @@ vi.mock('@/lib/supabase/server', () => ({
     auth: { getUser: async () => ({ data: { user: state.userId ? { id: state.userId } : null } }) },
   })),
 }))
-vi.mock('@/lib/social/lists', () => ({ getUserLists: vi.fn(async () => state.lists) }))
+vi.mock('@/lib/social/lists', () => ({
+  getUserLists: vi.fn(async (...args: unknown[]) => {
+    getUserLists.calls.push(args)
+    return state.lists
+  }),
+}))
+// Con «Sala» las piezas llegan por next/dynamic: aquí, dobles que guardan lo que reciben.
+vi.mock('@/components/lists/sala/SalaListsIndexLazy', () => ({
+  SalaListsIndexLazy: (props: Record<string, unknown>) => {
+    state.sala = props
+    return <div data-sala-stub="index" />
+  },
+}))
+vi.mock('@/components/lists/sala/SalaListsSkeletonLazy', () => ({
+  SalaListsSkeletonLazy: (props: Record<string, unknown>) => <div data-sala-stub="skeleton" data-props={JSON.stringify(props)} />,
+}))
 
 import ListsPage from '@/app/[locale]/(app)/lists/page'
 import ListsLoading from '@/app/[locale]/(app)/lists/loading'
@@ -83,6 +99,8 @@ async function renderPage(): Promise<string> {
 beforeEach(() => {
   state.lists = LISTS
   state.userId = 'u1'
+  state.sala = null
+  getUserLists.calls = []
   delete process.env.SALA_LISTAS
 })
 afterEach(() => {
@@ -92,6 +110,8 @@ afterEach(() => {
 describe('/lists sin «Sala» (SALA_LISTAS apagada): marcado de hoy', () => {
   it('índice con tarjetas', async () => {
     expect(await renderPage()).toMatchSnapshot()
+    // La consulta de siempre: sin portadas.
+    expect(getUserLists.calls).toEqual([['u1']])
   })
 
   it('sin listas', async () => {
@@ -120,6 +140,29 @@ describe('/lists sin «Sala» (SALA_LISTAS apagada): marcado de hoy', () => {
   })
 
   it('sin sesión, a /login', async () => {
+    state.userId = null
+    await expect(ListsPage()).rejects.toThrow('NEXT_REDIRECT')
+  })
+})
+
+describe('/lists con «Sala» (SALA_LISTAS=1)', () => {
+  beforeEach(() => {
+    process.env.SALA_LISTAS = '1'
+  })
+
+  it('el índice de «Sala» sustituye al de hoy, con las portadas y quién mira', async () => {
+    const html = await renderPage()
+    expect(html).toBe('<div data-sala-stub="index"></div>')
+    expect(getUserLists.calls).toEqual([['u1', { covers: true }]])
+    expect(state.sala).toEqual({ lists: LISTS, viewerId: 'u1' })
+  })
+
+  it('loading.tsx pinta el esqueleto de «Sala» con el aviso de carga', async () => {
+    const html = renderToStaticMarkup((await ListsLoading()) as ReactElement)
+    expect(html).toBe('<div data-sala-stub="skeleton" data-props="{&quot;loadingLabel&quot;:&quot;common.loading&quot;}"></div>')
+  })
+
+  it('sin sesión, a /login también', async () => {
     state.userId = null
     await expect(ListsPage()).rejects.toThrow('NEXT_REDIRECT')
   })

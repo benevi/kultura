@@ -121,3 +121,12 @@ export function salaInicioEnabled(): Promise<boolean> {
 export function salaPerfilEnabled(): Promise<boolean> {
   return salaFlagEnabled(process.env.SALA_PERFIL);
 }
+
+/**
+ * Listas en «Sala» (`SALA_LISTAS`, fase 8.5 L1): el índice `/lists` y, en
+ * L2–L5, el diálogo de crear, el detalle y la lista pública. La misma cookie y
+ * la misma lógica que las otras: con `0` las listas salen como hoy.
+ */
+export function salaListasEnabled(): Promise<boolean> {
+  return salaFlagEnabled(process.env.SALA_LISTAS);
+}
