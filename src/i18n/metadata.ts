@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { routing } from "./routing";
 import type { AppLocale } from "./detect";
 import { siteUrl } from "@/lib/site-url";
+import { salaMarcaForAll } from "@/lib/flags/sala";
 
 /**
  * Hex real de `--surface-base` (oklch(16% 0.015 280), VERIF-B). La barra del
@@ -24,6 +25,15 @@ export const SHELL_VIEWPORT: Viewport = {
   viewportFit: "cover",
   themeColor: SURFACE_BASE_HEX,
   colorScheme: "dark",
+};
+
+/** Iconos de «Sala» (fase 8.5 M1, `public/brand/` y `public/icons/sala/`). */
+export const SALA_ICONS: NonNullable<Metadata["icons"]> = {
+  icon: [
+    { url: "/brand/kultura-simbolo.svg", type: "image/svg+xml" },
+    { url: "/brand/favicon.ico", sizes: "16x16 32x32" },
+  ],
+  apple: { url: "/icons/sala/apple-icon-180.png", sizes: "180x180" },
 };
 
 /** Ruta de la petición (`x-pathname` del middleware) sin query ni hash. */
@@ -64,6 +74,9 @@ export async function shellMetadata(locale: AppLocale, pathname?: string | null)
       statusBarStyle: "black",
     },
     formatDetection: { telephone: false, email: false, address: false },
+    // Fase 8.5 M2: con `SALA_MARCA=1`, los iconos de «Sala» (M1). Sin leer
+    // cookies: estos metadatos salen en todas las páginas, también estáticas.
+    ...(salaMarcaForAll() ? { icons: SALA_ICONS } : {}),
     openGraph: {
       siteName: SITE_NAME,
       type: "website",

@@ -10,7 +10,7 @@ import { createClient } from '@/lib/supabase/client'
 import { unsubscribeCurrentDevice } from '@/lib/push/client'
 import { clearAllProgress } from '@/lib/import/import-storage'
 import { LanguageSwitcher } from '@/components/layout/LanguageSwitcher'
-import { isNavActive, FOCUS_RING, MENU_ROW } from '@/components/layout/nav-shared'
+import { isNavActive, FOCUS_RING, MENU_ROW, SALA_HEADER_ICON_CURRENT } from '@/components/layout/nav-shared'
 import { HeaderMenu } from '@/components/layout/HeaderMenu'
 
 interface AvatarDropdownProps {
@@ -18,6 +18,8 @@ interface AvatarDropdownProps {
   avatarColor: string
   avatarInitials: string
   avatarIcon?: string | null
+  /** Piel de «Sala» (fase 8.5 M2): avatar cuadrado y foco de «Sala». */
+  skin?: 'sala'
 }
 
 /** Engranaje relleno para Ajustes (los iconos comunes no traen uno). */
@@ -36,7 +38,8 @@ function IconSettings(props: { className?: string }) {
  * Menú del avatar (DIS-9): Ajustes, Sugerencias, idioma y cerrar sesión. El
  * perfil ya es uno de los 5 destinos de la navegación, así que no se repite.
  */
-export function AvatarDropdown({ username, avatarColor, avatarInitials, avatarIcon }: AvatarDropdownProps) {
+export function AvatarDropdown({ username, avatarColor, avatarInitials, avatarIcon, skin }: AvatarDropdownProps) {
+  const sala = skin === 'sala'
   const t = useTranslations('nav')
   const tAuth = useTranslations('auth')
   const tCalendar = useTranslations('calendar.nav')
@@ -66,8 +69,20 @@ export function AvatarDropdown({ username, avatarColor, avatarInitials, avatarIc
   return (
     <HeaderMenu
       label={t('accountMenu', { username })}
-      trigger={<Avatar initials={avatarInitials} color={avatarColor} icon={avatarIcon} className="w-11 h-11 text-sm" />}
-      triggerClassName={cn('flex-shrink-0 rounded-full', FOCUS_RING)}
+      trigger={
+        <Avatar
+          initials={avatarInitials}
+          color={avatarColor}
+          icon={avatarIcon}
+          className={sala ? 'w-10 h-10 text-sm rounded-none font-extrabold' : 'w-11 h-11 text-sm'}
+        />
+      }
+      triggerClassName={
+        sala
+          ? 'relative flex items-center justify-center w-12 h-12 flex-shrink-0 sala-focused:sala-focus'
+          : cn('flex-shrink-0 rounded-full', FOCUS_RING)
+      }
+      currentClassName={sala ? SALA_HEADER_ICON_CURRENT : undefined}
       current={links.some(({ href }) => isNavActive(pathname, href))}
     >
       {(close) => (

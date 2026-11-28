@@ -130,3 +130,22 @@ export function salaPerfilEnabled(): Promise<boolean> {
 export function salaListasEnabled(): Promise<boolean> {
   return salaFlagEnabled(process.env.SALA_LISTAS);
 }
+
+/**
+ * Marca y armazón en «Sala» (`SALA_MARCA`, fase 8.5 M2): la cabecera con
+ * sesión con el logo nuevo. Con sesión la página ya lee cookies, así que aquí
+ * vale `prueba`. Con `0` la cabecera sale como hoy.
+ */
+export function salaMarcaEnabled(): Promise<boolean> {
+  return salaFlagEnabled(process.env.SALA_MARCA);
+}
+
+/**
+ * `SALA_MARCA` para lo que se pinta sin sesión (la cabecera pública y los
+ * iconos de la página): solo con `1`, sin leer cookies, para no volver
+ * dinámicas las páginas públicas estáticas (rankings, legales). Con `prueba`
+ * las públicas siguen como hoy.
+ */
+export function salaMarcaForAll(): boolean {
+  return salaFlagMode(process.env.SALA_MARCA) === "on";
+}

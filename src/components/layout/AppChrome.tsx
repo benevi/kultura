@@ -23,6 +23,8 @@ interface AppChromeProps {
   profile: ChromeProfile
   /** Avisos sin leer (`getUnreadCount`): lo pide el layout, en paralelo. */
   unreadCount: number
+  /** Cabecera de «Sala» (`salaMarcaEnabled()`, fase 8.5 M2). Sin ella, la de hoy. */
+  sala?: boolean
   children: React.ReactNode
 }
 
@@ -30,9 +32,9 @@ interface AppChromeProps {
  * Componente síncrono a propósito: el layout carga los datos y lo pinta, así
  * el árbol que devuelve se puede renderizar tal cual (también en los tests).
  */
-export function AppChrome({ user, profile, unreadCount, children }: AppChromeProps) {
+export function AppChrome({ user, profile, unreadCount, sala = false, children }: AppChromeProps) {
   return (
-    <AppChromeFrame userId={user.id} profile={profile} unreadCount={unreadCount} demo={isDemoUser(user)} footer={<AppFooter />}>
+    <AppChromeFrame userId={user.id} profile={profile} unreadCount={unreadCount} demo={isDemoUser(user)} footer={<AppFooter />} sala={sala}>
       {children}
     </AppChromeFrame>
   )
