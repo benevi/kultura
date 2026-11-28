@@ -12,8 +12,8 @@
 //   si es colaborativa, tiene plantilla o no es tuya, otra línea con eso.
 // - Los nombres son `h2` bajo el `h1` de la página (hoy son `h3` sin `h2`).
 // - El vacío es un `SalaBlockState` con «Nueva lista».
-// - «Nueva lista» abre el diálogo de hoy, que se descarga al pulsar (antes
-//   iba en el código de la página). En L2 pasa a `SalaDialog`.
+// - «Nueva lista» abre «Crear lista» en «Sala» (`SalaCreateListDialog`, L2),
+//   que se descarga al pulsar.
 //
 // Solo se carga con `next/dynamic` (`SalaListsIndexLazy`): con la bandera
 // apagada el índice no descarga su código ni sus hojas.
@@ -32,8 +32,9 @@ import { SalaButton } from '@/components/sala/SalaButton'
 import { SalaPoster } from '@/components/sala/SalaPoster'
 import type { List, ListCover } from '@/types/list'
 
-const CreateListModal = dynamic(
-  () => import('@/components/social/CreateListModal').then((m) => m.CreateListModal),
+// L2: «Crear lista» en «Sala», que solo se descarga al pulsar «Nueva lista».
+const SalaCreateListDialog = dynamic(
+  () => import('./SalaCreateListDialog').then((m) => m.SalaCreateListDialog),
   { ssr: false }
 )
 
@@ -91,7 +92,7 @@ export function SalaListsIndex({ lists, viewerId }: SalaListsIndexProps) {
         </ul>
       )}
 
-      {creating ? <CreateListModal onClose={() => setCreating(false)} /> : null}
+      {creating ? <SalaCreateListDialog onClose={() => setCreating(false)} /> : null}
     </main>
   )
 }

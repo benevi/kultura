@@ -49,6 +49,8 @@ Decisiones de Víctor (27-11-2026): (1) bandera nueva `SALA_LISTAS` para las tre
 
 L1: con `salaListasEnabled()` la página pide `getUserLists(id, { covers: true })` (la consulta que cuenta trae también orden y portada; sin la opción, la de siempre) y pinta `SalaListsIndex` por `next/dynamic`; con `0`, el HTML de siempre (instantánea en `tests/unit/app/lists`). «Nueva lista» abre el diálogo de hoy, que ahora se descarga al pulsar.
 
+L2: «Crear lista» en «Sala» (`SalaCreateListDialog`, `SalaDialog` en hoja en móvil), que `SalaListsIndex` descarga al pulsar «Nueva lista». El estado y el alta salen a `useCreateListForm`, el mismo para el diálogo de hoy (instantánea en `tests/unit/components/social`: su HTML no cambia). Plantilla y visibilidad con `SalaRadioGroup` y su explicación ligada, formato con `SalaSelect` (fijo y dicho en texto con «Franquicia»), descripción con contador, colaborativa con `SalaSwitch`, «Cancelar» antes que «Crear». Sin número de personas en las colaborativas por ahora (Víctor, 28-11).
+
 ## Decisiones (Víctor, 21-11-2026)
 1. `KButton sm` 32→44: **no se toca**; cada pantalla migrada pasa a `SalaButton` (48 px) y `KButton` muere con la migración. 32 px ya cumple WCAG 2.2 AA (2.5.8 pide 24).
 2. Degradados: **no se unifican**; los dos se retiran con la migración (respaldo de Sala).

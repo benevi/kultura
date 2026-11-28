@@ -690,7 +690,8 @@
     "editNoteNamed": "Edit the note on “{title}”",
     "sala": {
       "collaborative": "collaborative",
-      "by": "by @{username}"
+      "by": "by @{username}",
+      "creating": "Creating the list…"
     }
   },
   "aiRecommendations": {

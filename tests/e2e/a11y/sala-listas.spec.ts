@@ -1,7 +1,8 @@
 /**
  * Listas con «Sala» (fase 8.5 L1): el índice `/lists` con una tarjeta por
  * lista (mosaico de cuatro casillas, el nombre como único enlace en un `h2` y
- * los datos con palabras), «Nueva lista» y el esqueleto. La red arranca con
+ * los datos con palabras), «Nueva lista» y el esqueleto. L2: «Crear lista» en
+ * `SalaDialog`. La red arranca con
  * `SALA_LISTAS=prueba` (`env.cjs`) y este spec entra con la cookie de prueba;
  * con `SALA_LISTAS=1` también pasa (salvo el caso «sin cookie»).
  *
@@ -80,12 +81,49 @@ test.describe("con la cookie de prueba", () => {
     await expectNoBlockingViolations(page, "Listas con «Sala»");
   });
 
-  test("«Nueva lista» abre el diálogo de crear", async ({ page }) => {
+  test("«Nueva lista» abre «Crear lista» en «Sala»: foco en el nombre, axe limpio y Escape devuelve el foco (L2)", async ({ page }) => {
+    await openIndex(page);
+    const nueva = page.getByRole("button", { name: es.lists.newList });
+    await nueva.click();
+    const dialog = page.getByRole("dialog", { name: es.lists.createList });
+    await expect(dialog).toBeVisible();
+    await expect(dialog.locator('[data-testid="sala-create-list-form"]')).toBeVisible();
+    await expect(page.getByRole("textbox", { name: es.lists.listName })).toBeFocused();
+    await expect(page.getByRole("radio", { name: new RegExp(es.lists.visibilityPrivate) })).toBeChecked();
+    await expectNoBlockingViolations(page, "Crear lista con «Sala»");
+    await page.keyboard.press("Escape");
+    await expect(dialog).toHaveCount(0);
+    await expect(nueva).toBeFocused();
+  });
+
+  test("«Crear lista»: sin nombre, el error en el campo y el foco en él; «Franquicia» fija el formato (L2)", async ({ page }) => {
     await openIndex(page);
     await page.getByRole("button", { name: es.lists.newList }).click();
-    await expect(page.getByRole("dialog")).toBeVisible();
-    await expect(page.getByRole("textbox", { name: es.lists.listName })).toBeFocused();
+    const dialog = page.getByRole("dialog", { name: es.lists.createList });
+    await dialog.getByRole("button", { name: es.lists.create, exact: true }).click();
+    const field = page.getByRole("textbox", { name: es.lists.listName });
+    await expect(field).toHaveAttribute("aria-invalid", "true");
+    await expect(field).toBeFocused();
+    await expect(dialog).toContainText(es.lists.nameRequired);
+    await dialog.getByRole("radio", { name: new RegExp(es.lists.template.franchise) }).check();
+    await expect(dialog.getByRole("combobox", { name: es.lists.mediaType })).toHaveCount(0);
+    await expect(dialog).toContainText(es.lists.mediaTypeMixed);
+    await expectNoBlockingViolations(page, "Crear lista con error con «Sala»");
   });
+
+  for (const width of [320, 375]) {
+    test(`${width} px: «Crear lista» como hoja, sin scroll horizontal y con «Crear» de 44 px o más (L2)`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 800 });
+      await openIndex(page);
+      await page.getByRole("button", { name: es.lists.newList }).click();
+      const dialog = page.getByRole("dialog", { name: es.lists.createList });
+      await expect(dialog).toBeVisible();
+      await expectNoHorizontalScroll(page, width);
+      const crear = await dialog.getByRole("button", { name: es.lists.create, exact: true }).boundingBox();
+      expect(crear!.height).toBeGreaterThanOrEqual(44);
+      await expectNoBlockingViolations(page, `Crear lista con «Sala» a ${width} px`);
+    });
+  }
 
   test("teclado: cada parada a la vista y con foco visible; las listas, alcanzables", async ({ page }) => {
     await openIndex(page);
