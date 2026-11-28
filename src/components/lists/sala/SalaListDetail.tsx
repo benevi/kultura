@@ -1,10 +1,10 @@
 'use client'
 
 // ============================================================
-// KULTURA — /lists/[id] en «Sala» (fase 8.5 L3, bandera SALA_LISTAS)
+// KULTURA — /lists/[id] en «Sala» (fase 8.5 L3–L4, bandera SALA_LISTAS)
 // La ficha de una lista para su dueño y sus miembros (a los demás la página
-// los lleva a la pública, `/u/…/l/…`). Cabecera y títulos; ordenar y
-// miembros siguen con las piezas de hoy hasta L4.
+// los lleva a la pública, `/u/…/l/…`). Cabecera, títulos, ordenar y anotar
+// (`SalaReorderableItems`) y miembros (`SalaListMembers`).
 //
 // - Cabecera: el nombre en el `h1`, los datos con palabras y en minúscula
 //   («varios formatos · franquicia · colaborativa · 6 títulos») y, si no es
@@ -16,8 +16,10 @@
 //   «Cancelar» primero; el error, dentro del diálogo.
 // - Títulos: `h2` solo con «Títulos» (antes «Títulos2») y el número aparte,
 //   anunciado al cambiar. Rejilla de `SalaWorkCard` en una lista ordenada;
-//   en un ranking, el número a la vista y en el nombre de la tarjeta; la nota
-//   en sus datos. Quitar un título no pregunta: desaparece y un aviso ofrece
+//   en un ranking, el puesto a la vista y en el nombre de la tarjeta (no en
+//   el póster de relleno); la nota en sus datos. «Quitar» va debajo de la
+//   tarjeta, no encima del póster (en un móvil tapaba un tercio de la
+//   portada). Quitar un título no pregunta: desaparece y un aviso ofrece
 //   «Deshacer» (con el foco en él); si nadie deshace, se quita de verdad. Si
 //   falla, vuelve a su sitio y se dice.
 //
@@ -41,8 +43,6 @@ import { SalaWorkCard } from '@/components/sala/SalaWorkCard'
 import { SalaWorkList } from '@/components/sala/SalaWorkList'
 import { ShareLinkButton } from '@/components/social/ShareLinkButton'
 import { removeListItem } from '@/lib/lists/client'
-import { ListMembersSection } from '@/app/[locale]/(app)/lists/[id]/ListMembersSection'
-import { ReorderableItems } from '@/app/[locale]/(app)/lists/[id]/ReorderableItems'
 import { useListDetail } from '@/app/[locale]/(app)/lists/[id]/useListDetail'
 import { useListDescription } from '@/app/[locale]/(app)/lists/[id]/useListDescription'
 import {
@@ -54,6 +54,8 @@ import {
 } from '@/app/[locale]/(app)/lists/[id]/list-detail-utils'
 import type { List, ListItem, ListMember } from '@/types/list'
 import type { MediaType } from '@/types/media'
+import { SalaListMembers } from './SalaListMembers'
+import { SalaReorderableItems } from './SalaReorderableItems'
 
 export interface SalaListDetailProps {
   list: List
@@ -270,8 +272,7 @@ function SalaListDetailView({
         </div>
 
         {detail.reordering && canEdit && items.length > 0 ? (
-          // L4 la pasa a «Sala»; de momento, la de hoy.
-          <ReorderableItems listId={list.id} items={visible} onItemsChange={onItemsChange} ranked={ranked} />
+          <SalaReorderableItems listId={list.id} items={visible} onItemsChange={onItemsChange} ranked={ranked} />
         ) : visible.length === 0 ? (
           <SalaBlockState
             headingLevel={3}
@@ -291,10 +292,11 @@ function SalaListDetailView({
               const title = item.media?.title ?? item.mediaId
               const type = (item.media?.type ?? item.mediaId.split('_')[0]) as MediaType
               return (
-                <div key={item.id} data-sala-list-item={item.id} className="contents">
+                <div key={item.id} data-sala-list-item={item.id} className="flex flex-col items-start gap-1">
                   <SalaWorkCard
                     href={mediaHref(item)}
-                    title={ranked ? `${index + 1}. ${title}` : title}
+                    title={title}
+                    rank={ranked ? index + 1 : undefined}
                     format={type}
                     formatLabel={tType(type)}
                     year={item.media?.year}
@@ -302,18 +304,19 @@ function SalaListDetailView({
                     ratio="2/3"
                     headingLevel={3}
                     detail={item.note ? <span className="[overflow-wrap:anywhere]">{item.note}</span> : undefined}
-                    action={
-                      canEdit ? (
-                        <SalaButton
-                          variant="secondary"
-                          icon={<QuitarIcon />}
-                          label={t('removeItemNamed', { title })}
-                          onClick={() => remove(item)}
-                          className="bg-sala-background"
-                        />
-                      ) : undefined
-                    }
+                    className="w-full"
                   />
+                  {canEdit ? (
+                    <SalaButton
+                      variant="quiet"
+                      icon={<QuitarIcon />}
+                      aria-label={t('removeItemNamed', { title })}
+                      onClick={() => remove(item)}
+                      className="-ms-6"
+                    >
+                      {t('sala.removeShort')}
+                    </SalaButton>
+                  ) : null}
                 </div>
               )
             })}
@@ -321,13 +324,13 @@ function SalaListDetailView({
         )}
       </section>
 
-      {/* Miembros: solo colaborativas, y solo para su dueño y sus miembros. L4 los pasa a «Sala». */}
+      {/* Miembros: solo colaborativas, y solo para su dueño y sus miembros. */}
       {showMembers ? (
-        <ListMembersSection
+        <SalaListMembers
           list={list}
           members={detail.members}
           isOwner={isOwner}
-          onRemoveMember={detail.handleRemoveMember}
+          onRemoveMember={detail.removeMember}
           invitableFriends={invitableFriends(detail.members, list.ownerId, currentUserFriends)}
           inviteUserId={detail.inviteUserId}
           onInviteUserIdChange={detail.setInviteUserId}

@@ -122,6 +122,21 @@ export function useListDetail({ list, initialItems, initialMembers, currentUserF
     }
   }
 
+  /**
+   * Quitar a un miembro desde una confirmación («Sala», L4): el fallo lo
+   * dice el diálogo, así que aquí no se pone en `actionError`.
+   */
+  async function removeMember(userId: string): Promise<boolean> {
+    try {
+      await removeListMember(list.id, userId)
+      setMembers((prev) => prev.filter((m) => m.userId !== userId))
+      return true
+    } catch (err) {
+      log.error('Failed to remove member', { err })
+      return false
+    }
+  }
+
   return {
     items,
     onItemsChange,
@@ -135,6 +150,7 @@ export function useListDetail({ list, initialItems, initialMembers, currentUserF
     inviting,
     handleInvite,
     handleRemoveMember,
+    removeMember,
     isPublic,
     handleVisibilityChange,
     confirmDelete,
