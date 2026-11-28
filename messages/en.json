@@ -691,6 +691,7 @@
     "sala": {
       "collaborative": "collaborative",
       "by": "by @{username}",
+      "creating": "Creating the list…",
       "removed": "“{title}” removed from the list",
       "undo": "Undo",
       "savingDescription": "Saving the description…"
