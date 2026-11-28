@@ -201,7 +201,8 @@ describe("las pantallas de hoy solo descargan «Sala» donde ya la usan", () => 
     //   esqueleto de su `loading.tsx`, igual que el de Inicio.
     // - `SalaListsIndex` (fase 8.5, L1): el índice de listas, por `next/dynamic`
     //   y solo con la bandera `SALA_LISTAS` encendida; `SalaListsSkeleton`, el
-    //   esqueleto de su `loading.tsx`, igual.
+    //   esqueleto de su `loading.tsx`, igual. `SalaListDetail` (L3) y
+    //   `SalaPublicList` (L5): la ficha de una lista y la lista pública, igual.
     // - `SalaAuthHeader` y `SalaChromeStyles` (fase 8.5, M2): la cabecera con
     //   sesión y la pública en «Sala», por `next/dynamic` y solo con la bandera
     //   `SALA_MARCA` encendida.
@@ -217,6 +218,7 @@ describe("las pantallas de hoy solo descargan «Sala» donde ya la usan", () => 
       "src/components/lists/sala/SalaListDetailSkeleton.tsx",
       "src/components/lists/sala/SalaListsIndex.tsx",
       "src/components/lists/sala/SalaListsSkeleton.tsx",
+      "src/components/lists/sala/SalaPublicList.tsx",
       "src/components/media/sala/SalaFichaStyles.tsx",
       "src/components/profile/sala/SalaProfile.tsx",
       "src/components/profile/sala/SalaProfileSkeleton.tsx",

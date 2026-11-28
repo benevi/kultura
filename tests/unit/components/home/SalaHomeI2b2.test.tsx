@@ -6,7 +6,7 @@
 // tres estados.
 // ============================================================
 
-import { render, screen, fireEvent, act } from '@testing-library/react'
+import { render, screen, fireEvent, act, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, afterEach } from 'vitest'
 
 vi.mock('@/i18n/navigation', () => ({
@@ -74,7 +74,8 @@ describe('«Para ti» en «Sala»', () => {
     expect(screen.getByText('Mismo tono que tus favoritas.')).toBeInTheDocument()
     expect(screen.getByText('aiPickBadge')).toBeInTheDocument()
     expect(screen.getByText('dailyNote')).toBeInTheDocument()
-    expect(screen.getByRole('heading', { level: 2, name: 'title' })).toHaveFocus()
+    // El foco llega en un efecto después de pintar: con la suite cargada, un tick más tarde (docs/tests-intermitentes.md).
+    await waitFor(() => expect(screen.getByRole('heading', { level: 2, name: 'title' })).toHaveFocus())
   })
 
   it('con las de hoy (initial) las pinta sin pedir', () => {

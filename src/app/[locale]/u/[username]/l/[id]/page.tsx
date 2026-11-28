@@ -14,6 +14,13 @@
 // mira y el dueño, 404 (como una lista que no existe), también en los
 // metadatos (el nombre de la lista no sale en `<title>`). La lista es todo
 // dato del dueño: no hay versión genérica como en `/u/…/r/…`.
+//
+// Fase 8.5 L5: con `SALA_LISTAS` la página sale en «Sala»
+// (`SalaPublicListPage`). Con la bandera en `1` se decide sin leer cookies;
+// en `prueba`, con la cookie de prueba (la página ya es dinámica: lee la
+// sesión). Con `0`, el HTML de siempre. Los mismos datos, el mismo 404 con
+// bloqueo y los mismos metadatos en las dos ramas; los miembros de una
+// colaborativa no salen en ninguna (#322).
 // ============================================================
 
 import * as React from 'react'
@@ -34,6 +41,10 @@ import { viewerBlockedWith } from '@/lib/social/block-check'
 import { getPublicListExtras, sortListItems } from '@/lib/social/lists'
 import { OrderedListGrid } from '@/components/collection/OrderedListGrid'
 import type { MediaItem, MediaType } from '@/types/media'
+import { salaListasEnabled } from '@/lib/flags/sala'
+import { getViewer } from '@/lib/media/viewer'
+import { getUnreadCount } from '@/lib/social/notifications'
+import { SalaPublicListPage } from '@/components/collection/sala/SalaPublicListPage'
 
 interface Props {
   params: Promise<{ locale: string; username: string; id: string }>
@@ -56,9 +67,16 @@ function decodeName(raw: string): string {
 const cache: <T extends (...args: never[]) => unknown>(fn: T) => T =
   (React as unknown as { cache?: <T>(fn: T) => T }).cache ?? ((fn) => fn)
 
-/** Quién mira (sin sesión: `null`; nunca lanza). Una vez por petición. */
+/**
+ * Quién mira (sin sesión: `null`; nunca lanza). Una vez por petición. Con
+ * «Sala», la sesión sale de `getViewer` (con el perfil que pinta la barra).
+ */
 const currentViewer = cache(async (): Promise<{ id: string } | null> => {
   try {
+    if (await salaListasEnabled()) {
+      const { user } = await getViewer()
+      return user ? { id: user.id } : null
+    }
     const supabase = await createClient()
     const { data } = await supabase.auth.getUser()
     return data.user ? { id: data.user.id } : null
@@ -101,7 +119,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function PublicListPage({ params }: Props) {
-  const { username, id } = await params
+  const { locale, username, id } = await params
   const name = decodeName(username)
   const [{ data, viewer }, extras] = await Promise.all([
     loadVisibleList(name, id),
@@ -134,6 +152,31 @@ export default async function PublicListPage({ params }: Props) {
         })),
       ).map(({ entry }) => entry)
     : null
+  if (await salaListasEnabled()) {
+    const session = viewer ? await getViewer() : null
+    const unreadCount = session?.user && session.profile ? await getUnreadCount(session.user.id).catch(() => 0) : 0
+    const entries = extras
+      ? sortListItems(
+          list.items.map((item) => ({
+            entry: { item, note: extras.items.get(item.mediaId)?.note ?? null },
+            position: extras.items.get(item.mediaId)?.position ?? null,
+          })),
+        ).map(({ entry }) => entry)
+      : list.items.map((item) => ({ item, note: null }))
+    return (
+      <SalaPublicListPage
+        locale={locale}
+        owner={owner}
+        list={list}
+        entries={entries}
+        description={extras?.description ?? null}
+        template={extras?.template ?? null}
+        chrome={session?.user ? { user: session.user, profile: session.profile, unreadCount } : null}
+        registerHref={`/login?mode=register&ref=${encodeURIComponent(owner.username)}`}
+      />
+    )
+  }
+
   const formatLabel = SINGULAR_KEY[list.mediaType] ? tm(SINGULAR_KEY[list.mediaType]) : tl('mediaTypeMixed')
 
   return (

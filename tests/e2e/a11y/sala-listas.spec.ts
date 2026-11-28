@@ -18,6 +18,9 @@
  * miembro: «Quitar a @benevi» con su confirmación; no se confirma, para no
  * cambiar los datos del simulado entre pruebas). Invitar se prueba en
  * `SalaListMembers.test.tsx` (en el simulado no hay amigos que invitar).
+ * L5: la lista pública `/u/benevi/l/…` («Imprescindibles», un título) con
+ * sesión (barra de la app, denuncia con su botón) y sin ella (cabecera
+ * pública, una sola llamada a registrarse, denuncia con su enlace).
  */
 import { test, expect, type BrowserContext, type Page } from "@playwright/test";
 import { expectNoBlockingViolations, expectNoHorizontalScroll, isolateNetwork, open, signIn, walkTab } from "./helpers";
@@ -76,6 +79,22 @@ test.describe("sin la cookie de prueba: la ficha de hoy", () => {
       links.map((l) => (l as HTMLLinkElement).href).filter((href) => /sala/i.test(href))
     );
     expect(salaSheets, "hojas de «Sala» en la ficha de hoy").toEqual([]);
+  });
+});
+
+const PUBLIC_LIST = "[data-sala-public-list]";
+
+test.describe("sin la cookie de prueba: la lista pública de hoy", () => {
+  test.skip(process.env.SALA_LISTAS === "1", "con SALA_LISTAS=1 la ven todos");
+
+  test("sin «Sala» ni sus hojas", async ({ page }) => {
+    await open(page, `/es/u/benevi/l/${PUBLIC_LIST_ID}`);
+    await expect(page.locator(PUBLIC_LIST)).toHaveCount(0);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Imprescindibles");
+    const salaSheets = await page.$$eval('link[rel="stylesheet"]', (links) =>
+      links.map((l) => (l as HTMLLinkElement).href).filter((href) => /sala/i.test(href))
+    );
+    expect(salaSheets, "hojas de «Sala» en la lista pública de hoy").toEqual([]);
   });
 });
 
@@ -331,6 +350,68 @@ test.describe("con la cookie de prueba", () => {
         await page.getByRole("button", { name: es.lists.reorder }).click();
         await expectNoHorizontalScroll(page, width);
         await expectNoBlockingViolations(page, `Ordenar con «Sala» a ${width} px`);
+      });
+    }
+  });
+  test.describe("lista pública (L5)", () => {
+    const path = `/es/u/benevi/l/${PUBLIC_LIST_ID}`;
+
+    test("con sesión: barra de la app, cabecera en lectura, denuncia con su botón y axe limpio", async ({ page }) => {
+      await open(page, path);
+      await expect(page.locator(PUBLIC_LIST)).toBeVisible();
+      await expect(page.getByRole("heading", { level: 1 })).toHaveText("Imprescindibles");
+      const header = page.locator(`${PUBLIC_LIST} header`);
+      // Los datos con palabras y en minúscula; el dueño, con su propio enlace.
+      await expect(header).toContainText(es.discoverFilters.typeBadge.movie.toLowerCase());
+      await expect(header).toContainText("1 título");
+      await expect(header.getByRole("link", { name: "de @benevi" })).toHaveAttribute("href", "/es/u/benevi");
+      await expect(page.getByRole("link", { name: es.collection.backToCollection })).toHaveCount(0);
+      // «Denunciar» a la vista; el nombre dice qué: «Denunciar lista: Imprescindibles».
+      await expect(header.getByRole("button", { name: `${es.report.triggerList}: Imprescindibles` })).toBeVisible();
+      // La barra de la app y ninguna llamada a registrarse.
+      await expect(page.getByRole("navigation").first()).toBeVisible();
+      await expect(page.getByRole("link", { name: es.collection.ctaButton })).toHaveCount(0);
+      const lista = page.getByRole("list", { name: es.lists.itemsTitle });
+      await expect(lista).toHaveJSProperty("tagName", "OL");
+      await expect(lista.getByRole("heading", { level: 3 })).toHaveCount(1);
+      await expectNoBlockingViolations(page, "Lista pública con «Sala» y sesión");
+    });
+
+    test("sin sesión: cabecera pública, una sola llamada a registrarse y la denuncia con su enlace", async ({ page, context, baseURL }) => {
+      await context.clearCookies();
+      await salaCookie(context, baseURL!);
+      await open(page, path);
+      await expect(page.locator(PUBLIC_LIST)).toBeVisible();
+      const cta = page.getByRole("link", { name: es.collection.ctaButton });
+      await expect(cta).toHaveCount(1);
+      await expect(cta).toHaveAttribute("href", "/es/login?mode=register&ref=benevi");
+      await expect(page.getByRole("link", { name: es.collection.reportList })).toHaveAttribute(
+        "href",
+        `/es/report?target=list&id=${PUBLIC_LIST_ID}`
+      );
+      await expectNoBlockingViolations(page, "Lista pública con «Sala» sin sesión");
+    });
+
+    test("teclado: cada parada a la vista y con foco visible", async ({ page, context, baseURL }) => {
+      await context.clearCookies();
+      await salaCookie(context, baseURL!);
+      await open(page, path);
+      const stops = await walkTab(page, 40);
+      const titles = new Set(await page.locator(`${PUBLIC_LIST} [data-sala-card] a`).allTextContents());
+      const bad = stops.filter((s) => !s.visible || (!s.indicator && !(s.tag === "a" && titles.has(s.name))));
+      expect(bad, "paradas tapadas o sin foco visible").toEqual([]);
+      for (const name of ["de @benevi", es.collection.reportList, es.collection.ctaButton]) {
+        expect(stops.some((s) => s.name === name), `${name}: ${JSON.stringify(stops)}`).toBe(true);
+      }
+    });
+
+    for (const width of [320, 375]) {
+      test(`${width} px: sin scroll horizontal y axe limpio`, async ({ page }) => {
+        await page.setViewportSize({ width, height: 800 });
+        await open(page, path);
+        await expect(page.locator(PUBLIC_LIST)).toBeVisible();
+        await expectNoHorizontalScroll(page, width);
+        await expectNoBlockingViolations(page, `Lista pública con «Sala» a ${width} px`);
       });
     }
   });
