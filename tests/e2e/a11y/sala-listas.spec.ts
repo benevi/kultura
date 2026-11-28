@@ -16,7 +16,8 @@
  * (vacía, ranking) y la pública de `benevi` (ni dueño ni miembro: a `/u/…/l/…`).
  * L4: ordenar y anotar en «Sala» y los miembros de la propia (`benevi` es
  * miembro: «Quitar a @benevi» con su confirmación; no se confirma, para no
- * cambiar los datos del simulado entre pruebas).
+ * cambiar los datos del simulado entre pruebas). Invitar se prueba en
+ * `SalaListMembers.test.tsx` (en el simulado no hay amigos que invitar).
  */
 import { test, expect, type BrowserContext, type Page } from "@playwright/test";
 import { expectNoBlockingViolations, expectNoHorizontalScroll, isolateNetwork, open, signIn, walkTab } from "./helpers";
@@ -312,7 +313,6 @@ test.describe("con la cookie de prueba", () => {
       const seccion = page.locator("[data-sala-list-members]");
       await expect(seccion.getByRole("heading", { level: 2, name: es.lists.membersTitle })).toBeVisible();
       await expect(seccion.getByRole("link", { name: "@benevi" })).toBeVisible();
-      await expect(seccion.getByRole("combobox", { name: es.lists.inviteMember })).toBeVisible();
       const quitar = seccion.getByRole("button", { name: "Quitar a @benevi" });
       await quitar.click();
       const dialogo = page.getByRole("alertdialog");
