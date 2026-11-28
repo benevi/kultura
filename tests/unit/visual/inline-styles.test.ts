@@ -31,6 +31,7 @@ const ALLOWED: Record<string, [number, string]> = {
   "src/app/[locale]/best/[format]/[year]/opengraph-image.tsx": [11, "OG: next/og solo admite estilos en línea"],
   "src/app/[locale]/u/[username]/opengraph-image.tsx": [10, "OG: next/og solo admite estilos en línea"],
   "src/app/[locale]/u/[username]/l/[id]/opengraph-image.tsx": [10, "OG: next/og solo admite estilos en línea"],
+  "src/lib/og/sala-card.tsx": [7, "OG: plantilla de next/og de «Sala» (M1), solo admite estilos en línea"],
   "src/app/[locale]/u/[username]/r/_lib/rated-card.tsx": [11, "OG: tarjeta de next/og de la reseña pública"],
   "src/app/global-error.tsx": [8, "global-error: se pinta sin layout ni hojas de estilo"],
 
