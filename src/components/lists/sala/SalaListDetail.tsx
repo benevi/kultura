@@ -187,7 +187,7 @@ function SalaListDetailView({
           {!isOwner && list.owner ? (
             <span>
               <Sep />
-              <Link href={`/u/${list.owner.username}`} className="text-sala-ink underline underline-offset-2 sala-focused:sala-focus">
+              <Link href={`/u/${list.owner.username}`} className="whitespace-nowrap text-sala-ink underline underline-offset-2 sala-focused:sala-focus">
                 {t('sala.by', { username: list.owner.username })}
               </Link>
             </span>
@@ -250,7 +250,7 @@ function SalaListDetailView({
       <section aria-labelledby={itemsHeadingId} className="flex flex-col gap-4">
         <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
           <div className="flex min-w-0 flex-wrap items-baseline gap-x-4 gap-y-1">
-            <h2 id={itemsHeadingId} className="sala-type-subheading">
+            <h2 id={itemsHeadingId} className="sala-type-data">
               {t('itemsTitle')}
             </h2>
             {/* Región viva: al quitar o deshacer se anuncia cuántos quedan. */}
@@ -403,7 +403,7 @@ function SalaListDescription({
       ) : null}
       {isOwner ? (
         <div>
-          <SalaButton variant="quiet" onClick={description.startEditing}>
+          <SalaButton variant="quiet" onClick={description.startEditing} className="-ms-6">
             {description.description ? t('editDescription') : t('addDescription')}
           </SalaButton>
         </div>
