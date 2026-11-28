@@ -47,6 +47,11 @@ interface Props {
    * «Cancelar».
    */
   closeLabel?: string
+  /**
+   * Con `skin="sala"`: clases del disparador, p. ej. `-ms-6` para alinear el
+   * botón discreto con el texto de la cabecera (lista pública, L5).
+   */
+  triggerClassName?: string
 }
 
 type Status = 'idle' | 'open' | 'sending' | 'sent'
@@ -159,7 +164,7 @@ export function InlineConfirm({
   )
 }
 
-export function ReportButton({ targetType, targetId, variant = 'button', contextLabel, className, skin, closeLabel }: Props) {
+export function ReportButton({ targetType, targetId, variant = 'button', contextLabel, className, skin, closeLabel, triggerClassName }: Props) {
   const sala = skin === 'sala' && variant === 'button'
   const t = useTranslations('report')
   const [status, setStatus] = useState<Status>('idle')
@@ -239,6 +244,7 @@ export function ReportButton({ targetType, targetId, variant = 'button', context
             aria-haspopup="dialog"
             aria-label={contextLabel ? triggerLabel : undefined}
             onClick={() => setStatus('open')}
+            className={triggerClassName}
           >
             {t('label')}
           </SalaButton>

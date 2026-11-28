@@ -80,7 +80,7 @@ export async function SalaPublicListPage({
   }))
 
   const report = signedIn ? (
-    <ReportButton targetType="list" targetId={list.id} contextLabel={list.name} skin="sala" closeLabel={tc('close')} />
+    <ReportButton targetType="list" targetId={list.id} contextLabel={list.name} skin="sala" closeLabel={tc('close')} triggerClassName="-ms-6" />
   ) : (
     <SalaLink variant="standalone" href={`/report?target=list&id=${encodeURIComponent(list.id)}`}>
       {t('reportList')}
