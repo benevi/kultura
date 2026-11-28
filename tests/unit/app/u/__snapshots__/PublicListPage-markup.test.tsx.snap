@@ -1,0 +1,59 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`/u/[username]/l/[id] sin «Sala» (SALA_LISTAS apagada): marcado de hoy > con sesión: barra corta y botón de denuncia 1`] = `"<div class="min-h-screen flex flex-col"><div data-stub="SignedInBar" data-props="{}"></div><main id="main" class="page-grid [&amp;&gt;*]:max-w-4xl flex-1 py-10 flex flex-col gap-10"><header class="flex flex-col gap-3"><div><div data-stub="FormatLabel" data-props="{}">media.movie</div></div><h1 class="font-display text-3xl md:text-4xl font-bold tracking-tight text-text-primary leading-tight">Top</h1><div data-stub="Link" data-props="{&quot;href&quot;:&quot;/u/ana&quot;,&quot;className&quot;:&quot;self-start flex items-center gap-3 text-meta text-text-tertiary hover:text-text-primary&quot;}"><div data-stub="Avatar" data-props="{&quot;initials&quot;:&quot;AN&quot;,&quot;color&quot;:&quot;pink&quot;,&quot;icon&quot;:null,&quot;size&quot;:&quot;sm&quot;}"></div><span><span class="font-semibold text-text-primary">ana</span> · collection.items{&quot;count&quot;:2} · collection.backToCollection</span></div></header><div data-stub="MediaGrid" data-props="{&quot;items&quot;:[{&quot;id&quot;:&quot;movie_1&quot;,&quot;externalId&quot;:&quot;1&quot;,&quot;type&quot;:&quot;movie&quot;,&quot;title&quot;:&quot;Dune&quot;,&quot;poster&quot;:&quot;/p1.jpg&quot;,&quot;year&quot;:2021},{&quot;id&quot;:&quot;movie_2&quot;,&quot;externalId&quot;:&quot;2&quot;,&quot;type&quot;:&quot;movie&quot;,&quot;title&quot;:&quot;Arrival&quot;,&quot;year&quot;:2016}],&quot;requirePoster&quot;:false}"></div><div class="flex justify-center"><div data-stub="ReportButton" data-props="{&quot;targetType&quot;:&quot;list&quot;,&quot;targetId&quot;:&quot;l1&quot;}"></div></div></main><div data-stub="Footer" data-props="{}"></div></div>"`;
+
+exports[`/u/[username]/l/[id] sin «Sala» (SALA_LISTAS apagada): marcado de hoy > metadatos 1`] = `
+{
+  "alternates": {
+    "canonical": "/es/u/ana/l/l1",
+  },
+  "description": "collection.listMetaDescription{"username":"ana"}",
+  "openGraph": {
+    "description": "collection.listMetaDescription{"username":"ana"}",
+    "siteName": "KULTURA",
+    "title": "Top · ana · KULTURA",
+    "url": "https://kultura.test/es/u/ana/l/l1",
+  },
+  "robots": {
+    "follow": true,
+    "index": false,
+  },
+  "title": "Top · ana",
+  "twitter": {
+    "card": "summary_large_image",
+    "description": "collection.listMetaDescription{"username":"ana"}",
+    "title": "Top · ana · KULTURA",
+  },
+}
+`;
+
+exports[`/u/[username]/l/[id] sin «Sala» (SALA_LISTAS apagada): marcado de hoy > metadatos 2`] = `
+{
+  "alternates": {
+    "canonical": "/es/u/ana/l/l1",
+  },
+  "description": "collection.listMetaDescription{"username":"ana"}",
+  "openGraph": {
+    "description": "collection.listMetaDescription{"username":"ana"}",
+    "siteName": "KULTURA",
+    "title": "collection.metaTitle{"username":"ana"} · KULTURA",
+    "url": "https://kultura.test/es/u/ana/l/l1",
+  },
+  "robots": {
+    "follow": true,
+    "index": false,
+  },
+  "title": "collection.metaTitle{"username":"ana"}",
+  "twitter": {
+    "card": "summary_large_image",
+    "description": "collection.listMetaDescription{"username":"ana"}",
+    "title": "collection.metaTitle{"username":"ana"} · KULTURA",
+  },
+}
+`;
+
+exports[`/u/[username]/l/[id] sin «Sala» (SALA_LISTAS apagada): marcado de hoy > sin sesión y sin datos extra: rejilla, registro y denuncia pública 1`] = `"<div class="min-h-screen flex flex-col"><div data-stub="Header" data-props="{}"></div><main id="main" class="page-grid [&amp;&gt;*]:max-w-4xl flex-1 py-10 flex flex-col gap-10"><header class="flex flex-col gap-3"><div><div data-stub="FormatLabel" data-props="{}">media.movie</div></div><h1 class="font-display text-3xl md:text-4xl font-bold tracking-tight text-text-primary leading-tight">Top</h1><div data-stub="Link" data-props="{&quot;href&quot;:&quot;/u/ana&quot;,&quot;className&quot;:&quot;self-start flex items-center gap-3 text-meta text-text-tertiary hover:text-text-primary&quot;}"><div data-stub="Avatar" data-props="{&quot;initials&quot;:&quot;AN&quot;,&quot;color&quot;:&quot;pink&quot;,&quot;icon&quot;:null,&quot;size&quot;:&quot;sm&quot;}"></div><span><span class="font-semibold text-text-primary">ana</span> · collection.items{&quot;count&quot;:2} · collection.backToCollection</span></div></header><div data-stub="MediaGrid" data-props="{&quot;items&quot;:[{&quot;id&quot;:&quot;movie_1&quot;,&quot;externalId&quot;:&quot;1&quot;,&quot;type&quot;:&quot;movie&quot;,&quot;title&quot;:&quot;Dune&quot;,&quot;poster&quot;:&quot;/p1.jpg&quot;,&quot;year&quot;:2021},{&quot;id&quot;:&quot;movie_2&quot;,&quot;externalId&quot;:&quot;2&quot;,&quot;type&quot;:&quot;movie&quot;,&quot;title&quot;:&quot;Arrival&quot;,&quot;year&quot;:2016}],&quot;requirePoster&quot;:false}"></div><div data-stub="SignUpCta" data-props="{&quot;href&quot;:&quot;/login?mode=register&amp;ref=ana&quot;}"></div><div class="flex justify-center"><div data-stub="Link" data-props="{&quot;href&quot;:&quot;/report?target=list&amp;id=l1&quot;,&quot;className&quot;:&quot;inline-flex items-center min-h-11 text-meta text-text-tertiary underline-offset-4 hover:underline hover:text-text-primary&quot;}">collection.reportList</div></div></main><div data-stub="Footer" data-props="{}"></div></div>"`;
+
+exports[`/u/[username]/l/[id] sin «Sala» (SALA_LISTAS apagada): marcado de hoy > un «Ranking personal» con su orden, sus notas y la descripción 1`] = `"<div class="min-h-screen flex flex-col"><div data-stub="Header" data-props="{}"></div><main id="main" class="page-grid [&amp;&gt;*]:max-w-4xl flex-1 py-10 flex flex-col gap-10"><header class="flex flex-col gap-3"><div><div data-stub="FormatLabel" data-props="{}">media.movie</div><span class="ml-2 text-meta font-bold text-text-tertiary">lists.template.ranking</span></div><h1 class="font-display text-3xl md:text-4xl font-bold tracking-tight text-text-primary leading-tight">Top</h1><div data-stub="Link" data-props="{&quot;href&quot;:&quot;/u/ana&quot;,&quot;className&quot;:&quot;self-start flex items-center gap-3 text-meta text-text-tertiary hover:text-text-primary&quot;}"><div data-stub="Avatar" data-props="{&quot;initials&quot;:&quot;AN&quot;,&quot;color&quot;:&quot;pink&quot;,&quot;icon&quot;:null,&quot;size&quot;:&quot;sm&quot;}"></div><span><span class="font-semibold text-text-primary">ana</span> · collection.items{&quot;count&quot;:2} · collection.backToCollection</span></div><p class="max-w-2xl text-body leading-relaxed text-text-secondary whitespace-pre-line break-words">Mis favoritas</p></header><div data-stub="OrderedListGrid" data-props="{&quot;entries&quot;:[{&quot;item&quot;:{&quot;id&quot;:&quot;movie_2&quot;,&quot;externalId&quot;:&quot;2&quot;,&quot;type&quot;:&quot;movie&quot;,&quot;title&quot;:&quot;Arrival&quot;,&quot;year&quot;:2016},&quot;note&quot;:&quot;La mejor&quot;},{&quot;item&quot;:{&quot;id&quot;:&quot;movie_1&quot;,&quot;externalId&quot;:&quot;1&quot;,&quot;type&quot;:&quot;movie&quot;,&quot;title&quot;:&quot;Dune&quot;,&quot;poster&quot;:&quot;/p1.jpg&quot;,&quot;year&quot;:2021},&quot;note&quot;:null}],&quot;ranked&quot;:true,&quot;label&quot;:&quot;Top&quot;}"></div><div data-stub="SignUpCta" data-props="{&quot;href&quot;:&quot;/login?mode=register&amp;ref=ana&quot;}"></div><div class="flex justify-center"><div data-stub="Link" data-props="{&quot;href&quot;:&quot;/report?target=list&amp;id=l1&quot;,&quot;className&quot;:&quot;inline-flex items-center min-h-11 text-meta text-text-tertiary underline-offset-4 hover:underline hover:text-text-primary&quot;}">collection.reportList</div></div></main><div data-stub="Footer" data-props="{}"></div></div>"`;
+
+exports[`/u/[username]/l/[id] sin «Sala» (SALA_LISTAS apagada): marcado de hoy > una lista mixta sin plantilla 1`] = `"<div class="min-h-screen flex flex-col"><div data-stub="Header" data-props="{}"></div><main id="main" class="page-grid [&amp;&gt;*]:max-w-4xl flex-1 py-10 flex flex-col gap-10"><header class="flex flex-col gap-3"><div><div data-stub="FormatLabel" data-props="{}">lists.mediaTypeMixed</div></div><h1 class="font-display text-3xl md:text-4xl font-bold tracking-tight text-text-primary leading-tight">Top</h1><div data-stub="Link" data-props="{&quot;href&quot;:&quot;/u/ana&quot;,&quot;className&quot;:&quot;self-start flex items-center gap-3 text-meta text-text-tertiary hover:text-text-primary&quot;}"><div data-stub="Avatar" data-props="{&quot;initials&quot;:&quot;AN&quot;,&quot;color&quot;:&quot;pink&quot;,&quot;icon&quot;:null,&quot;size&quot;:&quot;sm&quot;}"></div><span><span class="font-semibold text-text-primary">ana</span> · collection.items{&quot;count&quot;:2} · collection.backToCollection</span></div></header><div data-stub="OrderedListGrid" data-props="{&quot;entries&quot;:[{&quot;item&quot;:{&quot;id&quot;:&quot;movie_1&quot;,&quot;externalId&quot;:&quot;1&quot;,&quot;type&quot;:&quot;movie&quot;,&quot;title&quot;:&quot;Dune&quot;,&quot;poster&quot;:&quot;/p1.jpg&quot;,&quot;year&quot;:2021},&quot;note&quot;:null},{&quot;item&quot;:{&quot;id&quot;:&quot;movie_2&quot;,&quot;externalId&quot;:&quot;2&quot;,&quot;type&quot;:&quot;movie&quot;,&quot;title&quot;:&quot;Arrival&quot;,&quot;year&quot;:2016},&quot;note&quot;:null}],&quot;ranked&quot;:false,&quot;label&quot;:&quot;Top&quot;}"></div><div data-stub="SignUpCta" data-props="{&quot;href&quot;:&quot;/login?mode=register&amp;ref=ana&quot;}"></div><div class="flex justify-center"><div data-stub="Link" data-props="{&quot;href&quot;:&quot;/report?target=list&amp;id=l1&quot;,&quot;className&quot;:&quot;inline-flex items-center min-h-11 text-meta text-text-tertiary underline-offset-4 hover:underline hover:text-text-primary&quot;}">collection.reportList</div></div></main><div data-stub="Footer" data-props="{}"></div></div>"`;
