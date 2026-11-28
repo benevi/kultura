@@ -690,7 +690,10 @@
     "editNoteNamed": "Edit the note on “{title}”",
     "sala": {
       "collaborative": "collaborative",
-      "by": "by @{username}"
+      "by": "by @{username}",
+      "removed": "“{title}” removed from the list",
+      "undo": "Undo",
+      "savingDescription": "Saving the description…"
     }
   },
   "aiRecommendations": {

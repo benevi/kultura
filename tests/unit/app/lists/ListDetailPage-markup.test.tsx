@@ -166,3 +166,70 @@ describe('/lists/[id] sin «Sala» (SALA_LISTAS apagada): marcado de hoy', () =>
     expect(html).not.toContain('data-sala')
   })
 })
+
+describe('/lists/[id] con «Sala» (SALA_LISTAS=1)', () => {
+  beforeEach(() => {
+    process.env.SALA_LISTAS = '1'
+  })
+
+  it('el dueño de una colaborativa: ficha «Sala», edita y recibe sus amigos', async () => {
+    const html = await renderPage()
+    expect(html).toBe('<div data-sala-stub="detail"></div>')
+    expect(state.calls).toEqual(['getListDetail', 'getFriends'])
+    expect(state.sala).toMatchObject({
+      currentUserId: 'u1',
+      canEdit: true,
+      members: [{ userId: 'u2' }],
+      currentUserFriends: [{ id: 'u3', username: 'cris', avatarColor: 'blue', avatarInitials: 'CR' }],
+      toastLabels: {
+        region: 'media_detail.salaToastRegion',
+        dismiss: 'media_detail.salaToastDismiss',
+        hint: 'media_detail.salaToastHint',
+      },
+    })
+  })
+
+  it('el dueño de una lista no colaborativa: sin pedir amigos', async () => {
+    state.detail = detail({ isCollaborative: false })
+    await renderPage()
+    expect(state.calls).toEqual(['getListDetail'])
+    expect(state.sala).toMatchObject({ canEdit: true, currentUserFriends: [] })
+  })
+
+  it('quien colabora: edita, sin amigos (no invita)', async () => {
+    state.userId = 'u2'
+    await renderPage()
+    expect(state.calls).toEqual(['getListDetail'])
+    expect(state.sala).toMatchObject({ currentUserId: 'u2', canEdit: true, currentUserFriends: [] })
+  })
+
+  it('quien no es miembro de una pública va a su página pública', async () => {
+    state.userId = 'u9'
+    await expect(ListDetailPage({ params })).rejects.toThrow('NEXT_REDIRECT /es/u/ana/l/l1')
+    expect(state.sala).toBeNull()
+  })
+
+  it('sin sesión, también a la pública', async () => {
+    state.userId = null
+    await expect(ListDetailPage({ params })).rejects.toThrow('NEXT_REDIRECT /es/u/ana/l/l1')
+  })
+
+  it('quien no es miembro de una privada (o sin dueño embebido): notFound', async () => {
+    state.userId = 'u9'
+    state.detail = detail({ isPublic: false })
+    await expect(ListDetailPage({ params })).rejects.toThrow('NEXT_NOT_FOUND')
+    state.detail = detail({ owner: undefined })
+    await expect(ListDetailPage({ params })).rejects.toThrow('NEXT_NOT_FOUND')
+  })
+
+  it('lista que no existe: notFound', async () => {
+    state.detail = null
+    await expect(ListDetailPage({ params })).rejects.toThrow('NEXT_NOT_FOUND')
+  })
+
+  it('esqueleto de «Sala» en loading.tsx', async () => {
+    const html = renderToStaticMarkup((await ListDetailLoading()) as ReactElement)
+    expect(html).toContain('data-sala-stub="skeleton"')
+    expect(html).toContain('common.loading')
+  })
+})

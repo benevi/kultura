@@ -10,10 +10,15 @@
  * `lucia_lee` (colaborativa, privada, varios formatos, ranking, vacía). El
  * vacío del índice se prueba en `SalaListsIndex.test.tsx`: aquí quien mira
  * siempre tiene listas.
+ *
+ * L3, la ficha `/lists/[id]`: la propia (dos títulos), la de la que es miembro
+ * (vacía, ranking) y la pública de `benevi` (ni dueño ni miembro: a `/u/…/l/…`).
  */
 import { test, expect, type BrowserContext, type Page } from "@playwright/test";
 import { expectNoBlockingViolations, expectNoHorizontalScroll, isolateNetwork, open, signIn, walkTab } from "./helpers";
 import es from "../../../messages/es.json";
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { LIST_ID, PUBLIC_LIST_ID, MEMBER_LIST_ID } = require("./fixtures.cjs");
 
 const INDEX = "[data-sala-lists]";
 
@@ -45,6 +50,27 @@ test.describe("sin la cookie de prueba", () => {
       links.map((l) => (l as HTMLLinkElement).href).filter((href) => /sala/i.test(href))
     );
     expect(salaSheets, "hojas de «Sala» en el índice de hoy").toEqual([]);
+  });
+});
+
+const DETAIL = "[data-sala-list-detail]";
+
+async function openDetail(page: Page, id: string = LIST_ID) {
+  await open(page, `/es/lists/${id}`);
+  await expect(page.locator(DETAIL)).toBeVisible();
+}
+
+test.describe("sin la cookie de prueba: la ficha de hoy", () => {
+  test.skip(process.env.SALA_LISTAS === "1", "con SALA_LISTAS=1 la ven todos");
+
+  test("sin «Sala» ni sus hojas", async ({ page }) => {
+    await open(page, `/es/lists/${LIST_ID}`);
+    await expect(page.locator(DETAIL)).toHaveCount(0);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Pelis para el finde");
+    const salaSheets = await page.$$eval('link[rel="stylesheet"]', (links) =>
+      links.map((l) => (l as HTMLLinkElement).href).filter((href) => /sala/i.test(href))
+    );
+    expect(salaSheets, "hojas de «Sala» en la ficha de hoy").toEqual([]);
   });
 });
 
@@ -113,4 +139,88 @@ test.describe("con la cookie de prueba", () => {
       await expectNoBlockingViolations(page, `Listas con «Sala» a ${width} px`);
     });
   }
+
+  test.describe("ficha de la lista (L3)", () => {
+    test("la propia: `h1`, «Títulos» sin número pegado, rejilla ordenada y axe limpio", async ({ page }) => {
+      await openDetail(page);
+      await expect(page.getByRole("heading", { level: 1 })).toHaveText("Pelis para el finde");
+      for (const dato of [es.discoverFilters.typeBadge.movie.toLowerCase(), es.lists.sala.collaborative]) {
+        await expect(page.locator(`${DETAIL} header`)).toContainText(dato);
+      }
+      await expect(page.getByRole("radiogroup", { name: es.collection.visibility })).toBeVisible();
+      await expect(page.getByRole("link", { name: es.lists.addItem })).toHaveAttribute("href", "/es/discover?type=movie");
+      await expect(page.getByRole("heading", { level: 2, name: es.lists.itemsTitle, exact: true })).toBeVisible();
+      await expect(page.locator("[data-sala-list-count]")).toHaveText("2 títulos");
+      const lista = page.getByRole("list", { name: es.lists.itemsTitle });
+      await expect(lista).toHaveJSProperty("tagName", "OL");
+      await expect(lista.getByRole("heading", { level: 3 })).toHaveCount(2);
+      await expectNoBlockingViolations(page, "Ficha de lista con «Sala»");
+    });
+
+    test("quien no es dueño ni miembro de una pública va a su página pública", async ({ page }) => {
+      await page.goto(`/es/lists/${PUBLIC_LIST_ID}`);
+      await expect(page).toHaveURL(new RegExp(`/es/u/benevi/l/${PUBLIC_LIST_ID}$`));
+    });
+
+    test("de la que es miembro: «de @…», vacía y sin visibilidad ni eliminar", async ({ page }) => {
+      await openDetail(page, MEMBER_LIST_ID);
+      await expect(page.getByRole("link", { name: "de @lucia_lee" })).toBeVisible();
+      await expect(page.getByRole("heading", { level: 3, name: es.lists.noItems })).toBeVisible();
+      await expect(page.getByRole("radiogroup")).toHaveCount(0);
+      await expect(page.getByRole("button", { name: es.lists.deleteList })).toHaveCount(0);
+      await expectNoBlockingViolations(page, "Ficha de lista ajena con «Sala»");
+    });
+
+    test("quitar un título: desaparece, «Deshacer» con el foco lo devuelve", async ({ page }) => {
+      await openDetail(page);
+      const lista = page.getByRole("list", { name: es.lists.itemsTitle });
+      const primero = (await lista.getByRole("heading", { level: 3 }).first().textContent())!.trim();
+      await page.getByRole("button", { name: es.lists.removeItemNamed.replace("{title}", primero) }).click();
+      await expect(lista.getByRole("heading", { level: 3 })).toHaveCount(1);
+      await expect(page.locator("[data-sala-list-count]")).toHaveText("1 título");
+      const deshacer = page.getByRole("button", { name: es.lists.sala.undo });
+      await expect(deshacer).toBeFocused();
+      await page.keyboard.press("Enter");
+      await expect(lista.getByRole("heading", { level: 3 })).toHaveCount(2);
+      await expect(page.getByRole("link", { name: new RegExp(primero) })).toBeFocused();
+    });
+
+    test("«Eliminar lista»: diálogo con su verbo, axe limpio y Escape devuelve el foco", async ({ page }) => {
+      await openDetail(page);
+      const abrir = page.getByRole("button", { name: es.lists.deleteList });
+      await abrir.click();
+      const dialogo = page.getByRole("alertdialog");
+      await expect(dialogo).toBeVisible();
+      await expect(dialogo.getByRole("button", { name: es.lists.deleteList })).toBeVisible();
+      await expectNoBlockingViolations(page, "Eliminar lista con «Sala»");
+      await page.keyboard.press("Escape");
+      await expect(dialogo).toHaveCount(0);
+      await expect(abrir).toBeFocused();
+    });
+
+    test("teclado: cada parada a la vista y con foco visible", async ({ page }) => {
+      await openDetail(page);
+      const stops = await walkTab(page, 40);
+      const titles = new Set(await page.locator(`${DETAIL} [data-sala-card] a`).allTextContents());
+      const bad = stops.filter((s) => !s.visible || (!s.indicator && !(s.tag === "a" && titles.has(s.name))));
+      expect(bad, "paradas tapadas o sin foco visible").toEqual([]);
+      for (const name of [es.lists.addItem, es.lists.deleteList, es.lists.reorder]) {
+        expect(stops.some((s) => s.name === name), `${name}: ${JSON.stringify(stops)}`).toBe(true);
+      }
+    });
+
+    for (const width of [320, 375]) {
+      test(`${width} px: ficha sin scroll horizontal, dos columnas y axe limpio`, async ({ page }) => {
+        await page.setViewportSize({ width, height: 800 });
+        await openDetail(page);
+        await expectNoHorizontalScroll(page, width);
+        const tops = await page
+          .getByRole("list", { name: es.lists.itemsTitle })
+          .locator(":scope > li")
+          .evaluateAll((els) => els.map((el) => el.getBoundingClientRect().top));
+        expect(tops[0], "dos títulos en la misma fila").toBe(tops[1]);
+        await expectNoBlockingViolations(page, `Ficha de lista con «Sala» a ${width} px`);
+      });
+    }
+  });
 });
