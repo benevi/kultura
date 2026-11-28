@@ -165,6 +165,26 @@ describe('SalaListDetail', () => {
       '1. Dune (libro)',
       '2. Dune (2021)',
     ])
+    // El póster de relleno lleva solo el título de la obra (L4).
+    expect(within(lista).getAllByTestId('poster').map((p) => p.textContent)).toEqual(['Dune (libro)', 'Dune (2021)'])
+  })
+
+  it('«Quitar» va debajo de la tarjeta (no encima del póster) y dice qué título quita', () => {
+    renderDetail()
+    const quitar = screen.getByRole('button', { name: 'lists.removeItemNamed(Dune (libro))' })
+    expect(quitar.textContent).toContain('lists.sala.removeShort')
+    expect(quitar.closest('[data-sala-card]')).toBeNull()
+    expect(quitar.closest('[data-sala-list-item="i1"]')).not.toBeNull()
+  })
+
+  it('ordenar: la vista de «Sala» con asa, Subir y Bajar, y vuelta a la rejilla con «Listo»', () => {
+    renderDetail()
+    fireEvent.click(screen.getByRole('button', { name: 'lists.reorder' }))
+    expect(document.querySelector('[data-sala-reorder]')).not.toBeNull()
+    expect(screen.getByRole('button', { name: 'lists.moveDown(Dune (libro))' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'lists.addNoteNamed(Dune (2021))' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'lists.reorderDone' }))
+    expect(document.querySelector('[data-sala-reorder]')).toBeNull()
   })
 
   it('vacía: estado con «Descubrir» si puede editar', () => {

@@ -14,6 +14,10 @@
  *
  * L3, la ficha `/lists/[id]`: la propia (dos títulos), la de la que es miembro
  * (vacía, ranking) y la pública de `benevi` (ni dueño ni miembro: a `/u/…/l/…`).
+ * L4: ordenar y anotar en «Sala» y los miembros de la propia (`benevi` es
+ * miembro: «Quitar a @benevi» con su confirmación; no se confirma, para no
+ * cambiar los datos del simulado entre pruebas). Invitar se prueba en
+ * `SalaListMembers.test.tsx` (en el simulado no hay amigos que invitar).
  */
 import { test, expect, type BrowserContext, type Page } from "@playwright/test";
 import { expectNoBlockingViolations, expectNoHorizontalScroll, isolateNetwork, open, signIn, walkTab } from "./helpers";
@@ -258,6 +262,75 @@ test.describe("con la cookie de prueba", () => {
           .evaluateAll((els) => els.map((el) => el.getBoundingClientRect().top));
         expect(tops[0], "dos títulos en la misma fila").toBe(tops[1]);
         await expectNoBlockingViolations(page, `Ficha de lista con «Sala» a ${width} px`);
+      });
+    }
+
+    test("«Quitar» va debajo de la tarjeta, sin tapar el póster (375 px)", async ({ page }) => {
+      await page.setViewportSize({ width: 375, height: 800 });
+      await openDetail(page);
+      const item = page.locator("[data-sala-list-item]").first();
+      const poster = await item.locator("[data-sala-card] > div").first().boundingBox();
+      const quitar = await item.getByRole("button", { name: /^Quitar «/ }).boundingBox();
+      expect(quitar!.y, "«Quitar» debajo del póster").toBeGreaterThanOrEqual(poster!.y + poster!.height);
+      expect(quitar!.height).toBeGreaterThanOrEqual(44);
+    });
+  });
+
+  test.describe("ordenar, anotar y miembros (L4)", () => {
+    test("ordenar en «Sala»: axe limpio; el asa coge, mueve y Escape lo devuelve con el foco", async ({ page }) => {
+      await openDetail(page);
+      await page.getByRole("button", { name: es.lists.reorder }).click();
+      const orden = page.locator("[data-sala-reorder]");
+      await expect(orden).toBeVisible();
+      await expectNoBlockingViolations(page, "Ordenar con «Sala»");
+      const filas = orden.locator("[data-sala-reorder-item]");
+      const antes = await filas.evaluateAll((els) => els.map((el) => el.getAttribute("data-sala-reorder-item")));
+      const asa = filas.first().getByRole("button", { name: /^Mover «/ });
+      await asa.focus();
+      await page.keyboard.press("Space");
+      await expect(asa).toHaveAttribute("aria-pressed", "true");
+      await page.keyboard.press("ArrowDown");
+      await expect.poll(() => filas.evaluateAll((els) => els[1].getAttribute("data-sala-reorder-item"))).toBe(antes[0]);
+      await page.keyboard.press("Escape");
+      await expect.poll(() => filas.evaluateAll((els) => els.map((el) => el.getAttribute("data-sala-reorder-item")))).toEqual(antes);
+      await expect(filas.first().getByRole("button", { name: /^Mover «/ })).toBeFocused();
+    });
+
+    test("anotar: el editor con su etiqueta y Escape devuelve el foco", async ({ page }) => {
+      await openDetail(page);
+      await page.getByRole("button", { name: es.lists.reorder }).click();
+      const anotar = page.getByRole("button", { name: /^Añadir nota a «/ }).first();
+      await anotar.click();
+      const campo = page.getByRole("textbox", { name: /^Nota sobre «/ });
+      await expect(campo).toBeFocused();
+      await expectNoBlockingViolations(page, "Anotar con «Sala»");
+      await page.keyboard.press("Escape");
+      await expect(page.getByRole("button", { name: /^Añadir nota a «/ }).first()).toBeFocused();
+    });
+
+    test("miembros: «Quitar a @benevi» abre la confirmación con su nombre; Cancelar devuelve el foco", async ({ page }) => {
+      await openDetail(page);
+      const seccion = page.locator("[data-sala-list-members]");
+      await expect(seccion.getByRole("heading", { level: 2, name: es.lists.membersTitle })).toBeVisible();
+      await expect(seccion.getByRole("link", { name: "@benevi" })).toBeVisible();
+      const quitar = seccion.getByRole("button", { name: "Quitar a @benevi" });
+      await quitar.click();
+      const dialogo = page.getByRole("alertdialog");
+      await expect(dialogo).toContainText("¿Quitar a @benevi de la lista?");
+      await expect(dialogo.getByRole("button", { name: "Quitar a @benevi" })).toBeVisible();
+      await expectNoBlockingViolations(page, "Quitar miembro con «Sala»");
+      await dialogo.getByRole("button", { name: es.common.cancel }).click();
+      await expect(dialogo).toHaveCount(0);
+      await expect(quitar).toBeFocused();
+    });
+
+    for (const width of [320, 375]) {
+      test(`${width} px: ordenar y miembros sin scroll horizontal y axe limpio`, async ({ page }) => {
+        await page.setViewportSize({ width, height: 800 });
+        await openDetail(page);
+        await page.getByRole("button", { name: es.lists.reorder }).click();
+        await expectNoHorizontalScroll(page, width);
+        await expectNoBlockingViolations(page, `Ordenar con «Sala» a ${width} px`);
       });
     }
   });

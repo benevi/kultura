@@ -694,7 +694,14 @@
       "creating": "Creating the list…",
       "removed": "“{title}” removed from the list",
       "undo": "Undo",
-      "savingDescription": "Saving the description…"
+      "savingDescription": "Saving the description…",
+      "removeShort": "Remove",
+      "removeMemberNamed": "Remove @{username}",
+      "removeMemberTitle": "Remove @{username} from the list?",
+      "removeMemberMessage": "@{username} will no longer see or edit this list. You can invite them again whenever you like.",
+      "removingMember": "Removing…",
+      "inviting": "Inviting…",
+      "savingNote": "Saving the note…"
     }
   },
   "aiRecommendations": {

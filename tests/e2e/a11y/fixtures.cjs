@@ -322,7 +322,11 @@ const tables = {
       template: "ranking",
     },
   ],
-  list_members: [{ list_id: MEMBER_LIST_ID, user_id: USER_ID }],
+  // `benevi` es miembro de la colaborativa de quien mira (fase 8.5 L4: quitar miembro en «Sala»).
+  list_members: [
+    { list_id: MEMBER_LIST_ID, user_id: USER_ID },
+    { list_id: LIST_ID, user_id: benevi.id },
+  ],
   list_items: [
     ...mediaRows.slice(0, 2).map((m, i) => ({
       id: `00000000-0000-4000-8000-0000000000d${i}`,

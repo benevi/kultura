@@ -694,7 +694,14 @@
       "creating": "Creando la lista…",
       "removed": "«{title}» quitado de la lista",
       "undo": "Deshacer",
-      "savingDescription": "Guardando la descripción…"
+      "savingDescription": "Guardando la descripción…",
+      "removeShort": "Quitar",
+      "removeMemberNamed": "Quitar a @{username}",
+      "removeMemberTitle": "¿Quitar a @{username} de la lista?",
+      "removeMemberMessage": "@{username} dejará de ver y de editar esta lista. Puedes volver a invitarle cuando quieras.",
+      "removingMember": "Quitando…",
+      "inviting": "Invitando…",
+      "savingNote": "Guardando la nota…"
     }
   },
   "aiRecommendations": {

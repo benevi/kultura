@@ -48,6 +48,12 @@ export interface SalaWorkCardProps
   title: string;
   /** Idioma del título si no es el de la página. */
   titleLang?: string;
+  /**
+   * Puesto en un ranking (fase 8.5 L4): «1. » delante del título en el
+   * nombre y en el enlace, pero no en el póster de relleno (que lleva solo el
+   * título de la obra).
+   */
+  rank?: number;
   /** Título original en su escritura, con su idioma (biblia §3). Va fuera del enlace. */
   originalTitle?: { text: string; lang: string };
   /** Formato de la obra: decide la proporción del póster. */
@@ -158,6 +164,7 @@ export const SalaWorkCard = React.forwardRef<HTMLAnchorElement, SalaWorkCardProp
     href,
     title,
     titleLang,
+    rank,
     originalTitle,
     format,
     formatLabel,
@@ -184,6 +191,7 @@ export const SalaWorkCard = React.forwardRef<HTMLAnchorElement, SalaWorkCardProp
 
   const texto = (
     <span lang={titleLang} className={MARCA}>
+      {rank !== undefined ? `${rank}. ` : null}
       {title}
     </span>
   );
