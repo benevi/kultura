@@ -26,6 +26,7 @@
     "tokens:sala": "vitest run tests/unit/design/sala-tokens-css.test.ts -u",
     "title:sala": "vitest run tests/unit/design/sala-title-css.test.ts -u",
     "fonts:sala": "node scripts/gen-sala-fonts.mjs",
+    "brand:sala": "vitest run tests/unit/design/sala-logo.test.ts -u",
     "test:all": "npm run type-check && npm run lint && npm run test && npm run test:e2e",
     "verify": "npm run build && npm run test:all"
   },
