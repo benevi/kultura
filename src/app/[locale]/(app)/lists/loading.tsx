@@ -1,9 +1,15 @@
 // MOV-14 (F-25): esqueleto de «Mis listas» con la misma rejilla que la página
 // (sin salto al llegar los datos). El pulso se apaga con reduced-motion.
 import { getTranslations } from 'next-intl/server'
+import { salaListasEnabled } from '@/lib/flags/sala'
+import { SalaListsSkeletonLazy } from '@/components/lists/sala/SalaListsSkeletonLazy'
 
 export default async function ListsLoading() {
   const t = await getTranslations('common')
+  // Fase 8.5 L1: con `SALA_LISTAS`, el esqueleto de «Sala» (por `next/dynamic`:
+  // con la bandera apagada no trae sus hojas). La página ya es dinámica (lee
+  // la sesión), así que leer la cookie aquí no cambia nada.
+  if (await salaListasEnabled()) return <SalaListsSkeletonLazy loadingLabel={t('loading')} />
   return (
     <main aria-busy="true" className="page-grid py-8">
       <p role="status" className="sr-only">{t('loading')}</p>

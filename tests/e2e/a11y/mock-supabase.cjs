@@ -46,10 +46,16 @@ function parseEmbed(item) {
 
 const singular = (t) => (t.endsWith("s") ? t.slice(0, -1) : t);
 
+/** Claves ajenas cuya tabla no sale de su nombre. */
+const FK_TABLES = { owner_id: "users" };
+
 function embed(row, parentTable, spec) {
   // `alias:columna_id(...)` (PostgREST embebe por la clave ajena): la tabla sale
   // de la columna (`user_id` → `users`, `media_id` → `media`).
-  if (!tables[spec.table] && spec.table.endsWith("_id")) {
+  // Claves cuyo nombre no es el de su tabla (`owner:owner_id(...)` → `users`).
+  if (!tables[spec.table] && FK_TABLES[spec.table]) {
+    spec = { ...spec, hint: spec.table, table: FK_TABLES[spec.table] };
+  } else if (!tables[spec.table] && spec.table.endsWith("_id")) {
     const base = spec.table.slice(0, -3);
     spec = { ...spec, hint: spec.table, table: tables[`${base}s`] ? `${base}s` : base };
   }

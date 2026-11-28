@@ -38,6 +38,8 @@ const A11Y_ENV = {
   // Perfil con «Sala» (fase 8.5 P1): igual, `sala-perfil.spec.ts` entra con
   // la cookie y `SALA_PERFIL=1` la enseña en todos los specs.
   SALA_PERFIL: process.env.SALA_PERFIL || "prueba",
+  // Fase 8.5 L1: las listas en «Sala», igual: con la cookie en `sala-listas.spec.ts`.
+  SALA_LISTAS: process.env.SALA_LISTAS || "prueba",
   NODE_OPTIONS: `--require ${path.join(ROOT, "tests/e2e/a11y/offline-fetch.cjs")}`,
 };
 

@@ -8,7 +8,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { LIST_COLUMNS } from '@/lib/social/lists-shared'
 import type { DbList, DbListItem, DbListMember, DbUser, DbMedia } from '@/types/supabase'
-import type { List, ListItem, ListMediaType, ListMember, ListTemplate } from '@/types/list'
+import type { List, ListCover, ListItem, ListMediaType, ListMember, ListTemplate } from '@/types/list'
 import type { MediaType } from '@/types/media'
 
 // ── Row types ─────────────────────────────────────────────────────────────────
@@ -122,11 +122,26 @@ export function sortListItems<T extends { position?: number | null; addedAt?: st
 
 // ── Queries ───────────────────────────────────────────────────────────────────
 
+/** Portadas del mosaico del índice: las cuatro primeras de cada lista. */
+const LIST_COVERS = 4
+
+type CoverRow = {
+  list_id: string
+  position: number | null
+  added_at: string | null
+  media: Pick<DbMedia, 'title' | 'poster' | 'type'> | null
+}
+
 /**
  * Listas propias del usuario + listas donde es miembro.
  * Usa dos queries separadas y las combina (sin duplicados).
+ *
+ * Con `covers` (fase 8.5 L1, índice en «Sala»), la misma consulta que cuenta
+ * los títulos trae también su orden y su portada, y cada lista lleva sus
+ * cuatro primeros títulos en `covers`. Sin la opción, la consulta es la de
+ * siempre.
  */
-export async function getUserLists(userId: string): Promise<List[]> {
+export async function getUserLists(userId: string, options: { covers?: boolean } = {}): Promise<List[]> {
   const supabase = await createClient()
 
   const fetchOwned = (columns: string) =>
@@ -157,23 +172,38 @@ export async function getUserLists(userId: string): Promise<List[]> {
   ]
 
   const counts: Record<string, number> = {}
+  const covers: Record<string, ListCover[]> = {}
   if (allIds.length > 0) {
     const { data: countData } = await supabase
       .from('list_items')
-      .select('list_id')
+      .select(options.covers ? 'list_id, position, added_at, media:media_id(title, poster, type)' : 'list_id')
       .in('list_id', allIds)
 
-    ;((countData ?? []) as Array<{ list_id: string }>).forEach((row) => {
+    const rows = (countData ?? []) as unknown as CoverRow[]
+    rows.forEach((row) => {
       counts[row.list_id] = (counts[row.list_id] ?? 0) + 1
     })
+    if (options.covers) {
+      const byList: Record<string, CoverRow[]> = {}
+      rows.forEach((row) => {
+        ;(byList[row.list_id] ??= []).push(row)
+      })
+      for (const [listId, items] of Object.entries(byList)) {
+        covers[listId] = sortListItems(items.map((r) => ({ ...r, addedAt: r.added_at })))
+          .filter((r) => r.media !== null)
+          .slice(0, LIST_COVERS)
+          .map((r) => ({ title: r.media!.title, poster: r.media!.poster ?? null, type: r.media!.type as MediaType }))
+      }
+    }
   }
 
-  const ownedLists = ownedRawTyped.map((r) => mapList({ ...r, item_count: counts[r.id] ?? 0 }))
+  const withExtras = (l: List): List => (options.covers ? { ...l, covers: covers[l.id] ?? [] } : l)
+  const ownedLists = ownedRawTyped.map((r) => withExtras(mapList({ ...r, item_count: counts[r.id] ?? 0 })))
   const memberIds = new Set(ownedLists.map((l) => l.id))
   const membered = memberRawTyped
     .map((r) => r.list)
     .filter((l): l is RawListRow => l !== null && !memberIds.has(l.id))
-    .map((l) => mapList({ ...l, item_count: counts[l.id] ?? 0 }))
+    .map((l) => withExtras(mapList({ ...l, item_count: counts[l.id] ?? 0 })))
 
   return [...ownedLists, ...membered]
 }
