@@ -1,23 +1,36 @@
 #!/usr/bin/env python3
 """
-KULTURA — Renovación semanal de las imágenes con profundidad de la landing.
+KULTURA — Renovación mensual de las imágenes con profundidad de la landing.
 
-Lo ejecuta .github/workflows/landing-media.yml cada lunes (y a mano con
-workflow_dispatch). Pasos:
-  1. Candidatos: GET {SITE_URL}/api/landing/sources (rankings destacados y
-     muestra de portadas, datos ya públicos) + lo más visto de la semana en
-     TMDB (fondos SIN texto para la portada).
+Lo ejecuta .github/workflows/landing-media.yml el día 1 de cada mes (y a mano
+con workflow_dispatch). Criterio: «novedades del mes» (decisión de Víctor;
+bloqueo de §9 levantado el 18-11-2026). Pasos:
+  1. Candidatos, por formato:
+     - Cine: TMDB /discover/movie con estreno dentro del mes.
+     - Series: TMDB /discover/tv con primera emisión dentro del mes.
+     - Juegos: RAWG /games con lanzamiento dentro del mes (RAWG_API_KEY).
+     Solo obras con popularidad mínima (no salen desconocidas). Si un formato
+     no tiene bastantes, se rellena con el criterio anterior: lo más visto de
+     la semana en TMDB (portada) y los líderes de los rankings de
+     GET {SITE_URL}/api/landing/sources (resto). Anime, manga y cómic: solo
+     ranking (la tarea no tiene fuente de novedades para ellos). Los libros
+     siguen fuera (EXCLUDED_FORMATS).
   2. Para cada imagen: mapa de profundidad (Depth Anything V2), dilatado y
      suavizado para que los bordes no se rompan al moverse, y control de
      calidad automático: umbral de la capa delantera (Otsu), foco del encuadre
      y si el nombre puede ir «entre capas» sin quedar tapado.
   3. Sube imagen y mapa al bucket «landing» y escribe `landing_media` de la
-     semana. Solo si la semana nueva está completa la activa (y desactiva la
-     anterior): si falla algo, la landing sigue con la semana pasada.
-  4. Borra semanas de más de 5 semanas y vacía la caché `landing-media`.
+     tanda. Solo si la tanda nueva está completa la activa (y desactiva la
+     anterior): si falla algo, la landing sigue con la del mes pasado.
+  4. Borra tandas de más de 5 meses y vacía la caché `landing-media`.
+
+La columna `landing_media.week` (date) se mantiene sin migración: ahora guarda
+el día 1 del mes de la tanda (p. ej. 2026-12-01). Las carpetas del bucket usan
+esa misma fecha.
 
 Variables: SITE_URL, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, TMDB_API_KEY,
-REVALIDATE_SECRET (opcional), DRY_RUN=1 (calcula y guarda en ./out sin subir).
+RAWG_API_KEY (opcional: sin ella, juegos solo por ranking), REVALIDATE_SECRET
+(opcional), DRY_RUN=1 (calcula y guarda en ./out sin subir).
 """
 from __future__ import annotations
 
@@ -38,7 +51,11 @@ UA = {"User-Agent": "KULTURA-landing-media/1.0 (+https://kulturaapp.vercel.app)"
 HERO_COUNT = 3          # escenas de la portada
 FEATURE_COUNT = 4       # «Lo que hay dentro»
 STEP_COUNT = 3          # «Así funciona»
-KEEP_WEEKS = 5
+KEEP_MONTHS = 5
+# Popularidad mínima de una novedad del mes (no salen obras desconocidas).
+MIN_TMDB_POPULARITY = 20.0    # escala de TMDB; los grandes estrenos pasan de 50
+MIN_RAWG_ADDED = 50           # personas que lo tienen en RAWG (incluye «lo quiero»)
+NOVELTIES_PER_FORMAT = 8      # como los rankings: el primero y reservas
 FG_MIN, FG_MAX = 0.05, 0.45   # parte de la imagen que puede quedar delante
 FG_LAYER_MIN = 0.20           # por debajo, el efecto de capas apenas se nota
 MIN_WIDTH = 400               # portadas más pequeñas se ven borrosas
@@ -241,6 +258,52 @@ def unique_by_url(items: list[Pick]) -> list[Pick]:
     return out
 
 
+def month_range(today: dt.date) -> tuple[str, str]:
+    """Primer y último día del mes de `today` (AAAA-MM-DD)."""
+    start = today.replace(day=1)
+    nxt = (start + dt.timedelta(days=32)).replace(day=1)
+    return start.isoformat(), (nxt - dt.timedelta(days=1)).isoformat()
+
+
+def months_before(first: dt.date, n: int) -> str:
+    """Día 1 del mes `n` meses antes (se conservan las tandas desde ahí)."""
+    y, m = divmod(first.year * 12 + first.month - 1 - n, 12)
+    return dt.date(y, m + 1, 1).isoformat()
+
+
+def popular_tmdb(results: list[dict], min_pop: float = MIN_TMDB_POPULARITY) -> list[dict]:
+    """Novedades de TMDB con popularidad mínima, sin adultos ni sin imagen."""
+    return [r for r in results
+            if not r.get("adult") and (r.get("popularity") or 0) >= min_pop
+            and (r.get("poster_path") or r.get("backdrop_path"))]
+
+
+def popular_rawg(results: list[dict], min_added: int = MIN_RAWG_ADDED) -> list[dict]:
+    """Lanzamientos de RAWG con un mínimo de personas que lo siguen."""
+    return [r for r in results if (r.get("added") or 0) >= min_added and r.get("background_image")]
+
+
+def alternate(a: list, b: list) -> list:
+    """a1, b1, a2, b2… y luego lo que sobre de la más larga."""
+    out = [x for pair in zip(a, b) for x in pair]
+    return out + a[len(b):] + b[len(a):]
+
+
+def tmdb_picks(items: list[dict], kind: str, slot: str, portrait: bool) -> list[Pick]:
+    """Resultados de /discover como candidatos (póster o fondo)."""
+    out = []
+    for it in items:
+        date = it.get("release_date") or it.get("first_air_date") or ""
+        path = it.get("poster_path") if portrait else it.get("backdrop_path")
+        if not path:
+            continue
+        out.append(Pick(slot, 0, kind, str(it["id"]), it.get("title") or it.get("name") or "",
+                        f"https://image.tmdb.org/t/p/w500{path}", format=kind,
+                        year=int(date[:4]) if date[:4].isdigit() else None,
+                        rating=it.get("vote_average") or None, portrait=portrait))
+    return out
+
+
 def choose_scenes(cands: list[tuple[Pick, Analysis]], count: int) -> list[tuple[Pick, Analysis]]:
     """Primero las que admiten el nombre entre capas; dentro, las que tienen
     la capa delantera más cerca del 22 % de la imagen."""
@@ -278,7 +341,8 @@ def to_portrait(rgb: np.ndarray) -> np.ndarray:
 
 
 def tmdb_hero_candidates(key: str, limit: int = 14) -> list[Pick]:
-    """Lo más visto de la semana con un fondo SIN texto (idioma nulo)."""
+    """Respaldo de la portada: lo más visto de la semana con un fondo SIN
+    texto (idioma nulo). Solo se usa si el mes no da bastantes escenas."""
     out: list[Pick] = []
     r = get(f"https://api.themoviedb.org/3/trending/all/week?api_key={key}&language=es-ES")
     for it in (r.json().get("results") or [])[:30] if r.ok else []:
@@ -297,6 +361,51 @@ def tmdb_hero_candidates(key: str, limit: int = 14) -> list[Pick]:
         if len(out) >= limit:
             break
     return out
+
+
+def tmdb_month_novelties(key: str, kind: str, start: str, end: str) -> list[dict]:
+    """Estrenos (cine) o primeras emisiones (series) del mes, por popularidad."""
+    field_ = "primary_release_date" if kind == "movie" else "first_air_date"
+    r = get(f"https://api.themoviedb.org/3/discover/{kind}", params={
+        "api_key": key, "language": "es-ES", "sort_by": "popularity.desc", "include_adult": "false",
+        f"{field_}.gte": start, f"{field_}.lte": end})
+    return popular_tmdb(r.json().get("results") or [])[:NOVELTIES_PER_FORMAT] if r.ok else []
+
+
+def tmdb_textless_backdrop(key: str, kind: str, tmdb_id: str) -> str | None:
+    """Fondo sin texto (idioma nulo) de TMDB, si existe."""
+    imgs = get(f"https://api.themoviedb.org/3/{kind}/{tmdb_id}/images?api_key={key}&include_image_language=null")
+    backs = [b for b in (imgs.json().get("backdrops") or []) if b.get("iso_639_1") is None] if imgs.ok else []
+    if not backs:
+        return None
+    best = max(backs, key=lambda b: (b.get("vote_average") or 0, b.get("width") or 0))
+    return f"https://image.tmdb.org/t/p/original{best['file_path']}"
+
+
+def tmdb_month_hero(key: str, start: str, end: str, limit: int = 14) -> list[Pick]:
+    """Portada: novedades del mes (cine y series alternados) con fondo SIN texto."""
+    picks = alternate(tmdb_picks(tmdb_month_novelties(key, "movie", start, end), "movie", "hero", False),
+                      tmdb_picks(tmdb_month_novelties(key, "tv", start, end), "tv", "hero", False))
+    out: list[Pick] = []
+    for p in picks:
+        url = tmdb_textless_backdrop(key, p.media_type, p.external_id)
+        if not url:
+            continue
+        p.url = url
+        out.append(p)
+        if len(out) >= limit:
+            break
+    return out
+
+
+def rawg_month_novelties(key: str, start: str, end: str) -> list[Pick]:
+    """Juegos lanzados en el mes con un mínimo de seguidores en RAWG."""
+    r = get("https://api.rawg.io/api/games", params={"key": key, "dates": f"{start},{end}",
+                                                      "ordering": "-added", "page_size": 20})
+    items = popular_rawg(r.json().get("results") or []) if r.ok else []
+    return [Pick("ranking", 0, "game", f"game_{g['id']}", g.get("name") or "", g["background_image"], format="game",
+                 year=int(g["released"][:4]) if (g.get("released") or "")[:4].isdigit() else None,
+                 rating=g.get("rating") or None) for g in items[:NOVELTIES_PER_FORMAT]]
 
 
 def steam_portrait(title: str) -> str | None:
@@ -355,8 +464,9 @@ def main() -> int:
     dry = os.environ.get("DRY_RUN") == "1"
     store = Store(os.environ.get("SUPABASE_URL", ""), os.environ.get("SUPABASE_SERVICE_ROLE_KEY", ""), dry)
     tmdb = os.environ.get("TMDB_API_KEY", "")
-    today = dt.date.today()
-    week = (today - dt.timedelta(days=today.weekday())).isoformat()
+    rawg = os.environ.get("RAWG_API_KEY", "")
+    # Va en la columna `week` (date) sin migración: el día 1 del mes.
+    week, month_end = month_range(dt.date.today())
 
     src = get(os.environ.get("SOURCES_URL") or f"{site}/api/landing/sources").json()
     from transformers import pipeline  # tarda: se carga solo si hay trabajo
@@ -427,12 +537,21 @@ def main() -> int:
 
     used: list[Pick] = []
 
-    # 1. Portada: fondos sin texto de lo más visto de la semana.
+    # 1. Portada: fondos sin texto de las novedades del mes; si no llegan,
+    #    lo más visto de la semana (criterio anterior).
     scenes = []
-    for c in tmdb_hero_candidates(tmdb) if tmdb else []:
+    for c in tmdb_month_hero(tmdb, week, month_end) if tmdb else []:
         res = process(c, 1920)
         if res:
             scenes.append((c, res))
+    if tmdb and len(scenes) < HERO_COUNT:
+        print(f"Portada: {len(scenes)} novedades del mes; se rellena con lo más visto de la semana.")
+        seen = {(c.media_type, c.external_id) for c, _ in scenes}
+        for c in tmdb_hero_candidates(tmdb):
+            if (c.media_type, c.external_id) not in seen:
+                res = process(c, 1920)
+                if res:
+                    scenes.append((c, res))
     ranked = choose_scenes([(c, r[2]) for c, r in scenes], HERO_COUNT)
     by_pick = {id(c): r for c, r in scenes}
     for i, (c, _) in enumerate(ranked):
@@ -440,8 +559,15 @@ def main() -> int:
         emit(c, *by_pick[id(c)])
         used.append(c)
 
-    # 2. Rankings: el líder de cada formato; si su imagen no pasa el control
-    #    de calidad, el siguiente del mismo ranking.
+    # 2. Un título por formato: primero las novedades del mes (cine, series,
+    #    juegos); si ninguna pasa el control de calidad, el líder del ranking y
+    #    los siguientes (criterio anterior).
+    novelties: dict[str, list[Pick]] = {}
+    if tmdb:
+        for kind in ("movie", "tv"):
+            novelties[kind] = tmdb_picks(tmdb_month_novelties(tmdb, kind, week, month_end), kind, "ranking", True)
+    if rawg:
+        novelties["game"] = rawg_month_novelties(rawg, week, month_end)
     reserve: list[Pick] = []
     taken_urls = {u.url for u in used}
     position = 0
@@ -451,6 +577,7 @@ def main() -> int:
         picks = [Pick("ranking", 0, it["type"], str(it.get("externalId") or it["id"]), it["title"], it["poster"],
                       format=rk["format"], year=it.get("year"), rating=it.get("rating"))
                  for it in rk.get("items", [])]
+        picks = novelties.get(rk["format"], []) + picks
         chosen = False
         for p in unique_by_url(picks):
             if chosen or p.url in taken_urls:
@@ -479,19 +606,19 @@ def main() -> int:
                 emit(p, *res)
                 n += 1
 
-    # 4. Sin portada o sin rankings, no se activa nada: se queda la semana anterior.
+    # 4. Sin portada o sin rankings, no se activa nada: se queda la tanda anterior.
     slots = {r["slot"] for r in rows}
     if not {"hero", "ranking"} <= slots:
-        print("Semana incompleta: no se activa (sigue la anterior).", file=sys.stderr)
+        print("Mes incompleto: no se activa (sigue la tanda anterior).", file=sys.stderr)
         return 1
-    # Al relanzar en la misma semana no deben quedar filas de la ejecución anterior.
+    # Al relanzar en el mismo mes no deben quedar filas de la ejecución anterior.
     store.rest("DELETE", f"landing_media?week=eq.{week}")
     store.rest("POST", "landing_media?on_conflict=week,slot,position", rows, "resolution=merge-duplicates")
     store.rest("PATCH", f"landing_media?week=eq.{week}", {"active": True})
     store.rest("PATCH", f"landing_media?week=neq.{week}&active=is.true", {"active": False})
 
     # 5. Limpieza y caché.
-    cutoff = (dt.date.fromisoformat(week) - dt.timedelta(weeks=KEEP_WEEKS)).isoformat()
+    cutoff = months_before(dt.date.fromisoformat(week), KEEP_MONTHS - 1)
     if not dry:
         old = store.rest("GET", f"landing_media?select=week&week=lt.{cutoff}").json()
         for w in sorted({o["week"] for o in old}):
@@ -501,7 +628,7 @@ def main() -> int:
         if secret:
             requests.post(f"{site}/api/revalidate", json={"tags": ["landing-media"]},
                           headers={"Authorization": f"Bearer {secret}"}, timeout=30)
-    print(f"Semana {week}: {len(rows)} imágenes.")
+    print(f"Mes {week[:7]}: {len(rows)} imágenes.")
     return 0
 
 
