@@ -34,6 +34,18 @@ export interface List {
   /** Datos embebidos */
   owner?: UserProfile;
   itemCount?: number;
+  /**
+   * Fase 8.5 L1 (`SALA_LISTAS`): los cuatro primeros títulos de la lista, en
+   * su orden, para el mosaico del índice. Solo con `getUserLists(…, { covers: true })`.
+   */
+  covers?: ListCover[];
+}
+
+/** Un título del mosaico de portadas del índice de listas (fase 8.5 L1). */
+export interface ListCover {
+  title: string;
+  poster: string | null;
+  type: MediaType;
 }
 
 /** Item dentro de una lista */

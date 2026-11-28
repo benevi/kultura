@@ -687,7 +687,11 @@
     "addNote": "Add a note",
     "editNote": "Edit note",
     "addNoteNamed": "Add a note to “{title}”",
-    "editNoteNamed": "Edit the note on “{title}”"
+    "editNoteNamed": "Edit the note on “{title}”",
+    "sala": {
+      "collaborative": "collaborative",
+      "by": "by @{username}"
+    }
   },
   "aiRecommendations": {
     "title": "For you",

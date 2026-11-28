@@ -687,7 +687,11 @@
     "addNote": "Añadir nota",
     "editNote": "Editar nota",
     "addNoteNamed": "Añadir nota a «{title}»",
-    "editNoteNamed": "Editar la nota de «{title}»"
+    "editNoteNamed": "Editar la nota de «{title}»",
+    "sala": {
+      "collaborative": "colaborativa",
+      "by": "de @{username}"
+    }
   },
   "aiRecommendations": {
     "title": "Para ti",

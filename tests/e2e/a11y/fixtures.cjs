@@ -13,6 +13,8 @@ const FRIEND_ID = "00000000-0000-4000-8000-000000000002";
 const LIST_ID = "00000000-0000-4000-8000-0000000000a1";
 /** Lista pública de benevi (fase 8.5 P3): `/u/benevi/l/…` en `pages.spec.ts`. */
 const PUBLIC_LIST_ID = "00000000-0000-4000-8000-0000000000a2";
+/** Lista colaborativa del amigo de la que el usuario es miembro (fase 8.5 L1: `/lists`). */
+const MEMBER_LIST_ID = "00000000-0000-4000-8000-0000000000a3";
 const GROUP_ID = "00000000-0000-4000-8000-0000000000b1";
 const CONVERSATION_ID = "00000000-0000-4000-8000-0000000000c1";
 const NOW = "2026-10-01T10:00:00.000Z";
@@ -309,7 +311,18 @@ const tables = {
       is_public: true,
       created_at: NOW,
     },
+    {
+      id: MEMBER_LIST_ID,
+      owner_id: FRIEND_ID,
+      name: "Ranking de terror",
+      media_type: "mixed",
+      is_collaborative: true,
+      is_public: false,
+      created_at: NOW,
+      template: "ranking",
+    },
   ],
+  list_members: [{ list_id: MEMBER_LIST_ID, user_id: USER_ID }],
   list_items: [
     ...mediaRows.slice(0, 2).map((m, i) => ({
       id: `00000000-0000-4000-8000-0000000000d${i}`,
@@ -420,6 +433,7 @@ module.exports = {
   FRIEND_ID,
   LIST_ID,
   PUBLIC_LIST_ID,
+  MEMBER_LIST_ID,
   GROUP_ID,
   CONVERSATION_ID,
   NOW,
