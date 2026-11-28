@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import es from "../../messages/es.json";
 import { routing } from "@/i18n/routing";
 import { SITE_NAME, SURFACE_BASE_HEX } from "@/i18n/metadata";
+import { salaMarcaForAll } from "@/lib/flags/sala";
 
 /**
  * MOV-1: manifest de la PWA (`/manifest.webmanifest`, Next añade el `<link>`).
@@ -11,9 +12,12 @@ import { SITE_NAME, SURFACE_BASE_HEX } from "@/i18n/metadata";
  *   ya lleva a Inicio.
  * - Colores = hex real de `--surface-base` (VERIF-B), igual que `themeColor`.
  * - Un manifest no se puede servir por idioma: va en el idioma por defecto.
+ * - Fase 8.5 M2: con `SALA_MARCA=1`, los iconos del logo D1 (`/icons/sala/`).
+ *   Con `prueba` no: la app instalada es de todos, no de quien lleva la cookie.
  */
 export default function manifest(): MetadataRoute.Manifest {
   const home = `/${routing.defaultLocale}`;
+  const dir = salaMarcaForAll() ? "/icons/sala" : "/icons";
   return {
     id: "/",
     name: SITE_NAME,
@@ -28,20 +32,20 @@ export default function manifest(): MetadataRoute.Manifest {
     theme_color: SURFACE_BASE_HEX,
     categories: ["entertainment", "lifestyle", "books"],
     icons: [
-      { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
-      { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
-      { src: "/icons/maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+      { src: `${dir}/icon-192.png`, sizes: "192x192", type: "image/png", purpose: "any" },
+      { src: `${dir}/icon-512.png`, sizes: "512x512", type: "image/png", purpose: "any" },
+      { src: `${dir}/maskable-512.png`, sizes: "512x512", type: "image/png", purpose: "maskable" },
     ],
     shortcuts: [
       {
         name: es.nav.library,
         url: `${home}/library`,
-        icons: [{ src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }],
+        icons: [{ src: `${dir}/icon-192.png`, sizes: "192x192", type: "image/png" }],
       },
       {
         name: es.nav.discover,
         url: `${home}/discover`,
-        icons: [{ src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }],
+        icons: [{ src: `${dir}/icon-192.png`, sizes: "192x192", type: "image/png" }],
       },
     ],
     share_target: SHARE_TARGET,

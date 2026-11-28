@@ -57,7 +57,7 @@ import { parseAttributionRecord, withAttribution, type AttributionParams } from 
 import { invitePath, isValidInviteSignature } from '@/lib/analytics/invite'
 import { siteUrl } from '@/lib/site-url'
 import type { MediaType } from '@/types/media'
-import { salaPerfilEnabled } from '@/lib/flags/sala'
+import { salaMarcaEnabled, salaPerfilEnabled } from '@/lib/flags/sala'
 import { getViewer } from '@/lib/media/viewer'
 import { getUnreadCount } from '@/lib/social/notifications'
 import { readRatingScale } from '@/lib/library/scale'
@@ -171,6 +171,7 @@ export default async function PublicCollectionPage({ params, searchParams }: Pro
   // leer de la barra de la app, en la misma espera.
   let scale: ShareScale = 'stars'
   let unreadCount = 0
+  let salaMarca = false
   if (viewer) {
     const [blocked, allowed, data, details, salaExtra] = await Promise.all([
       viewerBlockedWith(supabase, viewer.id, owner.id),
@@ -181,6 +182,7 @@ export default async function PublicCollectionPage({ params, searchParams }: Pro
         ? Promise.all([
             isOwner ? Promise.resolve(readRatingScale(session?.user)) : ownerShareScale(owner.id),
             session?.profile ? getUnreadCount(viewer.id).catch(() => 0) : Promise.resolve(0),
+            salaMarcaEnabled(),
           ])
         : Promise.resolve(null),
     ])
@@ -189,7 +191,7 @@ export default async function PublicCollectionPage({ params, searchParams }: Pro
     showcase = canRead ? data : null
     if (blocked) lists = []
     if (details) owner = { ...owner, ...details }
-    if (salaExtra) [scale, unreadCount] = salaExtra
+    if (salaExtra) [scale, unreadCount, salaMarca] = salaExtra
   }
 
   const t = await getTranslations('collection')
@@ -215,7 +217,7 @@ export default async function PublicCollectionPage({ params, searchParams }: Pro
         locale={locale}
         owner={owner}
         lists={lists}
-        chrome={session?.user ? { user: session.user, profile: session.profile, unreadCount } : null}
+        chrome={session?.user ? { user: session.user, profile: session.profile, unreadCount, sala: salaMarca } : null}
         isOwner={isOwner}
         showcase={canRead ? showcase : null}
         scale={scale}

@@ -34,7 +34,7 @@ import { mediaPath } from "@/lib/media/seo";
 import { siteUrl } from "@/lib/site-url";
 import { parseAttributionRecord, withAttribution, type AttributionParams } from "@/lib/analytics/attribution";
 import { OG_LOCALE, SITE_NAME } from "@/i18n/metadata";
-import { salaPerfilEnabled } from "@/lib/flags/sala";
+import { salaMarcaEnabled, salaPerfilEnabled } from "@/lib/flags/sala";
 import { getViewer } from "@/lib/media/viewer";
 import { getUnreadCount } from "@/lib/social/notifications";
 import { SalaRatedTitle } from "@/components/collection/sala/SalaRatedTitle";
@@ -196,12 +196,14 @@ export default async function RatedTitlePage(props: Props) {
 
   if (await salaPerfilEnabled()) {
     const session = viewer ? await getViewer() : null;
-    const unreadCount = session?.user && session.profile ? await getUnreadCount(session.user.id).catch(() => 0) : 0;
+    const [unreadCount, salaMarca] = session?.user && session.profile
+      ? await Promise.all([getUnreadCount(session.user.id).catch(() => 0), salaMarcaEnabled()])
+      : [0, false];
     return (
       <SalaRatedTitle
         locale={locale}
         view={view}
-        chrome={session?.user ? { user: session.user, profile: session.profile, unreadCount } : null}
+        chrome={session?.user ? { user: session.user, profile: session.profile, unreadCount, sala: salaMarca } : null}
         registerHref={registerHref}
       />
     );

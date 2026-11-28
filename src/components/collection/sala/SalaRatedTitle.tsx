@@ -36,7 +36,7 @@ export interface SalaRatedTitleProps {
   locale: string
   view: ShownView
   /** Con sesión y perfil: la barra de la app. Con sesión sin perfil (alta a medias): la barra de hoy. */
-  chrome: { user: User; profile: ViewerProfile | null; unreadCount: number } | null
+  chrome: { user: User; profile: ViewerProfile | null; unreadCount: number; sala?: boolean } | null
   /** Alta atribuida a quien compartió; solo sin sesión. */
   registerHref: string
 }
@@ -113,6 +113,7 @@ export async function SalaRatedTitle({ locale, view, chrome, registerHref }: Sal
           userId={chrome.user.id}
           profile={chrome.profile}
           unreadCount={chrome.unreadCount}
+          sala={chrome.sala}
           demo={isDemoUser(chrome.user)}
           footer={<AppFooter />}
         >

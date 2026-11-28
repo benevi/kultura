@@ -5,6 +5,7 @@ import { getUnreadCount } from '@/lib/social/notifications'
 import { AppChrome, getChromeSession } from '@/components/layout/AppChrome'
 import { getTranslations } from 'next-intl/server'
 import { PwaShell } from '@/components/pwa/PwaShell'
+import { salaMarcaEnabled } from '@/lib/flags/sala'
 import type { InstallLabels } from '@/components/pwa/InstallPrompt'
 
 export default async function AppLayout({
@@ -24,13 +25,14 @@ export default async function AppLayout({
   if (!user) redirect(loginRedirectPath(locale, (await headers()).get('x-pathname')))
   if (!profile) redirect(`/${locale}/login`)
 
-  const [unreadCount, t] = await Promise.all([
+  const [unreadCount, t, sala] = await Promise.all([
     getUnreadCount(user.id),
     getTranslations({ locale, namespace: 'pwa.install' }),
+    salaMarcaEnabled(),
   ])
 
   return (
-    <AppChrome user={user} profile={profile} unreadCount={unreadCount}>
+    <AppChrome user={user} profile={profile} unreadCount={unreadCount} sala={sala}>
       {children}
       {/* F-23: service worker y aviso de instalación (MOV-2, MOV-3). */}
       <PwaShell installLabels={installLabels(t)} />

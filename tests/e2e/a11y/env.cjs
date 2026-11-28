@@ -40,6 +40,9 @@ const A11Y_ENV = {
   SALA_PERFIL: process.env.SALA_PERFIL || "prueba",
   // Fase 8.5 L1: las listas en «Sala», igual: con la cookie en `sala-listas.spec.ts`.
   SALA_LISTAS: process.env.SALA_LISTAS || "prueba",
+  // Fase 8.5 M2: la cabecera con sesión en «Sala», igual: con la cookie en
+  // `sala-marca.spec.ts`; `SALA_MARCA=1` la enseña (y la pública) en todos.
+  SALA_MARCA: process.env.SALA_MARCA || "prueba",
   NODE_OPTIONS: `--require ${path.join(ROOT, "tests/e2e/a11y/offline-fetch.cjs")}`,
 };
 

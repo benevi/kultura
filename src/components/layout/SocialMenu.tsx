@@ -5,7 +5,15 @@ import { Link, usePathname } from '@/i18n/navigation'
 import { cn } from '@/lib/utils/index'
 import { IconChat, IconFriends, IconGroups, type KIcon } from '@/components/icons'
 import { useUnreadChat } from '@/components/layout/UnreadChatProvider'
-import { isNavActive, HEADER_ICON_BOX, CountBadge, MENU_ROW } from '@/components/layout/nav-shared'
+import {
+  isNavActive,
+  HEADER_ICON_BOX,
+  CountBadge,
+  MENU_ROW,
+  SALA_HEADER_ICON_BOX,
+  SALA_HEADER_ICON_CURRENT,
+  SalaCountBadge,
+} from '@/components/layout/nav-shared'
 import { HeaderMenu } from '@/components/layout/HeaderMenu'
 
 export const SOCIAL_ITEMS: { key: 'chat' | 'friends' | 'groups'; href: string; icon: KIcon }[] = [
@@ -20,7 +28,7 @@ export const SOCIAL_ITEMS: { key: 'chat' | 'friends' | 'groups'; href: string; i
  * escritorio. Si la página actual es una de las tres (`/chat/123` incluido),
  * el botón se marca y la fila correspondiente lleva `aria-current="page"`.
  */
-export function SocialMenu() {
+export function SocialMenu({ skin }: { skin?: 'sala' } = {}) {
   const t = useTranslations('nav')
   const pathname = usePathname()
   const { unreadCount } = useUnreadChat()
@@ -32,10 +40,11 @@ export function SocialMenu() {
       trigger={
         <>
           <IconChat className="w-5 h-5" />
-          <CountBadge count={unreadCount} />
+          {skin === 'sala' ? <SalaCountBadge count={unreadCount} /> : <CountBadge count={unreadCount} />}
         </>
       }
-      triggerClassName={HEADER_ICON_BOX}
+      triggerClassName={skin === 'sala' ? SALA_HEADER_ICON_BOX : HEADER_ICON_BOX}
+      currentClassName={skin === 'sala' ? SALA_HEADER_ICON_CURRENT : undefined}
       current={current}
     >
       {(close) => (

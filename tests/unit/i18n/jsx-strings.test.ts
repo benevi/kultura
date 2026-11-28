@@ -21,7 +21,7 @@ import { ROOT, SRC, walk } from "./scan";
  * Nombres propios y marcas: no se traducen. Los nombres de idioma van en su
  * propia lengua en el selector («Español», «English»), como en cualquier web.
  */
-const PROPER = new RegExp("(?<!\\p{L})(KULTURA|kultura|WhatsApp|Wikidata|Metacritic|JustWatch|Aa|English|Español)(?!\\p{L})", "gu");
+const PROPER = new RegExp("(?<!\\p{L})(KULTURA|Kultura|kultura|WhatsApp|Wikidata|Metacritic|JustWatch|Aa|English|Español)(?!\\p{L})", "gu");
 const LETTERS = /[A-Za-zÁ-úñÑ]{2,}/;
 /** ★ y ▶ son glifos tipográficos de la nota y de "seguir", no emojis. */
 const EMOJI = new RegExp("(?![\\u2605\\u25B6\\u00A9\\u00AE\\u2122])\\p{Extended_Pictographic}", "u");

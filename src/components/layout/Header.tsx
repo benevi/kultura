@@ -1,6 +1,8 @@
 ﻿import { getLocale, getTranslations } from "next-intl/server";
 import { KButton } from "@/components/ui/KButton";
 import { Logo } from "@/components/layout/Logo";
+import { salaMarcaForAll } from "@/lib/flags/sala";
+import { SalaPublicHeader } from "@/components/layout/sala/SalaPublicHeader";
 
 /**
  * Cabecera pública (landing, rankings, perfil y legales).
@@ -19,7 +21,9 @@ import { Logo } from "@/components/layout/Logo";
  */
 export async function Header({ locale }: { locale?: string } = {}) {
   const lang = locale ?? (await getLocale());
+  // Fase 8.5 M2: «Sala» solo con `SALA_MARCA=1` (sin leer cookies: hay públicas estáticas).
   const t = await getTranslations({ locale: lang, namespace: "auth" });
+  if (salaMarcaForAll()) return <SalaPublicHeader lang={lang} signIn={t("signIn")} signUp={t("signUp")} />;
   const compact = "h-9 px-2 min-[360px]:px-3 text-xs sm:h-10 sm:px-4 sm:text-sm";
 
   return (

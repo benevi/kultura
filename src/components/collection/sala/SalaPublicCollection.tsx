@@ -61,7 +61,7 @@ export interface SalaPublicCollectionProps {
   owner: PublicOwner
   lists: PublicList[]
   /** Con sesión y perfil: la barra de la app. Con sesión sin perfil (alta a medias): la barra de hoy. */
-  chrome: { user: User; profile: ViewerProfile | null; unreadCount: number } | null
+  chrome: { user: User; profile: ViewerProfile | null; unreadCount: number; sala?: boolean } | null
   isOwner: boolean
   showcase: LibraryShowcase | null
   /** Escala de notas del dueño (la de `/u/…/r/…`). */
@@ -289,6 +289,7 @@ export async function SalaPublicCollection({
           userId={chrome.user.id}
           profile={chrome.profile}
           unreadCount={chrome.unreadCount}
+          sala={chrome.sala}
           demo={isDemoUser(chrome.user)}
           footer={<AppFooter />}
         >
