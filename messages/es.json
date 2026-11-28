@@ -691,7 +691,10 @@
     "sala": {
       "collaborative": "colaborativa",
       "by": "de @{username}",
-      "creating": "Creando la lista…"
+      "creating": "Creando la lista…",
+      "removed": "«{title}» quitado de la lista",
+      "undo": "Deshacer",
+      "savingDescription": "Guardando la descripción…"
     }
   },
   "aiRecommendations": {

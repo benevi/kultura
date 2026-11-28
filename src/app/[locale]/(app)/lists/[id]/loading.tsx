@@ -1,9 +1,13 @@
 // MOV-14 (F-25): esqueleto del detalle de una lista (cabecera + rejilla de
 // pósters 2:3, como `ListDetail`). El pulso se apaga con reduced-motion.
 import { getTranslations } from 'next-intl/server'
+import { salaListasEnabled } from '@/lib/flags/sala'
+import { SalaListDetailSkeletonLazy } from '@/components/lists/sala/SalaListDetailSkeletonLazy'
 
 export default async function ListDetailLoading() {
   const t = await getTranslations('common')
+  // Fase 8.5 L3: con `SALA_LISTAS`, el esqueleto de «Sala» (por `next/dynamic`).
+  if (await salaListasEnabled()) return <SalaListDetailSkeletonLazy loadingLabel={t('loading')} />
   return (
     <main aria-busy="true" className="page-grid [&>*]:max-w-4xl py-8">
       <p role="status" className="sr-only">{t('loading')}</p>

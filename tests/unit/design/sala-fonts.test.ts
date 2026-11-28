@@ -208,6 +208,8 @@ describe("las pantallas de hoy solo descargan «Sala» donde ya la usan", () => 
       "src/components/home/sala/SalaHomeSkeleton.tsx",
       "src/components/layout/ErrorState.tsx",
       "src/components/library/sala/SalaLibraryGrid.tsx",
+      "src/components/lists/sala/SalaListDetail.tsx",
+      "src/components/lists/sala/SalaListDetailSkeleton.tsx",
       "src/components/lists/sala/SalaListsIndex.tsx",
       "src/components/lists/sala/SalaListsSkeleton.tsx",
       "src/components/media/sala/SalaFichaStyles.tsx",
