@@ -7,16 +7,16 @@
 // escrito no se pierde.
 // ============================================================
 
-import { useId, useRef, useState } from 'react'
+import { useId } from 'react'
 import { useTranslations } from 'next-intl'
 import { KButton } from '@/components/ui/KButton'
 import { K_FIELD_ERROR } from '@/components/ui/KField'
 import { KTextarea } from '@/components/ui/KTextarea'
 import { cn } from '@/lib/utils/index'
 import type { ListItem } from '@/types/list'
-import { setListItemNote } from '@/lib/lists/client'
+import { NOTE_MAX, useItemNote } from './useItemNote'
 
-export const NOTE_MAX = 500
+export { NOTE_MAX } from './useItemNote'
 
 interface ItemNoteProps {
   listId: string
@@ -31,41 +31,9 @@ export function ItemNote({ listId, item, editable, onSaved, className }: ItemNot
   const fieldId = useId()
   const hintId = useId()
   const errorId = useId()
-  const fieldRef = useRef<HTMLTextAreaElement>(null)
-  const toggleRef = useRef<HTMLButtonElement>(null)
-  const [editing, setEditing] = useState(false)
-  const [draft, setDraft] = useState(item.note ?? '')
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState(false)
+  const { fieldRef, toggleRef, editing, draft, setDraft, saving, error, open, close, save, onFieldKeyDown } =
+    useItemNote(listId, item, onSaved)
   const title = item.media?.title ?? item.mediaId
-
-  function open() {
-    setDraft(item.note ?? '')
-    setError(false)
-    setEditing(true)
-    requestAnimationFrame(() => fieldRef.current?.focus())
-  }
-
-  function close() {
-    setEditing(false)
-    requestAnimationFrame(() => toggleRef.current?.focus())
-  }
-
-  async function save(e: React.FormEvent) {
-    e.preventDefault()
-    setSaving(true)
-    setError(false)
-    try {
-      const data = await setListItemNote(listId, item.id, draft)
-      onSaved(data.note)
-      close()
-    } catch {
-      setError(true)
-      fieldRef.current?.focus()
-    } finally {
-      setSaving(false)
-    }
-  }
 
   if (editing) {
     return (
@@ -81,13 +49,7 @@ export function ItemNote({ listId, item, editable, onSaved, className }: ItemNot
           placeholder={t('notePlaceholder')}
           aria-describedby={error ? `${hintId} ${errorId}` : hintId}
           aria-invalid={error ? true : undefined}
-          onKeyDown={(e) => {
-            if (e.key === 'Escape') {
-              e.preventDefault()
-              e.stopPropagation()
-              close()
-            }
-          }}
+          onKeyDown={onFieldKeyDown}
           className={cn('min-h-[72px]', error && K_FIELD_ERROR)}
         />
         <p id={hintId} className="text-xs text-text-tertiary">
