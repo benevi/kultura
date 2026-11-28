@@ -2,6 +2,7 @@ import { ClientMessages } from "@/i18n/ClientMessages";
 import { MEDIA_CLIENT_NAMESPACES } from "@/i18n/client-messages";
 import { AppChrome, getChromeSession } from "@/components/layout/AppChrome";
 import { getUnreadCount } from "@/lib/social/notifications";
+import { salaMarcaEnabled } from "@/lib/flags/sala";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { ToastProvider } from "@/components/ui/ToastProvider";
@@ -21,9 +22,9 @@ export default async function MediaLayout({ children }: { children: React.ReactN
   const page = <ClientMessages namespaces={MEDIA_CLIENT_NAMESPACES}>{children}</ClientMessages>;
 
   if (user && profile) {
-    const unreadCount = await getUnreadCount(user.id);
+    const [unreadCount, sala] = await Promise.all([getUnreadCount(user.id), salaMarcaEnabled()]);
     return (
-      <AppChrome user={user} profile={profile} unreadCount={unreadCount}>
+      <AppChrome user={user} profile={profile} unreadCount={unreadCount} sala={sala}>
         {page}
       </AppChrome>
     );

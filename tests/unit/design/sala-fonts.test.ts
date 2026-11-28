@@ -202,11 +202,16 @@ describe("las pantallas de hoy solo descargan «Sala» donde ya la usan", () => 
     // - `SalaListsIndex` (fase 8.5, L1): el índice de listas, por `next/dynamic`
     //   y solo con la bandera `SALA_LISTAS` encendida; `SalaListsSkeleton`, el
     //   esqueleto de su `loading.tsx`, igual.
+    // - `SalaAuthHeader` y `SalaChromeStyles` (fase 8.5, M2): la cabecera con
+    //   sesión y la pública en «Sala», por `next/dynamic` y solo con la bandera
+    //   `SALA_MARCA` encendida.
     expect(importers.sort()).toEqual([
       "src/components/discover/sala/SalaDiscoverView.tsx",
       "src/components/home/sala/SalaHome.tsx",
       "src/components/home/sala/SalaHomeSkeleton.tsx",
       "src/components/layout/ErrorState.tsx",
+      "src/components/layout/sala/SalaAuthHeader.tsx",
+      "src/components/layout/sala/SalaChromeStyles.tsx",
       "src/components/library/sala/SalaLibraryGrid.tsx",
       "src/components/lists/sala/SalaListDetail.tsx",
       "src/components/lists/sala/SalaListDetailSkeleton.tsx",

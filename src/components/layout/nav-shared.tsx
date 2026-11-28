@@ -86,3 +86,32 @@ export function CountBadge({ count }: { count: number }) {
     </span>
   )
 }
+
+// ── «Sala» (fase 8.5 M2, bandera `SALA_MARCA`) ─────────────────────────────
+// Las mismas piezas con la piel de «Sala»: esquinas rectas, sin fondo en
+// reposo, tinta al pasar el puntero y 48 px. La página actual no se dice solo
+// con color: lleva un tono de panel y una barra de tinta abajo.
+
+/** Caja de icono de la cabecera en «Sala». */
+export const SALA_HEADER_ICON_BOX = [
+  'relative flex items-center justify-center w-12 h-12 flex-shrink-0 text-sala-ink',
+  'transition-colors duration-sala-fast ease-sala motion-reduce:transition-none',
+  'sala-hover:bg-sala-ink sala-hover:text-sala-background sala-focused:sala-focus',
+].join(' ')
+
+/** Estado «estás aquí» de una caja de la cabecera en «Sala». */
+export const SALA_HEADER_ICON_CURRENT =
+  'bg-sala-panel after:absolute after:inset-x-2 after:bottom-0 after:h-1 after:bg-sala-ink'
+
+/** Contador de la cabecera en «Sala». Decorativo: el número va en el nombre del botón. */
+export function SalaCountBadge({ count }: { count: number }) {
+  if (count <= 0) return null
+  return (
+    <span
+      aria-hidden
+      className="absolute top-0.5 right-0.5 min-w-5 h-5 px-1 bg-sala-ink text-sala-background text-xs font-bold leading-none tabular-nums flex items-center justify-center outline outline-2 outline-sala-background"
+    >
+      {count > 99 ? '99+' : count}
+    </span>
+  )
+}

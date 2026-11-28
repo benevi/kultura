@@ -13,6 +13,8 @@ interface HeaderMenuProps {
   triggerClassName?: string
   /** Marca el botón cuando la página actual es uno de sus destinos. */
   current?: boolean
+  /** Clases del botón cuando `current` (por defecto, las de la cabecera de hoy). */
+  currentClassName?: string
   panelClassName?: string
   children: (close: () => void) => ReactNode
 }
@@ -28,7 +30,15 @@ interface HeaderMenuProps {
  * cabecera (que sí lo es), alineado a su borde derecho. Así no se sale de la
  * pantalla a 320 px aunque el botón no sea el último de la fila.
  */
-export function HeaderMenu({ label, trigger, triggerClassName, current, panelClassName, children }: HeaderMenuProps) {
+export function HeaderMenu({
+  label,
+  trigger,
+  triggerClassName,
+  current,
+  currentClassName = HEADER_ICON_CURRENT,
+  panelClassName,
+  children,
+}: HeaderMenuProps) {
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
@@ -78,7 +88,7 @@ export function HeaderMenu({ label, trigger, triggerClassName, current, panelCla
         aria-controls={panelId}
         data-current={current ? 'true' : undefined}
         onClick={() => setOpen((v) => !v)}
-        className={cn(triggerClassName, current && HEADER_ICON_CURRENT)}
+        className={cn(triggerClassName, current && currentClassName)}
       >
         {trigger}
       </button>

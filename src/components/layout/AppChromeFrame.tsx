@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react'
 import type { ViewerProfile } from '@/lib/media/viewer'
 import { AuthHeader } from '@/components/layout/AuthHeader'
+import { SalaAuthHeaderLazy } from '@/components/layout/sala/SalaAuthHeaderLazy'
 import { BottomNav } from '@/components/layout/BottomNav'
 import { ToastProvider } from '@/components/ui/ToastProvider'
 import { UnreadChatProvider } from '@/components/layout/UnreadChatProvider'
@@ -26,14 +27,20 @@ export interface AppChromeFrameProps {
   demo: boolean
   footer: ReactNode
   children: ReactNode
+  /** Cabecera de «Sala» (bandera `SALA_MARCA`, fase 8.5 M2). */
+  sala?: boolean
 }
 
-export function AppChromeFrame({ userId, profile, unreadCount, demo, footer, children }: AppChromeFrameProps) {
+export function AppChromeFrame({ userId, profile, unreadCount, demo, footer, children, sala = false }: AppChromeFrameProps) {
   return (
     <ToastProvider>
       <UnreadChatProvider userId={userId}>
         <div className="min-h-dvh flex flex-col">
-          <AuthHeader profile={profile} unreadCount={unreadCount} />
+          {sala ? (
+            <SalaAuthHeaderLazy profile={profile} unreadCount={unreadCount} />
+          ) : (
+            <AuthHeader profile={profile} unreadCount={unreadCount} />
+          )}
           {demo && <DemoBanner />}
           {/* El relleno inferior va en el envoltorio que INCLUYE el pie: así
               la BottomNav fija (64 px + zona segura) no tapa ni el último
