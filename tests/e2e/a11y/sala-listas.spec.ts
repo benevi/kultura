@@ -366,7 +366,8 @@ test.describe("con la cookie de prueba", () => {
       await expect(header).toContainText("1 título");
       await expect(header.getByRole("link", { name: "de @benevi" })).toHaveAttribute("href", "/es/u/benevi");
       await expect(page.getByRole("link", { name: es.collection.backToCollection })).toHaveCount(0);
-      await expect(header.getByRole("button", { name: es.report.triggerList })).toBeVisible();
+      // «Denunciar» a la vista; el nombre dice qué: «Denunciar lista: Imprescindibles».
+      await expect(header.getByRole("button", { name: `${es.report.triggerList}: Imprescindibles` })).toBeVisible();
       // La barra de la app y ninguna llamada a registrarse.
       await expect(page.getByRole("navigation").first()).toBeVisible();
       await expect(page.getByRole("link", { name: es.collection.ctaButton })).toHaveCount(0);

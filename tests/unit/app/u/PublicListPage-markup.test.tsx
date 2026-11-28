@@ -237,7 +237,7 @@ describe('/u/[username]/l/[id] con «Sala» (SALA_LISTAS=1)', () => {
     expect(state.chrome).toMatchObject({ userId: 'v1', unreadCount: 3, demo: false })
     expect(state.sala).toMatchObject({ cta: null, description: null, ranked: false })
     const report = state.sala!.report as { props: Record<string, unknown> }
-    expect(report.props).toMatchObject({ targetType: 'list', targetId: 'l1', skin: 'sala', closeLabel: 'common.close' })
+    expect(report.props).toMatchObject({ targetType: 'list', targetId: 'l1', contextLabel: 'Top', skin: 'sala', closeLabel: 'common.close' })
     // Una sola lectura de la sesión (con su perfil) para la página y la barra.
     expect(state.calls.filter((c) => c === 'getViewer').length).toBeGreaterThan(0)
     expect(state.calls).toContain('getUnreadCount')
